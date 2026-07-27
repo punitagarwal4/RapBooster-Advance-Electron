@@ -1,0 +1,20 @@
+// Prisma 7: no datasource url here — the CLI reads it from prisma.config.ts,
+// and the runtime supplies it to the driver adapter (userData path is only
+// known at runtime in Electron).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Spike-only model. The full schema (SPRINTS.md §4) lands in T1.4 once the
+/// packaging question is settled.
+model SpikeProbe {
+  id        Int      @id @default(autoincrement())
+  note      String
+  createdAt DateTime @default(now())
+}

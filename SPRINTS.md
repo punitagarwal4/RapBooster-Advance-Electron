@@ -374,15 +374,21 @@ RapBooster-Advance-Electron/
 The complete `prisma/schema.prisma`. Sprint 1 creates all of it — later sprints add data, not
 tables, so there is exactly one baseline migration plus any deliberate later changes.
 
+> **Prisma 7 note.** v7 removed the Rust query engine (the query compiler is now
+> Rust→WASM) and removed datasource URLs from the schema. The CLI reads its URL from
+> `prisma.config.ts`; the **runtime supplies the URL to the driver adapter**, which is exactly
+> what Electron needs since `userData` is not known at build time. `driverAdapters` is no
+> longer a preview feature, and the generator is `prisma-client` (not `prisma-client-js`).
+
 ```prisma
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")   // set at runtime to userData/rapbooster.db
+  // No url here — see the Prisma 7 note above.
 }
 
 // ─────────────────────────────── Licensing ───────────────────────────────
@@ -1600,7 +1606,7 @@ time in Sprint 1; nothing floats on `^`.
 | `shadcn/ui` primitives (`@radix-ui/*`) | Accessible components | 1 |
 | `lucide-react` | Icons, replacing the prototype's emoji | 1 |
 | `zod` | IPC validation, both directions | 1 |
-| `@prisma/client` · `prisma` · `@prisma/adapter-better-sqlite3` | ORM + driver adapter | 1 |
+| `@prisma/client` · `prisma` · `@prisma/adapter-better-sqlite3` | ORM + driver adapter (v7 — WASM query compiler, no engine binary) | 1 |
 | `better-sqlite3` | Synchronous SQLite driver | 1 |
 | `baileys` | WhatsApp Web protocol — **pinned exactly**, version per REQUIREMENTS §7.6 | 2 |
 | `qrcode` | Render the QR the socket emits | 2 |

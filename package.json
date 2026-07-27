@@ -1,0 +1,33 @@
+{
+  "name": "rapbooster-advance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WhatsApp marketing desktop application",
+  "author": "Punit",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "spike:build": "electron-vite build",
+    "spike:pack": "electron-builder --dir",
+    "postinstall": "prisma generate && electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "7.9.1",
+    "@prisma/client": "7.9.1",
+    "better-sqlite3": "12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.10.1",
+    "electron": "42.7.1",
+    "electron-builder": "26.15.3",
+    "electron-vite": "5.0.0",
+    "prisma": "7.9.1",
+    "typescript": "5.9.3",
+    "vite": "7.2.4"
+  }
+}

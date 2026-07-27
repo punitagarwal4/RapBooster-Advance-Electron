@@ -1,0 +1,51 @@
+appId: com.rapbooster.advance
+productName: RapBooster Advance
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: assets/branding
+
+# The generated Prisma client is plain TypeScript compiled into out/, but the
+# migration SQL is read from disk at boot, so it must ship inside the asar.
+files:
+  - out/**/*
+  - prisma/migrations/**/*
+  - package.json
+  - '!**/*.map'
+  - '!**/*.ts'
+
+# Native .node binaries cannot be dlopen'd from inside an asar archive.
+asar: true
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # Signing is configured but inactive until certificates are supplied
+  # (REQUIREMENTS.md §4).
+  signAndEditExecutable: true
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.business
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+linux:
+  target: []
+
+# Update feed is a placeholder until REQUIREMENTS.md §3 is filled.
+publish:
+  - provider: generic
+    url: https://updates.example.invalid/rapbooster/

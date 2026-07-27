@@ -1,10 +1,46 @@
 # RapBooster Advance — Requirements Questionnaire
 
-> **Status:** ⬜ Not filled &nbsp;|&nbsp; **Owner:** Punit &nbsp;|&nbsp; **Blocks:** Sprint 1
+> **Status:** ⬜ Not filled &nbsp;|&nbsp; **Owner:** Punit &nbsp;|&nbsp; **Blocks:** parts of Sprints 1 and 4
 >
-> **Sprint 1 does not start until this file is filled.** Every blank below maps to something
-> the application genuinely cannot be built without. If an item does not apply, write
-> `N/A` — do not leave it empty, so we can tell "not applicable" from "not yet answered".
+> Every blank below maps to something the application genuinely cannot be finished without.
+> If an item does not apply, write `N/A` — do not leave it empty, so we can tell "not
+> applicable" from "not yet answered".
+>
+> **Build is proceeding without waiting for these.** On instruction (2026-07-27), Sprint 1
+> started before this file was filled. Anything that depends on an answer here is built
+> against a documented default or behind a swappable interface, and every such choice is
+> listed in [§0 Working assumptions](#section-0--working-assumptions-in-effect). When you fill
+> a section in, the corresponding assumption is replaced and the affected code updated — no
+> rewrite required, because the dependencies were isolated deliberately.
+
+---
+
+## Section 0 — Working assumptions in effect
+
+These are the defaults the build is currently running on. **Each one is a placeholder, not a
+decision.** Correct any of them by filling the linked section; nothing here is baked in.
+
+| # | Assumption in use | Replaced by | Cost to change later |
+| --- | --- | --- | --- |
+| A1 | License server calls go through a `LicenseService` interface with a mock implementation; no real endpoint is wired | §1 | Low — one file (`license.service.ts`) |
+| A2 | Product name "RapBooster Advance", appId `com.rapbooster.advance`, placeholder icon | §2 | Low — config + assets swap |
+| A3 | No update feed configured; `electron-updater` wired but pointed at a placeholder URL read from config | §3 | Low — config value |
+| A4 | Builds are unsigned; signing config present but disabled | §4 | Low — config + certs |
+| A5 | OpenAI model defaults to a current general-purpose model; user must supply their own key | §5 | Low — settings default |
+| A6 | Sending defaults = the prototype's values (delay 0–5s, sleep 10s after 10 msgs, group delay 2s), daily cap unlimited, 2 retries | §6 | Low — seeded settings row |
+| A7 | Default country code for phone normalization: **`+91`** (India) | §7.5 | **Medium** — changes how imported numbers normalize; re-import may be needed if wrong |
+| A8 | Duplicate policy on import: **skip** | §7.4 | Low — settings default |
+| A9 | Campaign report exports **CSV, one row per recipient** (upgrade over the prototype's `.txt`) | §7.2 | Low |
+| A10 | Inbox retention: **forever** (no cleanup job active) | §7.3 | Low |
+| A11 | Dashboard stats use the suggested definitions in §7.1 | §7.1 | Low |
+| A12 | Baileys pinned to the **7.x line**; exact version recorded in the tracker's decision log | §7.6 | Medium — regression run required |
+| A13 | Escalation uses **keyword triggers**; the confidence-threshold control is stored but not enforced | §5 | Medium — prompt + logic change |
+
+**A7 is the one worth checking early.** If your contact lists are not Indian numbers, tell me
+the right country code before a large CSV import happens, because normalization is applied at
+import time and stored.
+
+---
 
 ## How to fill this
 

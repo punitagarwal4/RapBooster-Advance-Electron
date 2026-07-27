@@ -15,7 +15,7 @@ Last updated: **2026-07-27**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | ⬜ Blocked | — | — | 0/11 | 0/16 | — |
+| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 0/11 | 0/16 | — |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
@@ -56,7 +56,7 @@ customer has the questionnaire.
 
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
-| T1.1 | Prisma/Electron packaging spike (timebox 1 day) | ⬜ | **Do first.** Fallback: Drizzle — record the decision below |
+| T1.1 | Prisma/Electron packaging spike (timebox 1 day) | 🟢 | **Passed packaged** — see D8, D10–D12. Drizzle fallback not needed |
 | T1.2 | Project scaffold, tooling, scripts | ⬜ | |
 | T1.3 | Electron shell + security baseline | ⬜ | |
 | T1.4 | Database layer, full schema, boot migrator | ⬜ | All tables created here |
@@ -149,8 +149,11 @@ reasoning — future sessions read this instead of re-litigating.
 | D5 | 2026-07-27 | `Contact.data` as a JSON blob with promoted `name`/`phone` | Lists have arbitrary columns; EAV would need a join per field at 50k rows; no screen filters on custom fields |
 | D6 | 2026-07-27 | Mock transport built in Sprint 2, before the campaign engine | Without it, Sprints 3–4 cannot be tested in CI without risking a real WhatsApp ban |
 | D7 | 2026-07-27 | No Baileys fork (`baileys-pro`, `baileys-antiban`, etc.) | Anti-ban pacing is ours and auditable; forks add supply-chain risk to the most sensitive dependency |
-| D8 | ⬜ pending | Prisma vs Drizzle | Decided by the T1.1 packaging spike — record the outcome here |
+| D8 | 2026-07-27 | **Prisma stays — Drizzle fallback not needed** | T1.1 spike passed in a packaged asar build on Windows: migrations applied, write/read/aggregate round-trip, idempotent rerun. Prisma 7 generates plain TypeScript with a WASM query compiler, so there is no engine binary to ship |
 | D9 | ⬜ pending | Baileys 7.x RC vs 6.7.23 | Customer decision in REQUIREMENTS §7.6 — record the pinned version here |
+| D10 | 2026-07-27 | **Electron pinned to 42.7.1, not 43.x** | Electron 43 is ABI 148; `better-sqlite3` publishes prebuilds only up to ABI 146 (Electron 42). On 43 every install fell back to `node-gyp`, which needs Python + VS Build Tools on every build machine — unacceptable for CI and the macOS build. Revisit when better-sqlite3 ships ABI 148 prebuilds |
+| D11 | 2026-07-27 | `better-sqlite3` pinned to 12.11.1 | `@prisma/adapter-better-sqlite3@7.9.1` requires `^12.6.0`. Pinning 13.x produced two copies (hoisted 13.0.1 + nested 12.11.1) and the nested one had no Electron prebuild. One hoisted copy is required for `install-app-deps` to work |
+| D12 | 2026-07-27 | Packaged build verified via a `--self-test` flag on the main entry | Native-module and asar-layout breakage only reproduces in a real packaged binary. Making it a flag on the shipped entry means the same probe backs the per-sprint smoke test in SPRINTS.md §13.4 |
 
 ---
 
@@ -172,6 +175,8 @@ explicitly accepted with a reason.
 | # | Sprint found | Issue | Severity | Status |
 | --- | --- | --- | --- | --- |
 | K1 | 3 (by design) | A message in flight during a crash may send twice; bounded at one per device per crash | Accepted | Documented in SPRINTS §6.4 — WhatsApp offers no dedup primitive to eliminate it |
+| K2 | 1 | The `init` migration creates a spike-only `SpikeProbe` table | Must fix | **Delete the migration and regenerate a clean baseline in T1.4** with the real schema. Safe to do because nothing has shipped — migrations only become forward-only after first release |
+| K3 | 1 | Builds are unsigned; `electron-builder` reports "default Electron icon is used" | Expected | Resolved in T4.5 once REQUIREMENTS §2 (icon) and §4 (certificates) are supplied |
 
 ---
 
