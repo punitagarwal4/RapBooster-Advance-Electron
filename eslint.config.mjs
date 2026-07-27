@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
@@ -62,10 +63,12 @@ export default tseslint.config(
 
   {
     files: ['renderer/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
     languageOptions: {
       globals: { ...globals.browser },
     },
     rules: {
+      ...reactHooks.configs.recommended.rules,
       // The renderer has no logger of its own; anything worth recording goes
       // to main over IPC.
       'no-console': ['error', { allow: ['warn', 'error'] }],

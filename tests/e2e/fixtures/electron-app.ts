@@ -29,6 +29,11 @@ export const test = base.extend<{ app: ElectronApplication }>({
       } as NodeJS.ProcessEnv,
     })
 
+    // The window is only created after the database boot sequence completes, so
+    // waiting for it is a reliable barrier. Without this, tests that assert on
+    // the database race the migrator and fail intermittently.
+    await app.firstWindow()
+
     await use(app)
 
     await app.close()

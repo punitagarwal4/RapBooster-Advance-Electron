@@ -1,12 +1,12 @@
 /**
  * Main process entry.
  *
- * The full boot sequence — logger → integrity check → backup → migrate →
- * settings → license gate → window — lands in T1.3/T1.8. This currently does
- * the minimum needed to prove the renderer load path in both dev and packaged
- * builds.
+ * Boot order: scheme registration → single-instance lock → ready → session
+ * security → database (integrity/backup/migrate) → IPC handlers → renderer
+ * protocol → window. The license gate joins between database and window in
+ * T1.8; the logger replaces console in T1.10.
  */
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
 import { join } from 'node:path'
 import {
   APP_ORIGIN,
@@ -16,6 +16,9 @@ import {
 } from './app-protocol'
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
+import { registerSystemHandlers } from './ipc/system.ipc'
+import { unregisteredChannels } from './ipc/router'
+import { applySessionSecurity, applyWindowSecurity } from './security'
 
 app.setName('RapBooster Advance')
 
@@ -52,17 +55,7 @@ function createWindow(): void {
   })
 
   win.once('ready-to-show', () => win.show())
-
-  // Nothing may navigate the shell away from the app, and nothing may spawn a
-  // second window. External links open in the user's real browser instead.
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://')) void shell.openExternal(url)
-    return { action: 'deny' }
-  })
-  win.webContents.on('will-navigate', (event, url) => {
-    const origin = RENDERER_URL ?? APP_ORIGIN
-    if (!url.startsWith(origin)) event.preventDefault()
-  })
+  applyWindowSecurity(win, RENDERER_URL)
 
   void win.loadURL(RENDERER_URL ?? `${APP_ORIGIN}/index.html`)
 }
@@ -83,6 +76,11 @@ async function bootUi(): Promise<void> {
   })
 
   await app.whenReady()
+
+  // In dev the Next server serves the renderer, so there is no export to hash;
+  // the CSP falls back to plain 'self' and dev inline scripts are expected to
+  // be reported. Production is the strict case and is what E2E exercises.
+  applySessionSecurity(rendererRoot(__dirname))
 
   // The database must be migrated before any window can query it. A failure
   // here is fatal and must be visible — starting with an unmigrated database
@@ -107,6 +105,16 @@ async function bootUi(): Promise<void> {
     )
     app.exit(1)
     return
+  }
+
+  // Handlers must exist before the window can issue its first invoke.
+  registerSystemHandlers()
+  const pending = unregisteredChannels()
+  if (pending.length > 0) {
+    // Expected during Sprint 1–4: the contract is fixed up front and handlers
+    // land per sprint. Logged so an accidentally-dropped handler is visible
+    // rather than surfacing as a mystery timeout in the UI.
+    console.log(`ipc: ${pending.length} channel(s) not yet implemented`)
   }
 
   // Only needed when serving the static export; in dev the Vite/Next server does it.

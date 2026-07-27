@@ -6,7 +6,7 @@ that lags the code is worse than no tracker.
 Specification: [SPRINTS.md](./SPRINTS.md) · Rules: [CLAUDE.md](./CLAUDE.md) ·
 Inputs: [REQUIREMENTS.md](./REQUIREMENTS.md)
 
-Last updated: **2026-07-27**
+Last updated: **2026-07-28**
 
 ---
 
@@ -15,7 +15,7 @@ Last updated: **2026-07-27**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 3/11 | 8/16 | `b1c2829` |
+| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 5/11 | 13/16 | `f6845d8` |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
@@ -66,19 +66,19 @@ customer has the questionnaire.
 | --- | --- | --- | --- |
 | T1.1 | Prisma/Electron packaging spike (timebox 1 day) | 🟢 | **Passed packaged** — see D8, D10–D12. Drizzle fallback not needed |
 | T1.2 | Project scaffold, tooling, scripts | 🟢 | Electron + Next static export + Tailwind 4 + ESLint 10 + Prettier; `build`/`pack`/`typecheck`/`lint`/`test:e2e`/`test:smoke` all green |
-| T1.3 | Electron shell + security baseline | ⬜ | |
+| T1.3 | Electron shell + security baseline | 🟢 | Strict CSP with build-time inline-script hashes, permission deny-all, external-URL allowlist, navigation lock |
 | T1.4 | Database layer, full schema, boot migrator | 🟢 | 17 tables, forward-only migrator, WAL, integrity check + quarantine, pre-migration backups |
-| T1.5 | IPC contract + router + renderer hooks | ⬜ | Full channel list written now |
+| T1.5 | IPC contract + router + renderer hooks | 🟢 | 68 channels + 10 events, two-way zod validation, sandbox-safe preload allowlist, useIpcQuery/useIpcEvent |
 | T1.6 | Design system (Tailwind + shadcn + tokens) | ⬜ | |
 | T1.7 | App shell, sidebar, nine routes | ⬜ | |
 | T1.8 | Licensing: service, fingerprint, activation, conflict, gate | ⬜ | |
 | T1.9 | Settings — license panel | ⬜ | |
 | T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
-| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 5 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
+| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 13 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
 
-**E2E:** E1.1 – E1.16 — **8 written, 8 passing**. Remaining: E1.1–E1.9 (licensing, with T1.8),
-E1.11 (tamper, T1.8), E1.15 (log redaction, T1.10). E1.16's packaged half runs via
-`npm run test:smoke`.
+**E2E:** **13 written, 13 passing** (stable across consecutive runs). Remaining: E1.1–E1.9
+(licensing, with T1.8), E1.11 (tamper, T1.8), E1.15 (log redaction, T1.10). E1.16's packaged
+half runs via `npm run test:smoke`.
 
 **Exit gate:** fresh install gates on license · valid key persists across restart · conflict
 transfer works · offline grace honored · all nine routes navigate · installers build on both
@@ -167,6 +167,10 @@ reasoning — future sessions read this instead of re-litigating.
 | D13 | 2026-07-27 | **Renderer served over a custom `app://` scheme, not `file://`** | The Next static export references assets at absolute `/_next/...` paths, which under `file://` resolve to the filesystem root and 404. A relative `assetPrefix` fixes the root page but breaks nested routes (`/campaigns/` would seek `/campaigns/_next/...`) and the app has nine. The scheme also gives the renderer a real origin, which is what makes a strict CSP possible in T1.3. Path traversal is contained in `app-protocol.ts` |
 | D14 | 2026-07-27 | `scripts/copy-renderer.mjs` copies the export to `out/renderer` at build time | Next cannot export outside its own directory. Doing the copy in the build rather than in `electron-builder` means the unpackaged and packaged layouts are identical, so E2E exercises the same load path the shipped app uses instead of a test-only one |
 | D15 | 2026-07-27 | Renderer load path keyed on `ELECTRON_RENDERER_URL`, not `app.isPackaged` | `isPackaged` is false under Playwright, which would have forced tests down a dev-server path the shipped app never takes. Keying on the env var means absence of a dev server === production behaviour |
+| D16 | 2026-07-28 | **Channel names live in a zod-free `shared/channels.ts`** | The preload runs with `sandbox: true`, where `require` cannot reach `node_modules` — importing the zod contract there broke `window.api` entirely. A compile-time `AssertEqual` in `ipc.ts` makes the two lists impossible to drift apart |
+| D17 | 2026-07-28 | **CSP pins build-time hashes of Next's inline scripts** | The App Router emits inline bootstrap scripts that `script-src 'self'` blocks. The alternatives were `'unsafe-inline'`, which permits *any* injected script, or per-request nonces, which a static export cannot produce. Hashing fails closed: an inline script not present at build time will not run |
+| D18 | 2026-07-28 | IPC handlers resolve a discriminated result and never throw | Electron stringifies a thrown `Error` across IPC, destroying the typed taxonomy and forcing every call site into try/catch |
+| D19 | 2026-07-28 | The E2E fixture awaits `firstWindow()` before yielding | The window is only created after the database boot sequence, so it is a reliable barrier. Without it, database assertions raced the migrator and failed intermittently |
 
 ---
 
@@ -202,6 +206,7 @@ every earlier suite.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-27 | 1 (partial) | 5 | n/a | 5 pass / 0 fail | ✅ | ✅ | ✅ | T1.1, T1.2 complete; T1.11 harness up |
 | 2026-07-27 | 1 (partial) | 3 | 5 | 8 pass / 0 fail | ✅ | ✅ | ✅ | T1.4 complete. Adds E1.13, E1.13b, E1.13c (real two-launch restart) |
+| 2026-07-28 | 1 (partial) | 5 | 8 | 13 pass / 0 fail | ✅ | ✅ | ✅ | T1.3 + T1.5 complete. Adds E1.3 (CSP), E1.14b–e (IPC contract, allowlist, path containment). Stable across 2 consecutive runs |
 
 ---
 

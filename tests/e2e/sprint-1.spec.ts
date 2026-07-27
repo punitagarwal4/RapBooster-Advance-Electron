@@ -152,6 +152,74 @@ test('E1.14 — renderer is sandboxed with no Node access', async ({ app }) => {
   expect(exposure.hasApi).toBe(true)
 })
 
+test('E1.14b — IPC round-trips through the contract', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  // Rendered from live IPC data, so its presence proves preload → router →
+  // handler → response validation all work.
+  await expect(win.getByTestId('version-info')).toBeVisible()
+  await expect(win.getByTestId('dashboard-stats')).toBeVisible()
+
+  const result = await win.evaluate(() => window.api.invoke('system:version'))
+  expect(result.ok).toBe(true)
+})
+
+test('E1.14c — malformed request is rejected with VALIDATION_FAILED', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  const result = await win.evaluate(() =>
+    // Deliberately wrong shape: openPath requires { path: string }.
+    window.api.invoke('system:openPath', { wrong: 'shape' } as never),
+  )
+
+  expect(result.ok).toBe(false)
+  if (!result.ok) expect(result.error.code).toBe('VALIDATION_FAILED')
+})
+
+test('E1.14d — unknown channels are refused by the preload allowlist', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  const result = await win.evaluate(() =>
+    window.api.invoke('totally:not:a:channel' as never, undefined as never),
+  )
+
+  expect(result.ok).toBe(false)
+})
+
+test('E1.14e — openPath outside userData is refused', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  const result = await win.evaluate(() =>
+    window.api.invoke('system:openPath', { path: 'C:\\Windows\\System32' }),
+  )
+
+  expect(result.ok).toBe(false)
+  if (!result.ok) expect(result.error.code).toBe('VALIDATION_FAILED')
+})
+
+test('E1.3 — a strict CSP is applied to the renderer', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  // Inline script must be blocked by script-src 'self'.
+  const inlineScriptRan = await win.evaluate(() => {
+    try {
+      const el = document.createElement('script')
+      el.textContent = 'window.__cspBypassed = true'
+      document.head.appendChild(el)
+    } catch {
+      return false
+    }
+    return (window as unknown as { __cspBypassed?: boolean }).__cspBypassed === true
+  })
+
+  expect(inlineScriptRan).toBe(false)
+})
+
 test('E1.16 — build artifacts the smoke test depends on are present', async () => {
   expect(existsSync(join('out', 'main', 'index.js'))).toBe(true)
   expect(existsSync(join('out', 'main', 'self-test.js'))).toBe(true)
