@@ -12,7 +12,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
-  timeout: 60_000,
+  /**
+   * Generous on purpose. The first Electron launch of a run absorbs module
+   * loading, Prisma initialisation and V8 warm-up, and several specs import
+   * tens of thousands of rows. A tight budget here fails the first test of a
+   * suite while it passes in isolation — cold start, not flakiness.
+   */
+  timeout: 180_000,
   expect: { timeout: 10_000 },
   use: {
     trace: 'retain-on-failure',

@@ -16,7 +16,7 @@ Last updated: **2026-07-28**
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
-| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 4.5/7 | 15 passing | `34af163` |
+| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 5/7 | 16 passing | `28b626f` |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
@@ -104,7 +104,7 @@ platforms.
 | T2.1 | `wa-service` utility process + supervisor | 🟢 | utilityProcess fork, typed protocol, health ping, restart ladder, recovery hook rebuilding sessions from SQLite |
 | T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | 🟢 | **baileys 7.0.0-rc13** pinned exact; backoff + jitter + circuit breaker; loggedOut terminal; auth purged on logout |
 | T2.3 | Devices screen | 🟢 | Card grid, live status via push events, Add Device dialog with QR + pairing tabs, reconnect, two-step logout, limit surfaced |
-| T2.4 | Contacts: lists, virtualized table, CSV import/export | 🟡 | Backend complete: cursor pagination, SQL search, streaming import with column mapping + E.164 normalization + duplicate policy, streaming export. **50k import verified.** Virtualized table UI still to build |
+| T2.4 | Contacts: lists, virtualized table, CSV import/export | 🟢 | Cursor pagination, SQL search, virtualized table with infinite scroll, list tabs, import dialog with column mapping, streaming export. **50k import + 10k UI verified** |
 | T2.5 | Templates: four types, media store, preview | ⬜ | |
 | T2.6 | Merge tags + live preview | ⬜ | |
 | T2.7 | Mock transport | 🟢 | Transport interface + deterministic mock (scriptable failure rate, latency, drops) + Baileys 7 implementation. Unblocks CI testing for Sprints 3–4 |
@@ -243,6 +243,7 @@ every earlier suite.
 | 2026-07-28 | 2 (partial) | 7 | 28 | 35 pass / 0 fail | ✅ | ✅ | ✅ | T2.1 + T2.2 + T2.7. wa-service verified inside the packaged asar |
 | 2026-07-28 | 2 (partial) | 2 | 35 | 37 pass / 0 fail | ✅ | ✅ | ✅ | T2.3 Devices screen. Stable across 2 consecutive runs |
 | 2026-07-28 | 2 (partial) | 6 | 37 | 43 pass / 0 fail | ✅ | ✅ | ✅ | T2.4 contacts backend. E2.12 imports 50,000 rows; E2.16 asserts the <500ms search budget. Stable across 2 runs |
+| 2026-07-28 | 2 (partial) | 1 | 43 | 44 pass / 0 fail | ✅ | ✅ | ✅ | T2.4 contacts UI. E2.17 asserts virtualization holds <100 rows in the DOM at 10,000 contacts. Stable across 2 runs |
 
 ---
 

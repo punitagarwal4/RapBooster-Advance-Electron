@@ -303,6 +303,68 @@ test('E2.15 — export round-trips back to an identical list', async () => {
   }
 })
 
+test('E2.17 — the contacts screen virtualizes a large list and searches it', async () => {
+  const dir = newUserDataDir()
+  const files = mkdtempSync(join(tmpdir(), 'rapbooster-csv-'))
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const ROWS = 10_000
+    const lines = ['Name,Mobile']
+    for (let i = 0; i < ROWS; i += 1) {
+      lines.push(`Person ${i},9${String(600000000 + i).padStart(9, '0')}`)
+    }
+    const csv = writeCsv(files, 'ui.csv', lines)
+
+    // Create the list through the UI so the dialog is exercised too.
+    await win.getByTestId('nav-contacts').click()
+    await expect(win.getByTestId('page-title')).toHaveText('Contact Lists')
+
+    await win.getByTestId('new-list').click()
+    const nameInput = win.getByTestId('list-name')
+    await nameInput.fill('UI List')
+    await expect(nameInput).toHaveValue('UI List')
+    await win.getByTestId('list-fields').fill('Company')
+    await win.getByTestId('submit-list').click()
+    await expect(win.getByTestId('create-list-dialog')).toHaveCount(0)
+
+    const listId = await win.evaluate(async () => {
+      const r = await window.api.invoke('contactList:list')
+      return r.ok ? (r.data.find((l) => l.name === 'UI List')?.id ?? '') : ''
+    })
+    expect(listId).not.toBe('')
+
+    await win.evaluate(
+      ({ id, p }) =>
+        window.api.invoke('contacts:import', {
+          listId: id,
+          filePath: p,
+          mapping: { Name: 'Name', Mobile: 'Mobile' },
+          duplicatePolicy: 'skip',
+        }),
+      { id: listId, p: csv },
+    )
+
+    // Re-enter the screen so the table picks up the imported rows.
+    await win.getByTestId('nav-dashboard').click()
+    await win.getByTestId('nav-contacts').click()
+    await expect(win.getByTestId('contacts-total')).toContainText('10,000')
+
+    // Virtualization: the DOM must hold a small window, not 10,000 rows.
+    const rendered = await win.getByTestId('contact-row').count()
+    expect(rendered).toBeGreaterThan(0)
+    expect(rendered).toBeLessThan(100)
+
+    // Search narrows the list.
+    await win.getByTestId('contact-search').fill('Person 4242')
+    await expect(win.getByTestId('contacts-total')).not.toContainText('10,000')
+    await expect(win.getByTestId('contact-row').first()).toContainText('Person 4242')
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+    rmSync(files, { recursive: true, force: true })
+  }
+})
+
 test('E2.16 — search across a large list stays fast and paginates', async () => {
   const dir = newUserDataDir()
   const files = mkdtempSync(join(tmpdir(), 'rapbooster-csv-'))
