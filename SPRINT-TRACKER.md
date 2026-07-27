@@ -16,7 +16,7 @@ Last updated: **2026-07-28**
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
-| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 3/7 | 7 passing | `5580010` |
+| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 4/7 | 9 passing | `a1627ee` |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
@@ -103,13 +103,13 @@ platforms.
 | --- | --- | --- | --- |
 | T2.1 | `wa-service` utility process + supervisor | 🟢 | utilityProcess fork, typed protocol, health ping, restart ladder, recovery hook rebuilding sessions from SQLite |
 | T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | 🟢 | **baileys 7.0.0-rc13** pinned exact; backoff + jitter + circuit breaker; loggedOut terminal; auth purged on logout |
-| T2.3 | Devices screen | ⬜ | |
+| T2.3 | Devices screen | 🟢 | Card grid, live status via push events, Add Device dialog with QR + pairing tabs, reconnect, two-step logout, limit surfaced |
 | T2.4 | Contacts: lists, virtualized table, CSV import/export | ⬜ | 50k-row target |
 | T2.5 | Templates: four types, media store, preview | ⬜ | |
 | T2.6 | Merge tags + live preview | ⬜ | |
 | T2.7 | Mock transport | 🟢 | Transport interface + deterministic mock (scriptable failure rate, latency, drops) + Baileys 7 implementation. Unblocks CI testing for Sprints 3–4 |
 
-**E2E:** **7 written, 7 passing** — E2.1 (QR connect), E2.2 (pairing code), E2.3 (restart recovery), E2.6 (logout purges credentials), E2.8 (20 concurrent devices), E2.9 (device limit), E2.10 (service state). Remaining land with T2.3–T2.6.
+**E2E:** **9 written, 9 passing** — E2.1 (QR connect), E2.2 (pairing code), E2.3 (restart recovery), E2.3b (Devices screen QR flow), E2.6 (logout purges credentials), E2.6b (two-step logout in UI), E2.8 (20 concurrent devices), E2.9 (device limit), E2.10 (service state). Remaining land with T2.4–T2.6.
 
 **Exit gate:** device links by QR and pairing code and survives restart · 20 mock devices
 concurrent · 50k CSV imports cleanly · all four template types with working merge tags.
@@ -237,6 +237,7 @@ every earlier suite.
 | 2026-07-28 | 1 (partial) | 10 | 15 | 25 pass / 0 fail | ✅ | ✅ | ✅ | T1.8 complete. Adds the full licensing suite: E1.1–E1.7, E1.9, E1.11, E1.14f. Stable across 2 consecutive runs |
 | 2026-07-28 | **1 (complete)** | 3 | 25 | **28 pass / 0 fail** | ✅ | ✅ | ✅ | T1.9 + T1.10 + T1.11. Adds E1.9b, E1.9c, E1.15 (redaction). Two flaky specs fixed at the root — see D28. **Stable across 3 consecutive runs** |
 | 2026-07-28 | 2 (partial) | 7 | 28 | 35 pass / 0 fail | ✅ | ✅ | ✅ | T2.1 + T2.2 + T2.7. wa-service verified inside the packaged asar |
+| 2026-07-28 | 2 (partial) | 2 | 35 | 37 pass / 0 fail | ✅ | ✅ | ✅ | T2.3 Devices screen. Stable across 2 consecutive runs |
 
 ---
 

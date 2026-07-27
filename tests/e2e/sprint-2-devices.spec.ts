@@ -28,12 +28,17 @@ async function launchLicensed(dir: string) {
   const app = await launchWith(dir)
   const win = await app.firstWindow()
 
-  const needsActivation = await win
-    .getByTestId('license-key')
-    .isVisible()
-    .catch(() => false)
+  // Wait for whichever screen actually renders before deciding. `isVisible()`
+  // does not wait, so on a slow first paint it returns false and activation
+  // would be skipped on a fresh install.
+  await win
+    .locator('[data-testid="license-key"], [data-testid="nav-dashboard"]')
+    .first()
+    .waitFor({ state: 'visible', timeout: 30_000 })
 
-  if (needsActivation) await activateWith(win, 'VALID-E2E-0001')
+  if (await win.getByTestId('license-key').isVisible()) {
+    await activateWith(win, 'VALID-E2E-0001')
+  }
 
   await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: 20_000 })
   return { app, win }
@@ -227,6 +232,65 @@ test('E2.6 — logout clears credentials and marks the device logged out', async
     // Credentials must not survive a logout — they are useless and reusing
     // them would be a security problem.
     expect(existsSync(join(dir, 'sessions', id))).toBe(false)
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E2.3b — the Devices screen links a device through the QR flow', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    await win.getByTestId('nav-devices').click()
+    await expect(win.getByTestId('page-title')).toHaveText('WhatsApp Devices')
+
+    // Empty state offers the primary action.
+    await win.getByTestId('add-device').click()
+    await expect(win.getByTestId('add-device-dialog')).toBeVisible()
+
+    // A device name is required before anything is created.
+    await win.getByTestId('generate-qr').click()
+    await expect(win.getByTestId('add-device-error')).toContainText('required')
+
+    const nameInput = win.getByTestId('device-name')
+    await nameInput.fill('Office PC')
+    await expect(nameInput).toHaveValue('Office PC')
+    await win.getByTestId('generate-qr').click()
+
+    // The dialog closes itself once the device reports connected.
+    await expect(win.getByTestId('add-device-dialog')).toHaveCount(0, { timeout: 20_000 })
+    await expect(win.getByTestId('device-card')).toHaveCount(1)
+    await expect(win.getByTestId('device-grid')).toContainText('Office PC')
+    await expect(win.getByTestId('device-grid')).toContainText('Connected')
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E2.6b — logout from the Devices screen requires confirmation', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const created = await win.evaluate(async () => {
+      const r = await window.api.invoke('device:create', { name: 'Confirm Me' })
+      if (r.ok) await window.api.invoke('device:connect', { id: r.data.id })
+      return r.ok ? r.data.id : ''
+    })
+    expect(created).not.toBe('')
+
+    await win.getByTestId('nav-devices').click()
+    await expect(win.getByTestId('device-card')).toHaveCount(1)
+
+    await win.getByTestId('logout-device').click()
+    // Destructive actions must not fire on a single click.
+    await expect(win.getByTestId('confirm-logout')).toBeVisible()
+    await win.getByTestId('confirm-logout').click()
+
+    await expect
+      .poll(() => deviceRows(dir).find((d) => d.id === created)?.status, { timeout: 15_000 })
+      .toBe('logged_out')
   } finally {
     await app.close()
     cleanupUserDataDir(dir)
