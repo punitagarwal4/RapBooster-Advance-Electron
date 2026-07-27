@@ -158,11 +158,16 @@ test('E1.14b — IPC round-trips through the contract', async ({ app }) => {
 
   // Rendered from live IPC data, so its presence proves preload → router →
   // handler → response validation all work.
-  await expect(win.getByTestId('version-info')).toBeVisible()
   await expect(win.getByTestId('dashboard-stats')).toBeVisible()
 
-  const result = await win.evaluate(() => window.api.invoke('system:version'))
-  expect(result.ok).toBe(true)
+  const version = await win.evaluate(() => window.api.invoke('system:version'))
+  expect(version.ok).toBe(true)
+  if (version.ok) expect(version.data.electron).toMatch(/^\d+\./)
+
+  // A void-request channel must round-trip with no argument at all.
+  const paths = await win.evaluate(() => window.api.invoke('system:paths'))
+  expect(paths.ok).toBe(true)
+  if (paths.ok) expect(paths.data.database).toContain('rapbooster.db')
 })
 
 test('E1.14c — malformed request is rejected with VALIDATION_FAILED', async ({ app }) => {
@@ -218,6 +223,49 @@ test('E1.3 — a strict CSP is applied to the renderer', async ({ app }) => {
   })
 
   expect(inlineScriptRan).toBe(false)
+})
+
+test('E1.10c — every sidebar route navigates without console errors', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  const errors: string[] = []
+  win.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  win.on('pageerror', (err) => errors.push(err.message))
+
+  // Sidebar order and titles come from the prototype (SPRINTS.md §2).
+  const routes: Array<[string, string]> = [
+    ['nav-inbox', 'Unified inbox'],
+    ['nav-campaigns', 'WhatsApp Bulk Campaigns'],
+    ['nav-groups', 'WhatsApp Groups'],
+    ['nav-devices', 'WhatsApp Devices'],
+    ['nav-contacts', 'Contact Lists'],
+    ['nav-templates', 'WhatsApp Templates'],
+    ['nav-chatbot', 'AI Chatbot Configuration'],
+    ['nav-settings', 'Settings'],
+    ['nav-dashboard', 'Dashboard'],
+  ]
+
+  for (const [testId, title] of routes) {
+    await win.getByTestId(testId).click()
+    await expect(win.getByTestId('page-title')).toHaveText(title)
+  }
+
+  expect(errors).toEqual([])
+})
+
+test('E1.10d — the active sidebar item reflects the current route', async ({ app }) => {
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('renderer-ready')).toBeVisible()
+
+  await expect(win.getByTestId('nav-dashboard')).toHaveAttribute('aria-current', 'page')
+
+  await win.getByTestId('nav-devices').click()
+  await expect(win.getByTestId('page-title')).toHaveText('WhatsApp Devices')
+  await expect(win.getByTestId('nav-devices')).toHaveAttribute('aria-current', 'page')
+  await expect(win.getByTestId('nav-dashboard')).not.toHaveAttribute('aria-current', 'page')
 })
 
 test('E1.16 — build artifacts the smoke test depends on are present', async () => {

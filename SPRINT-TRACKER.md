@@ -15,7 +15,7 @@ Last updated: **2026-07-28**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 5/11 | 13/16 | `f6845d8` |
+| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 7/11 | 15/16 | `15132dd` |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
@@ -69,14 +69,14 @@ customer has the questionnaire.
 | T1.3 | Electron shell + security baseline | 🟢 | Strict CSP with build-time inline-script hashes, permission deny-all, external-URL allowlist, navigation lock |
 | T1.4 | Database layer, full schema, boot migrator | 🟢 | 17 tables, forward-only migrator, WAL, integrity check + quarantine, pre-migration backups |
 | T1.5 | IPC contract + router + renderer hooks | 🟢 | 68 channels + 10 events, two-way zod validation, sandbox-safe preload allowlist, useIpcQuery/useIpcEvent |
-| T1.6 | Design system (Tailwind + shadcn + tokens) | ⬜ | |
-| T1.7 | App shell, sidebar, nine routes | ⬜ | |
+| T1.6 | Design system (Tailwind + shadcn + tokens) | 🟢 | Tokens from the prototype palette; hand-written primitives (Button, StatusPill, EmptyState, PageHeader) instead of the shadcn CLI — see D20 |
+| T1.7 | App shell, sidebar, nine routes | 🟢 | Sidebar in prototype order with Settings pinned, all nine routes prerendered, toast provider, per-route error boundary |
 | T1.8 | Licensing: service, fingerprint, activation, conflict, gate | ⬜ | |
 | T1.9 | Settings — license panel | ⬜ | |
 | T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
-| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 13 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
+| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 15 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
 
-**E2E:** **13 written, 13 passing** (stable across consecutive runs). Remaining: E1.1–E1.9
+**E2E:** **15 written, 15 passing** (stable across consecutive runs). Remaining: E1.1–E1.9
 (licensing, with T1.8), E1.11 (tamper, T1.8), E1.15 (log redaction, T1.10). E1.16's packaged
 half runs via `npm run test:smoke`.
 
@@ -171,6 +171,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D17 | 2026-07-28 | **CSP pins build-time hashes of Next's inline scripts** | The App Router emits inline bootstrap scripts that `script-src 'self'` blocks. The alternatives were `'unsafe-inline'`, which permits *any* injected script, or per-request nonces, which a static export cannot produce. Hashing fails closed: an inline script not present at build time will not run |
 | D18 | 2026-07-28 | IPC handlers resolve a discriminated result and never throw | Electron stringifies a thrown `Error` across IPC, destroying the typed taxonomy and forcing every call site into try/catch |
 | D19 | 2026-07-28 | The E2E fixture awaits `firstWindow()` before yielding | The window is only created after the database boot sequence, so it is a reliable barrier. Without it, database assertions raced the migrator and failed intermittently |
+| D20 | 2026-07-28 | **Hand-written UI primitives instead of the shadcn CLI** | The CLI wants to own project layout and expects a conventional single-app root; this repo has the renderer in a subdirectory alongside `electron/` and `shared/`. shadcn components are copy-in source anyway, so the CLI adds a layout constraint without adding capability. Radix primitives will be added directly for the components that need real accessibility behaviour (dialog, dropdown, tooltip) when those screens land. **Deviation from SPRINTS.md T1.6** |
+| D21 | 2026-07-28 | **`app://` handler resolves Next's dot-flattened RSC payload paths** | The static export writes segment payloads nested (`devices/__next.devices/__PAGE__.txt`) but the client router requests them flattened (`devices/__next.devices.__PAGE__.txt`). Every client-side navigation 404'd. Navigation still worked because Next falls back to a full document load, which is exactly why this was easy to miss — the symptom was console noise plus a stale layout |
+| D22 | 2026-07-28 | **Sidebar active state uses `useSelectedLayoutSegment`, not `usePathname`** | The sidebar lives in a persisted layout where `usePathname` did not update on client-side navigation in a static export, leaving every item marked active simultaneously. `useSelectedLayoutSegment` is the API intended for exactly this |
 
 ---
 
@@ -207,6 +210,7 @@ every earlier suite.
 | 2026-07-27 | 1 (partial) | 5 | n/a | 5 pass / 0 fail | ✅ | ✅ | ✅ | T1.1, T1.2 complete; T1.11 harness up |
 | 2026-07-27 | 1 (partial) | 3 | 5 | 8 pass / 0 fail | ✅ | ✅ | ✅ | T1.4 complete. Adds E1.13, E1.13b, E1.13c (real two-launch restart) |
 | 2026-07-28 | 1 (partial) | 5 | 8 | 13 pass / 0 fail | ✅ | ✅ | ✅ | T1.3 + T1.5 complete. Adds E1.3 (CSP), E1.14b–e (IPC contract, allowlist, path containment). Stable across 2 consecutive runs |
+| 2026-07-28 | 1 (partial) | 2 | 13 | 15 pass / 0 fail | ✅ | ✅ | ✅ | T1.6 + T1.7 complete. Adds E1.10c (all nine routes navigate, zero console errors) and E1.10d (active nav state). Stable across 2 consecutive runs |
 
 ---
 

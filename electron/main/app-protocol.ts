@@ -11,7 +11,7 @@
  */
 import { net, protocol } from 'electron'
 import { existsSync, statSync } from 'node:fs'
-import { join, normalize, sep } from 'node:path'
+import { basename, dirname, join, normalize, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 export const APP_SCHEME = 'app'
@@ -62,12 +62,52 @@ export function serveRendererBundle(rendererRoot: string): void {
       if (existsSync(withIndex)) {
         target = withIndex
       } else {
-        return new Response('Not found', { status: 404 })
+        const flattened = resolveFlattenedSegment(resolved)
+        if (flattened) {
+          target = flattened
+        } else {
+          // Logged rather than silent: a 404 here means the renderer asked for
+          // something the export does not contain, which is always a bug in the
+          // build or this handler.
+          console.warn(`app-protocol 404: ${url.pathname} -> ${resolved}`)
+          return new Response('Not found', { status: 404 })
+        }
       }
     }
 
     return net.fetch(pathToFileURL(target).toString())
   })
+}
+
+/**
+ * Resolve a dot-flattened RSC payload request to its nested file on disk.
+ *
+ * Next's static export writes route-segment payloads into a directory
+ * (`devices/__next.devices/__PAGE__.txt`) but the client router requests them
+ * with the segment flattened into the filename
+ * (`devices/__next.devices.__PAGE__.txt`). Without this the payload 404s on
+ * every client-side navigation — navigation still works, because Next falls
+ * back to a full document load, but every route change floods the console with
+ * errors and loses the benefit of prefetching.
+ *
+ * Splits the basename on '.' and tries each prefix as a directory, longest
+ * first, returning the first combination that exists.
+ */
+function resolveFlattenedSegment(resolved: string): string | null {
+  const dir = dirname(resolved)
+  const parts = basename(resolved).split('.')
+  if (parts.length < 2 || !existsSync(dir)) return null
+
+  for (let i = parts.length - 1; i >= 1; i -= 1) {
+    const prefix = parts.slice(0, i).join('.')
+    const rest = parts.slice(i).join('.')
+    const candidateDir = join(dir, prefix)
+    const candidate = join(candidateDir, rest)
+    if (existsSync(candidateDir) && statSync(candidateDir).isDirectory() && existsSync(candidate)) {
+      return candidate
+    }
+  }
+  return null
 }
 
 /**

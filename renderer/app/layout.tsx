@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { AppShell } from '../components/layout/app-shell'
+import { ToastProvider } from '../components/providers/toast-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -13,12 +15,14 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+        </ToastProvider>
+      </body>
     </html>
   )
 }
