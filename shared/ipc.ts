@@ -392,8 +392,12 @@ export const ipcContract = {
   'group:sync': { request: z.object({ deviceId: id.optional() }), response: z.object({ synced: z.number().int().min(0) }) },
   'groupSend:create': {
     request: z.object({
-      templateId: id,
-      groupIds: z.array(id).min(1),
+      // Neither is constrained here: the handler rejects an empty selection or
+      // a missing template with the prototype's wording, and a zod failure
+      // would replace that with a generic message the user cannot act on
+      // (same reasoning as campaign:create — tracker D44).
+      templateId: z.string(),
+      groupIds: z.array(id),
       delaySeconds: z.number().int().min(0).max(300),
     }),
     response: z.object({ jobId: id }),

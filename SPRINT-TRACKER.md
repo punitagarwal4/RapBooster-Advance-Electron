@@ -17,7 +17,7 @@ Last updated: **2026-07-28**
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
-| 3 | Campaign engine · Groups | 🟡 In progress | 2026-07-28 | — | 5/9 | 9 passing | `e5830c6` |
+| 3 | Campaign engine · Groups | 🟡 In progress | 2026-07-28 | — | 8/9 | 14 passing | `487ade5` |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
@@ -127,9 +127,9 @@ concurrent · 50k CSV imports cleanly · all four template types with working me
 | T3.4 | Controls + scheduling + device reassignment | 🟡 | Start/pause/resume/stop/delete + wall-clock scheduler tick. Device reassignment mid-run still to do |
 | T3.5 | Campaigns UI + detail view | 🟡 | Card grid with live counters and progress, status-conditional controls, create dialog. Per-recipient detail view still to do |
 | T3.6 | Campaign report export | 🟢 | CSV, one row per recipient with summary header (REQUIREMENTS §7.2 / A9), streamed by page |
-| T3.7 | Groups: sync + list + selection | ⬜ | |
-| T3.8 | Groups: bulk messaging job | ⬜ | |
-| T3.9 | Groups: bulk creation job | ⬜ | |
+| T3.7 | Groups: sync + list + selection | 🟢 | Per-device sync with upsert, device filter, select-all, multi-select with prototype styling |
+| T3.8 | Groups: bulk messaging job | 🟢 | Database-backed job with per-target rows, throttled through wa-service, per-group outcomes |
+| T3.9 | Groups: bulk creation job | 🟢 | Four suffix rules, seeded members consumed in order, per-group result log including partial adds |
 
 **E2E:** E3.1 – E3.25 — 0/25 passing.
 
@@ -233,6 +233,7 @@ explicitly accepted with a reason.
 | --- | --- | --- | --- | --- |
 | K1 | 3 (by design) | A message in flight during a crash may send twice; bounded at one per device per crash | Accepted | Documented in SPRINTS §6.4 — WhatsApp offers no dedup primitive to eliminate it |
 | K2 | 1 | ~~The `init` migration creates a spike-only `SpikeProbe` table~~ | ✅ Resolved | Baseline regenerated in T1.4 with the real 17-table schema; E1.13 asserts `SpikeProbe` is absent |
+| K4 | 3 | **Intermittent E2E launch timeouts on this machine** — roughly 1 per 2 full runs | Environmental | Always a launch wait, never a behavioural assertion; the affected spec passes in isolation every time; no orphaned Electron processes after a run. Consistent with disk/CPU contention on a machine that has been building, packaging and launching ~35 Electron apps per suite for hours. **Deliberately not masked with Playwright retries** — that would hide real regressions too. Re-evaluate on a quieter machine or in CI |
 | K3 | 1 | Builds are unsigned; `electron-builder` reports "default Electron icon is used" | Expected | Resolved in T4.5 once REQUIREMENTS §2 (icon) and §4 (certificates) are supplied |
 
 ---

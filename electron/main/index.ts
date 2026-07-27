@@ -19,12 +19,14 @@ import { checkpoint, disconnectPrisma } from './db/client'
 import { registerCampaignHandlers } from './ipc/campaign.ipc'
 import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
+import { registerGroupHandlers } from './ipc/group.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
 import { registerTemplateHandlers } from './ipc/template.ipc'
 import { emitToAll } from './ipc/router'
 import { waBridge } from './wa-bridge'
 import { campaignEngine } from './services/campaign-engine'
+import { groupRunner } from './services/group-runner'
 import { getPrisma } from './db/client'
 import { setLicenseGate, unregisteredChannels } from './ipc/router'
 import {
@@ -147,6 +149,10 @@ function startWaService(): void {
         `campaign recovery: requeued ${requeued} in-flight recipient(s), resumed ${resumed.length} campaign(s)`,
       )
     }
+  })
+
+  groupRunner.onProgress((p) => {
+    emitToAll(windows(), "groupJob:progress", p)
   })
 
   campaignEngine.onProgress((campaignId, c) => {
@@ -281,6 +287,7 @@ async function bootUi(): Promise<void> {
   registerContactHandlers()
   registerTemplateHandlers()
   registerCampaignHandlers()
+  registerGroupHandlers()
 
   startWaService()
   const pending = unregisteredChannels()
