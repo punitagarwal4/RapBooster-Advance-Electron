@@ -1,8 +1,8 @@
 'use client'
 
 import { Users } from 'lucide-react'
-import { PageHeader } from '../../components/layout/page-header'
-import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@renderer/components/layout/page-header'
+import { EmptyState } from '@renderer/components/ui/empty-state'
 
 /** WA Groups. Implemented in T3.7 (see SPRINTS.md). */
 export default function WAGroupsPage() {

@@ -1,7 +1,7 @@
 'use client'
 
-import { PageHeader } from '../components/layout/page-header'
-import { useIpcQuery } from '../hooks/useIpc'
+import { PageHeader } from '@renderer/components/layout/page-header'
+import { useIpcQuery } from '@renderer/hooks/useIpc'
 
 function StatCard({ label, value, loading }: { label: string; value: number; loading: boolean }) {
   return (

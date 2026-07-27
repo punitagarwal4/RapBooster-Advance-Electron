@@ -25,6 +25,7 @@ export const test = base.extend<{ app: ElectronApplication }>({
         // Unset so the app loads the static export, exercising the same path
         // the packaged build uses rather than a dev server.
         ELECTRON_RENDERER_URL: undefined,
+        LICENSE_SERVICE: 'mock',
         NODE_ENV: 'test',
       } as NodeJS.ProcessEnv,
     })
@@ -32,7 +33,14 @@ export const test = base.extend<{ app: ElectronApplication }>({
     // The window is only created after the database boot sequence completes, so
     // waiting for it is a reliable barrier. Without this, tests that assert on
     // the database race the migrator and fail intermittently.
-    await app.firstWindow()
+    const win = await app.firstWindow()
+
+    // Activate through the real UI rather than seeding the database or adding a
+    // test-only bypass: a shortcut here would let the gate rot undetected, and
+    // these specs are about what happens *after* activation.
+    await win.getByTestId('license-key').fill('VALID-E2E-0001')
+    await win.getByTestId('license-activate').click()
+    await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: 20_000 })
 
     await use(app)
 

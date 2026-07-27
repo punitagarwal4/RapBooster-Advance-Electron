@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SerializedError } from '../../shared/errors'
+import type { SerializedError } from '@shared/errors'
 import type {
   IpcChannel,
   IpcEvent,
   IpcEventPayload,
   IpcRequest,
   IpcResponse,
-} from '../../shared/ipc'
+} from '@shared/ipc'
 
 /**
  * Imperative IPC call. Returns the discriminated result rather than throwing,

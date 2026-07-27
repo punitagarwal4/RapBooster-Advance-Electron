@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Button } from '../components/ui/button'
+import { Button } from '@renderer/components/ui/button'
 
 /**
  * Per-route error boundary (CLAUDE.md §5.1). A render failure must offer a way

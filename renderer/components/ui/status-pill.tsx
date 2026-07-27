@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '../../lib/cn'
-import type { CampaignStatus, DeviceStatus } from '../../../shared/types'
+import type { CampaignStatus, DeviceStatus } from '@shared/types'
 
 /**
  * Status colours come straight from the prototype (SPRINTS.md §7): green for

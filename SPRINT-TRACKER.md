@@ -15,7 +15,7 @@ Last updated: **2026-07-28**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 7/11 | 15/16 | `15132dd` |
+| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 8/11 | 25 passing | `db9d729` |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
@@ -29,9 +29,10 @@ Last updated: **2026-07-28**
 > default or behind a swappable interface; all of them are listed in
 > [REQUIREMENTS.md §0](./REQUIREMENTS.md#section-0--working-assumptions-in-effect).
 >
-> Two tasks genuinely cannot finish until answers arrive: **T1.8** (licensing) needs §1 to talk
-> to a real server — it will ship against the interface with a mock — and **T4.5** (signing and
-> auto-update) needs §2, §3 and §4. Everything else is unblocked.
+> **T1.8 shipped against the `LicenseService` interface with the mock implementation.** The
+> real client (`services/license/http.ts`) is written against an assumed conventional JSON API;
+> when §1 arrives, that one file changes and nothing above it moves. **T4.5** (signing and
+> auto-update) still needs §2, §3 and §4. Everything else is unblocked.
 >
 > The assumption most worth an early correction is **A7**: phone normalization defaults to
 > `+91` and is applied at CSV import, so changing it after a large import means re-importing.
@@ -71,14 +72,15 @@ customer has the questionnaire.
 | T1.5 | IPC contract + router + renderer hooks | 🟢 | 68 channels + 10 events, two-way zod validation, sandbox-safe preload allowlist, useIpcQuery/useIpcEvent |
 | T1.6 | Design system (Tailwind + shadcn + tokens) | 🟢 | Tokens from the prototype palette; hand-written primitives (Button, StatusPill, EmptyState, PageHeader) instead of the shadcn CLI — see D20 |
 | T1.7 | App shell, sidebar, nine routes | 🟢 | Sidebar in prototype order with Settings pinned, all nine routes prerendered, toast provider, per-route error boundary |
-| T1.8 | Licensing: service, fingerprint, activation, conflict, gate | ⬜ | |
+| T1.8 | Licensing: service, fingerprint, activation, conflict, gate | 🟢 | LicenseService interface + Http/Mock, composite fingerprint, safeStorage cache with HMAC tamper check, activation + conflict UI, window gate + IPC guard, offline grace |
 | T1.9 | Settings — license panel | ⬜ | |
 | T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
-| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 15 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
+| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 25 specs green across two suites; log-redaction spec (E1.15) lands with T1.10 |
 
-**E2E:** **15 written, 15 passing** (stable across consecutive runs). Remaining: E1.1–E1.9
-(licensing, with T1.8), E1.11 (tamper, T1.8), E1.15 (log redaction, T1.10). E1.16's packaged
-half runs via `npm run test:smoke`.
+**E2E:** **25 written, 25 passing** (stable across consecutive runs), split across
+`sprint-1.spec.ts` (shell, IPC, security, database) and `sprint-1-license.spec.ts`
+(E1.1–E1.9, E1.11, E1.14f). Remaining: E1.15 (log redaction) with T1.10. E1.16's packaged half
+runs via `npm run test:smoke`.
 
 **Exit gate:** fresh install gates on license · valid key persists across restart · conflict
 transfer works · offline grace honored · all nine routes navigate · installers build on both
@@ -174,6 +176,11 @@ reasoning — future sessions read this instead of re-litigating.
 | D20 | 2026-07-28 | **Hand-written UI primitives instead of the shadcn CLI** | The CLI wants to own project layout and expects a conventional single-app root; this repo has the renderer in a subdirectory alongside `electron/` and `shared/`. shadcn components are copy-in source anyway, so the CLI adds a layout constraint without adding capability. Radix primitives will be added directly for the components that need real accessibility behaviour (dialog, dropdown, tooltip) when those screens land. **Deviation from SPRINTS.md T1.6** |
 | D21 | 2026-07-28 | **`app://` handler resolves Next's dot-flattened RSC payload paths** | The static export writes segment payloads nested (`devices/__next.devices/__PAGE__.txt`) but the client router requests them flattened (`devices/__next.devices.__PAGE__.txt`). Every client-side navigation 404'd. Navigation still worked because Next falls back to a full document load, which is exactly why this was easy to miss — the symptom was console noise plus a stale layout |
 | D22 | 2026-07-28 | **Sidebar active state uses `useSelectedLayoutSegment`, not `usePathname`** | The sidebar lives in a persisted layout where `usePathname` did not update on client-side navigation in a static export, leaving every item marked active simultaneously. `useSelectedLayoutSegment` is the API intended for exactly this |
+| D23 | 2026-07-28 | **The gate is enforced twice: window entry route *and* an IPC guard** | The window loading the activation screen is a UI decision, and UI decisions can be wrong — a stale window, a bug, a crafted call. The router refuses every non-license channel while unlocked is false, so no customer data can flow regardless. E1.14f asserts it |
+| D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
+| D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
+| D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D27 | 2026-07-28 | `app://` flattened-payload resolver made **recursive** | Route groups add a nesting level (`__next.!KGFwcCk/devices/__PAGE__.txt` requested as `__next.!KGFwcCk.devices.__PAGE__.txt`), which the single-level version could not reach. Depth now varies with route structure, so the resolver must too |
 
 ---
 
@@ -211,6 +218,7 @@ every earlier suite.
 | 2026-07-27 | 1 (partial) | 3 | 5 | 8 pass / 0 fail | ✅ | ✅ | ✅ | T1.4 complete. Adds E1.13, E1.13b, E1.13c (real two-launch restart) |
 | 2026-07-28 | 1 (partial) | 5 | 8 | 13 pass / 0 fail | ✅ | ✅ | ✅ | T1.3 + T1.5 complete. Adds E1.3 (CSP), E1.14b–e (IPC contract, allowlist, path containment). Stable across 2 consecutive runs |
 | 2026-07-28 | 1 (partial) | 2 | 13 | 15 pass / 0 fail | ✅ | ✅ | ✅ | T1.6 + T1.7 complete. Adds E1.10c (all nine routes navigate, zero console errors) and E1.10d (active nav state). Stable across 2 consecutive runs |
+| 2026-07-28 | 1 (partial) | 10 | 15 | 25 pass / 0 fail | ✅ | ✅ | ✅ | T1.8 complete. Adds the full licensing suite: E1.1–E1.7, E1.9, E1.11, E1.14f. Stable across 2 consecutive runs |
 
 ---
 

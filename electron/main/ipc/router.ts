@@ -29,6 +29,30 @@ export type Handler<C extends IpcChannel> = (
 
 const registered = new Set<IpcChannel>()
 
+/**
+ * Channels reachable before the app is licensed.
+ *
+ * Defence in depth: the window already loads the activation screen when
+ * unlicensed, but if a renderer ever reached a data channel anyway — a bug, a
+ * stale window, a crafted call — no customer data may flow. Everything outside
+ * this set is refused at the boundary.
+ */
+const UNGATED: ReadonlySet<IpcChannel> = new Set<IpcChannel>([
+  'license:status',
+  'license:activate',
+  'license:transfer',
+  'license:deactivate',
+  'license:revalidate',
+  'system:version',
+])
+
+let gate: (() => boolean) | undefined
+
+/** Installed at boot; absent in the self-test, which runs no renderer. */
+export function setLicenseGate(isUnlocked: () => boolean): void {
+  gate = isUnlocked
+}
+
 export function registerHandler<C extends IpcChannel>(channel: C, handler: Handler<C>): void {
   if (registered.has(channel)) {
     throw new Error(`IPC channel registered twice: ${channel}`)
@@ -38,6 +62,12 @@ export function registerHandler<C extends IpcChannel>(channel: C, handler: Handl
   ipcMain.handle(channel, async (event, rawRequest): Promise<IpcResult<IpcResponse<C>>> => {
     const started = Date.now()
     try {
+      if (gate && !UNGATED.has(channel) && !gate()) {
+        throw new AppError('LICENSE_REQUIRED', {
+          detail: `${channel} refused: application is not licensed`,
+        })
+      }
+
       const spec = ipcContract[channel]
 
       const parsedRequest = spec.request.safeParse(rawRequest)

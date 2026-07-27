@@ -1,8 +1,8 @@
 'use client'
 
 import { Bot } from 'lucide-react'
-import { PageHeader } from '../../components/layout/page-header'
-import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '@renderer/components/layout/page-header'
+import { EmptyState } from '@renderer/components/ui/empty-state'
 
 /** AI Bot. Implemented in T4.2 (see SPRINTS.md). */
 export default function AIBotPage() {

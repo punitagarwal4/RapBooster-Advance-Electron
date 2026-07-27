@@ -16,8 +16,15 @@ import {
 } from './app-protocol'
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
+import { registerLicenseHandlers } from './ipc/license.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
-import { unregisteredChannels } from './ipc/router'
+import { setLicenseGate, unregisteredChannels } from './ipc/router'
+import {
+  isUnlocked,
+  loadLicense,
+  revalidate,
+  REVALIDATE_INTERVAL_MS,
+} from './services/license/manager'
 import { applySessionSecurity, applyWindowSecurity } from './security'
 
 app.setName('RapBooster Advance')
@@ -32,6 +39,26 @@ registerAppScheme()
  * rather than a dev-only one.
  */
 const RENDERER_URL = process.env.ELECTRON_RENDERER_URL
+
+let mainWindow: BrowserWindow | undefined
+
+/** Entry route for the current license state — the gate. */
+function entryRoute(): string {
+  return isUnlocked() ? 'index.html' : 'activation/index.html'
+}
+
+/**
+ * Swap the window between the activation screen and the application without
+ * recreating it, so activating feels immediate rather than flashing a new
+ * window.
+ */
+export function refreshGate(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const target = RENDERER_URL
+    ? `${RENDERER_URL}/${entryRoute()}`
+    : `${APP_ORIGIN}/${entryRoute()}`
+  void mainWindow.loadURL(target)
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -56,8 +83,11 @@ function createWindow(): void {
 
   win.once('ready-to-show', () => win.show())
   applyWindowSecurity(win, RENDERER_URL)
+  mainWindow = win
 
-  void win.loadURL(RENDERER_URL ?? `${APP_ORIGIN}/index.html`)
+  void win.loadURL(
+    RENDERER_URL ? `${RENDERER_URL}/${entryRoute()}` : `${APP_ORIGIN}/${entryRoute()}`,
+  )
 }
 
 async function bootUi(): Promise<void> {
@@ -107,7 +137,12 @@ async function bootUi(): Promise<void> {
     return
   }
 
+  // Read the stored license before anything decides which screen to show.
+  await loadLicense()
+  setLicenseGate(isUnlocked)
+
   // Handlers must exist before the window can issue its first invoke.
+  registerLicenseHandlers(refreshGate)
   registerSystemHandlers()
   const pending = unregisteredChannels()
   if (pending.length > 0) {
@@ -123,6 +158,17 @@ async function bootUi(): Promise<void> {
   }
 
   createWindow()
+
+  // Background revalidation (REQUIREMENTS §1.6, assumption A1). A network
+  // failure moves to grace rather than locking the user out; an explicit
+  // rejection takes effect immediately and swaps the window back to activation.
+  if (isUnlocked()) {
+    setInterval(() => {
+      void revalidate()
+        .then(refreshGate)
+        .catch((err) => console.error('license revalidation failed', err))
+    }, REVALIDATE_INTERVAL_MS)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

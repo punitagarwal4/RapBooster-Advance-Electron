@@ -62,7 +62,7 @@ export function serveRendererBundle(rendererRoot: string): void {
       if (existsSync(withIndex)) {
         target = withIndex
       } else {
-        const flattened = resolveFlattenedSegment(resolved)
+        const flattened = resolveFlattenedSegment(dirname(resolved), basename(resolved))
         if (flattened) {
           target = flattened
         } else {
@@ -82,29 +82,32 @@ export function serveRendererBundle(rendererRoot: string): void {
 /**
  * Resolve a dot-flattened RSC payload request to its nested file on disk.
  *
- * Next's static export writes route-segment payloads into a directory
- * (`devices/__next.devices/__PAGE__.txt`) but the client router requests them
- * with the segment flattened into the filename
- * (`devices/__next.devices.__PAGE__.txt`). Without this the payload 404s on
- * every client-side navigation — navigation still works, because Next falls
- * back to a full document load, but every route change floods the console with
- * errors and loses the benefit of prefetching.
+ * Next's static export writes route-segment payloads into nested directories
+ * (`devices/__next.!KGFwcCk/devices/__PAGE__.txt`) but the client router
+ * requests them with the segments flattened into one filename
+ * (`devices/__next.!KGFwcCk.devices.__PAGE__.txt`). Without this every
+ * client-side navigation 404s its payload — navigation still works, because
+ * Next falls back to a full document load, which is exactly why the bug is easy
+ * to miss: the symptom is console noise plus lost prefetching.
  *
- * Splits the basename on '.' and tries each prefix as a directory, longest
- * first, returning the first combination that exists.
+ * Recursive because nesting depth varies: a route group adds a level, and a
+ * deeper route adds more. At each step it takes the longest dot-prefix that
+ * names a real directory and resolves the remainder inside it.
  */
-function resolveFlattenedSegment(resolved: string): string | null {
-  const dir = dirname(resolved)
-  const parts = basename(resolved).split('.')
-  if (parts.length < 2 || !existsSync(dir)) return null
+function resolveFlattenedSegment(dir: string, name: string): string | null {
+  if (!existsSync(dir)) return null
 
+  const direct = join(dir, name)
+  if (existsSync(direct) && statSync(direct).isFile()) return direct
+
+  const parts = name.split('.')
   for (let i = parts.length - 1; i >= 1; i -= 1) {
     const prefix = parts.slice(0, i).join('.')
     const rest = parts.slice(i).join('.')
     const candidateDir = join(dir, prefix)
-    const candidate = join(candidateDir, rest)
-    if (existsSync(candidateDir) && statSync(candidateDir).isDirectory() && existsSync(candidate)) {
-      return candidate
+    if (existsSync(candidateDir) && statSync(candidateDir).isDirectory()) {
+      const found = resolveFlattenedSegment(candidateDir, rest)
+      if (found) return found
     }
   }
   return null
