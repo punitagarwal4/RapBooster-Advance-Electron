@@ -8,6 +8,7 @@
  */
 import { MockTransport } from './transport/mock'
 import { SessionManager } from './session-manager'
+import { ThrottleScheduler } from './throttle'
 import type { Transport } from './transport/types'
 import type {
   WaEventEnvelope,
@@ -42,6 +43,7 @@ function emit<K extends WaEventKind>(event: K, payload: WaEvents[K]): void {
 
 async function main(): Promise<void> {
   const transport = await createTransport()
+  const throttle = new ThrottleScheduler()
 
   const sessions = new SessionManager(transport, {
     onStatus: (deviceId, status, detail) =>
@@ -102,7 +104,21 @@ async function main(): Promise<void> {
       }
       case 'message:send': {
         const p = payload as WaRequestEnvelope<'message:send'>['payload']
-        return (await transport.send(p.deviceId, p.to, p.message)) as WaResponses[K]
+        // Every outbound message goes through the scheduler. This is the last
+        // gate before the socket, so no caller can bypass pacing.
+        return (await throttle.run(p.deviceId, () =>
+          transport.send(p.deviceId, p.to, p.message),
+        )) as WaResponses[K]
+      }
+      case 'throttle:configure': {
+        const p = payload as WaRequestEnvelope<'throttle:configure'>['payload']
+        const { deviceId, sentToday, ...config } = p
+        const defined = Object.fromEntries(
+          Object.entries(config).filter(([, v]) => v !== undefined),
+        )
+        throttle.configure(deviceId, defined)
+        if (sentToday !== undefined) throttle.seed(deviceId, sentToday)
+        return { ok: true } as WaResponses[K]
       }
       case 'service:ping':
         return { pong: true, sessions: sessions.sessionCount } as WaResponses[K]

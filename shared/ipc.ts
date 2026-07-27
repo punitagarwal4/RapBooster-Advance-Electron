@@ -357,8 +357,11 @@ export const ipcContract = {
     request: z.object({
       name: z.string().min(1),
       templateId: id,
-      deviceIds: z.array(id).min(1),
-      listIds: z.array(id).min(1),
+      // Deliberately not `.min(1)`: the handler rejects an empty selection with
+      // the prototype's wording. A zod failure here would surface a generic
+      // "that request was not valid" instead of telling the user what to fix.
+      deviceIds: z.array(id),
+      listIds: z.array(id),
       scheduledAt: isoDate.optional(),
       delayFrom: z.number().int().min(0).max(300),
       delayTo: z.number().int().min(0).max(300),

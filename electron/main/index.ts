@@ -16,6 +16,7 @@ import {
 } from './app-protocol'
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
+import { registerCampaignHandlers } from './ipc/campaign.ipc'
 import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
@@ -23,6 +24,7 @@ import { registerSystemHandlers } from './ipc/system.ipc'
 import { registerTemplateHandlers } from './ipc/template.ipc'
 import { emitToAll } from './ipc/router'
 import { waBridge } from './wa-bridge'
+import { campaignEngine } from './services/campaign-engine'
 import { getPrisma } from './db/client'
 import { setLicenseGate, unregisteredChannels } from './ipc/router'
 import {
@@ -135,7 +137,27 @@ function startWaService(): void {
     }
   })
 
-  waBridge.setRecoveryHook(recoverDeviceSessions)
+  // Devices first, then campaigns: a campaign cannot send through a socket
+  // that has not been re-opened yet.
+  waBridge.setRecoveryHook(async () => {
+    await recoverDeviceSessions()
+    const { requeued, resumed } = await campaignEngine.recover()
+    if (requeued > 0 || resumed.length > 0) {
+      console.log(
+        `campaign recovery: requeued ${requeued} in-flight recipient(s), resumed ${resumed.length} campaign(s)`,
+      )
+    }
+  })
+
+  campaignEngine.onProgress((campaignId, c) => {
+    emitToAll(windows(), 'campaign:progress', {
+      campaignId,
+      status: 'running',
+      sent: c.sent,
+      failed: c.failed,
+      total: c.total,
+    })
+  })
 
   waBridge.on('status', ({ deviceId, status, phone, error }) => {
     void getPrisma()
@@ -244,6 +266,7 @@ async function bootUi(): Promise<void> {
   registerDeviceHandlers()
   registerContactHandlers()
   registerTemplateHandlers()
+  registerCampaignHandlers()
 
   startWaService()
   const pending = unregisteredChannels()
@@ -284,8 +307,9 @@ async function bootUi(): Promise<void> {
   app.on('before-quit', () => {
     // Close sockets before releasing the database, so nothing tries to persist
     // after the client is gone.
-    void waBridge
-      .stop()
+    void campaignEngine
+      .shutdown()
+      .then(() => waBridge.stop())
       .catch((err) => console.error('shutdown: wa-service stop failed', err))
       .then(() => disconnectPrisma())
       .then(() => checkpoint())

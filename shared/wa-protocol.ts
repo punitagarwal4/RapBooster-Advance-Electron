@@ -30,6 +30,17 @@ export interface WaRequests {
     to: string
     message: WaOutgoing
   }
+  /** Apply pacing rules to a device. Sent whenever sending defaults change. */
+  'throttle:configure': {
+    deviceId: string
+    delayFromMs?: number
+    delayToMs?: number
+    sleepDurationMs?: number
+    sleepAfter?: number
+    dailyCap?: number
+    /** Today's count, so a restart does not reset the daily cap. */
+    sentToday?: number
+  }
   'service:ping': Record<string, never>
   'service:shutdown': Record<string, never>
 }
@@ -51,6 +62,7 @@ export interface WaResponses {
   }
   'group:create': { id: string; name: string; memberCount: number; isAdmin: boolean }
   'message:send': { messageId: string }
+  'throttle:configure': { ok: true }
   'service:ping': { pong: true; sessions: number }
   'service:shutdown': { ok: true }
 }
