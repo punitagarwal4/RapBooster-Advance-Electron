@@ -207,6 +207,20 @@ function startWaService(): void {
   })
 
   waBridge.start()
+
+  // Scheduler tick. One minute is enough granularity for a datetime-local
+  // field, and comparing against the wall clock means a machine that slept
+  // through a scheduled time still fires on wake.
+  setInterval(() => {
+    void campaignEngine
+      .runScheduled()
+      .then((started) => {
+        if (started.length > 0) {
+          console.log(`scheduler: started ${started.length} campaign(s)`)
+        }
+      })
+      .catch((err: unknown) => console.error("scheduler tick failed", err))
+  }, 60_000)
 }
 
 async function bootUi(): Promise<void> {

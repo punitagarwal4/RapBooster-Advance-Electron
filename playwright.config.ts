@@ -7,6 +7,8 @@ import { defineConfig } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  // Absorbs first-launch disk warm-up so no individual test pays for it.
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: false, // one SQLite file per run; parallel Electron apps contend
   workers: 1,
   forbidOnly: !!process.env.CI,

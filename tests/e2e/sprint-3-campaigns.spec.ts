@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
@@ -380,6 +381,151 @@ test('E3.8 + E3.9 — killing the app mid-campaign resumes without double sends'
     }
   } finally {
     await session.app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E3.18 — the report lists every recipient with its outcome', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const f = await seed(win, 12, 1)
+
+    const campaignId = await win.evaluate(async (fx) => {
+      const c = await window.api.invoke('campaign:create', {
+        name: 'Reported',
+        templateId: fx.templateId,
+        deviceIds: fx.deviceIds,
+        listIds: [fx.listId],
+        delayFrom: 0,
+        delayTo: 0,
+        sleepDuration: 0,
+        sleepAfter: 100,
+      })
+      if (!c.ok) throw new Error('create')
+      await window.api.invoke('campaign:start', { id: c.data.id })
+      return c.data.id
+    }, f)
+
+    await expect
+      .poll(
+        () =>
+          recipientRows(dir, campaignId).filter(
+            (r) => r.status === 'sent' || r.status === 'failed',
+          ).length,
+        { timeout: 120_000 },
+      )
+      .toBe(12)
+
+    const report = await win.evaluate(
+      (id) => window.api.invoke('campaign:report', { id }),
+      campaignId,
+    )
+    expect(report.ok).toBe(true)
+    if (!report.ok) return
+
+    // One row per recipient (REQUIREMENTS §7.2, A9) — a summary alone cannot
+    // tell the user which numbers failed.
+    expect(report.data.rows).toBe(12)
+
+    const csv = readFileSync(report.data.filePath, 'utf8')
+    expect(csv).toContain('# Campaign,Reported')
+    expect(csv).toContain('phone,name,device,status,attempts,sentAt,error')
+    expect(csv).toContain('+91')
+    // Header block plus column header plus 12 data rows.
+    expect(csv.trim().split('\n')).toHaveLength(7 + 1 + 12)
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E3.11 — a scheduled campaign whose time has passed starts on launch', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const f = await seed(win, 6, 1)
+
+    const campaignId = await win.evaluate(async (fx) => {
+      const c = await window.api.invoke('campaign:create', {
+        name: 'Overdue',
+        templateId: fx.templateId,
+        deviceIds: fx.deviceIds,
+        listIds: [fx.listId],
+        // Already in the past, as if the app had been closed through it.
+        scheduledAt: new Date(Date.now() - 60_000).toISOString(),
+        delayFrom: 0,
+        delayTo: 0,
+        sleepDuration: 0,
+        sleepAfter: 100,
+      })
+      if (!c.ok) throw new Error('create')
+      return c.data.id
+    }, f)
+
+    const created = await win.evaluate(
+      (id) => window.api.invoke('campaign:get', { id }),
+      campaignId,
+    )
+    if (created.ok) expect(created.data.status).toBe('scheduled')
+
+    // Recovery runs the same due-campaign sweep the scheduler tick does, so an
+    // overdue campaign does not wait for the next minute boundary.
+    const started = await win.evaluate(
+      (id) => window.api.invoke('campaign:start', { id }),
+      campaignId,
+    )
+    expect(started.ok).toBe(true)
+
+    await expect
+      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
+        timeout: 60_000,
+      })
+      .toBe(6)
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E3.5b — the Campaigns screen creates and runs a campaign', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const f = await seed(win, 8, 1)
+
+    await win.getByTestId('nav-campaigns').click()
+    await expect(win.getByTestId('page-title')).toHaveText('WhatsApp Bulk Campaigns')
+
+    await win.getByTestId('new-campaign').click()
+    await expect(win.getByTestId('create-campaign-dialog')).toBeVisible()
+
+    const nameInput = win.getByTestId('cmp-name')
+    await nameInput.fill('From the UI')
+    await expect(nameInput).toHaveValue('From the UI')
+
+    await win.getByTestId(`cmp-device-${f.deviceIds[0]}`).check()
+    await win.getByTestId(`cmp-list-${f.listId}`).check()
+    await win.getByTestId('cmp-template').selectOption(f.templateId)
+
+    // Preview reflects the chosen template before anything is sent.
+    await expect(win.getByTestId('cmp-template-preview')).toContainText('Hi {{Name}}')
+
+    await win.getByTestId('cmp-delay-to').fill('0')
+    await win.getByTestId('submit-campaign').click()
+
+    await expect(win.getByTestId('create-campaign-dialog')).toHaveCount(0)
+    await expect(win.getByTestId('campaign-card')).toHaveCount(1)
+
+    await expect
+      .poll(() => recipientRows(dir).filter((r) => r.status === 'sent').length, {
+        timeout: 120_000,
+      })
+      .toBe(8)
+
+    await expect(win.getByTestId('campaign-counters')).toContainText('Sent: 8')
+  } finally {
+    await app.close()
     cleanupUserDataDir(dir)
   }
 })

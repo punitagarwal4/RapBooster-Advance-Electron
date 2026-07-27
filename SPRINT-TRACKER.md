@@ -17,7 +17,7 @@ Last updated: **2026-07-28**
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
-| 3 | Campaign engine · Groups | 🟡 In progress | 2026-07-28 | — | 3/9 | 6 passing | `90e0480` |
+| 3 | Campaign engine · Groups | 🟡 In progress | 2026-07-28 | — | 5/9 | 9 passing | `e5830c6` |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
@@ -124,9 +124,9 @@ concurrent · 50k CSV imports cleanly · all four template types with working me
 | T3.1 | Campaign creation + queue expansion | 🟢 | Batched expansion with round-robin device assignment, de-duplicated per contact |
 | T3.2 | Send engine (workers · throttle · retries) | 🟢 | Per-device workers, atomic single-statement claim, retry with terminal/retryable split, batched progress events |
 | T3.3 | Crash-safe resume | 🟢 | **E3.8 passes**: 80-recipient campaign hard-killed mid-send, resumes on relaunch, drains fully, no duplicate queue rows |
-| T3.4 | Controls + scheduling + device reassignment | ⬜ | |
-| T3.5 | Campaigns UI + detail view | ⬜ | |
-| T3.6 | Campaign report export | ⬜ | Format per REQUIREMENTS §7.2 |
+| T3.4 | Controls + scheduling + device reassignment | 🟡 | Start/pause/resume/stop/delete + wall-clock scheduler tick. Device reassignment mid-run still to do |
+| T3.5 | Campaigns UI + detail view | 🟡 | Card grid with live counters and progress, status-conditional controls, create dialog. Per-recipient detail view still to do |
+| T3.6 | Campaign report export | 🟢 | CSV, one row per recipient with summary header (REQUIREMENTS §7.2 / A9), streamed by page |
 | T3.7 | Groups: sync + list + selection | ⬜ | |
 | T3.8 | Groups: bulk messaging job | ⬜ | |
 | T3.9 | Groups: bulk creation job | ⬜ | |
@@ -190,6 +190,8 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D46 | 2026-07-28 | **E2E gained a global warm-up launch** | The first launch after a build pages a ~200 MB binary plus fresh bundles from disk; on a loaded machine that took over 90s while the same test ran in 1.4s warm. The first test was absorbing the whole cost and failing on a budget that was fine for its actual work. Warming once keeps every per-test timeout meaningful instead of being a proxy for disk I/O |
+| D47 | 2026-07-28 | Launch timeouts unified in `fixtures/constants.ts` | The two fixtures carried different arbitrary bounds (60s vs 90s). These guard reaching a screen, not behaviour, so a generous value costs nothing when healthy — while a tight one trains everyone to re-run instead of investigate |
 | D42 | 2026-07-28 | **Throttle lives in wa-service; the worker loop lives in main** | SPRINTS §3.1 placed both in wa-service, but the worker needs the database and wa-service deliberately has no handle. Splitting them is stronger than either alone: main owns the queue, and pacing sits at the socket boundary where no caller — campaign, group, inbox or AI — can bypass it |
 | D43 | 2026-07-28 | Row claiming uses **raw SQL**, not Prisma | It must be one statement so SQLite's write lock makes it atomic. Prisma would issue SELECT then UPDATE, leaving a window in which two workers claim the same recipient and send twice |
 | D44 | 2026-07-28 | `deviceIds`/`listIds` dropped `.min(1)` from the zod contract | zod rejected before the handler ran, so the user saw a generic "that request was not valid" instead of the prototype's "Select at least one device and contact list". Structural validation stays in zod; messages users read come from the handler |

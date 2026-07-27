@@ -446,6 +446,35 @@ export class CampaignEngine {
     return { requeued: requeued.count, resumed }
   }
 
+  /**
+   * Start any scheduled campaign whose time has arrived.
+   *
+   * Compares against the wall clock rather than a monotonic timer, so a laptop
+   * that slept through a scheduled time still fires on wake instead of silently
+   * skipping it.
+   */
+  async runScheduled(): Promise<string[]> {
+    const due = await getPrisma().campaign.findMany({
+      where: { status: 'scheduled', scheduledAt: { lte: new Date() } },
+    })
+
+    const started: string[] = []
+    for (const campaign of due) {
+      if (this.running.has(campaign.id)) continue
+      try {
+        await this.start(campaign.id)
+        started.push(campaign.id)
+      } catch (err) {
+        console.error(`scheduler: could not start campaign ${campaign.id}`, err)
+        await getPrisma().campaign.update({
+          where: { id: campaign.id },
+          data: { status: 'failed', lastError: String(err) },
+        })
+      }
+    }
+    return started
+  }
+
   async shutdown(): Promise<void> {
     for (const controller of this.running.values()) controller.abort()
     this.running.clear()

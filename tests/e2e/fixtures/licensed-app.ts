@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test'
+import { APP_READY_TIMEOUT_MS as READY_TIMEOUT_MS } from './constants'
 
 /**
  * Launch helpers for licensing specs, which need control over the userData
@@ -47,14 +48,6 @@ export async function activateWith(
 
   await win.getByTestId('license-activate').click()
 }
-
-/**
- * Generous because the *first* Electron launch after a build is much slower
- * than later ones — module loading, Prisma initialisation and V8 warm-up all
- * land on it. A tight bound here fails the first test in a suite while passing
- * in isolation, which looks like flakiness but is just a cold start.
- */
-const READY_TIMEOUT_MS = 90_000
 
 /**
  * Launch and end up inside the licensed application.

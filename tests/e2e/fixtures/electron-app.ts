@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, test as base, type ElectronApplication } from '@playwright/test'
+import { APP_READY_TIMEOUT_MS } from './constants'
 
 /**
  * Launches the built app with a throwaway userData directory.
@@ -39,13 +40,10 @@ export const test = base.extend<{ app: ElectronApplication }>({
     // Activate through the real UI rather than seeding the database or adding a
     // test-only bypass: a shortcut here would let the gate rot undetected, and
     // these specs are about what happens *after* activation.
-    // 60s because the first launch of a run absorbs module loading, Prisma
-    // initialisation and V8 warm-up — the same cold start that made this fail
-    // as the first test of a suite while passing in isolation.
-    await win.getByTestId('license-key').waitFor({ state: 'visible', timeout: 60_000 })
+    await win.getByTestId('license-key').waitFor({ state: 'visible', timeout: APP_READY_TIMEOUT_MS })
     await win.getByTestId('license-key').fill('VALID-E2E-0001')
     await win.getByTestId('license-activate').click()
-    await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: 60_000 })
+    await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: APP_READY_TIMEOUT_MS })
 
     await use(app)
 

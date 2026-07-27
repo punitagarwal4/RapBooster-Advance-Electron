@@ -4,9 +4,13 @@
  * Counters returned here always come from `CampaignRecipient` rows rather than
  * the denormalized columns, so the UI cannot show a stale total after a crash.
  */
+import { createWriteStream, mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { AppError } from '../../../shared/errors'
 import { getPrisma } from '../db/client'
+import { userDataDir } from '../db/paths'
 import { campaignEngine, counters } from '../services/campaign-engine'
+import { toCsvValue as csv } from '../services/csv'
 import { registerHandler } from './router'
 
 async function serialize(id: string) {
@@ -115,6 +119,83 @@ export function registerCampaignHandlers(): void {
     })
     await getPrisma().campaign.delete({ where: { id } })
     return { ok: true as const }
+  })
+
+  registerHandler('campaign:report', async ({ id }) => {
+    const campaign = await getPrisma().campaign.findUnique({
+      where: { id },
+      include: { template: true },
+    })
+    if (!campaign) {
+      throw new AppError('NOT_FOUND', { userMessage: 'That campaign no longer exists.' })
+    }
+
+    const exportsDir = join(userDataDir(), 'exports')
+    mkdirSync(exportsDir, { recursive: true })
+    const filePath = join(
+      exportsDir,
+      `${campaign.name.replace(/[^\w\-. ]+/g, '_')}-report-${Date.now()}.csv`,
+    )
+
+    const c = await counters(id)
+
+    // One row per recipient (REQUIREMENTS §7.2, assumption A9) rather than the
+    // prototype's plain-text summary: a summary cannot tell the user *which*
+    // numbers failed, which is the only actionable part of a report.
+    const stream = createWriteStream(filePath, { encoding: 'utf8' })
+    let rows = 0
+
+    try {
+      stream.write(`# Campaign,${csv(campaign.name)}\n`)
+      stream.write(`# Status,${csv(campaign.status)}\n`)
+      stream.write(`# Template,${csv(campaign.template.name)}\n`)
+      stream.write(`# Total,${c.total}\n`)
+      stream.write(`# Sent,${c.sent}\n`)
+      stream.write(`# Failed,${c.failed}\n`)
+      stream.write(`# Generated,${new Date().toISOString()}\n`)
+      stream.write('phone,name,device,status,attempts,sentAt,error\n')
+
+      let cursor: string | undefined
+      for (;;) {
+        const page = await getPrisma().campaignRecipient.findMany({
+          where: { campaignId: id },
+          orderBy: { id: 'asc' },
+          take: 1_001,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          include: { contact: { select: { name: true } }, device: { select: { name: true } } },
+        })
+        if (page.length === 0) break
+
+        const hasMore = page.length > 1_000
+        const slice = hasMore ? page.slice(0, 1_000) : page
+
+        for (const r of slice) {
+          stream.write(
+            [
+              csv(r.phone),
+              csv(r.contact?.name ?? ''),
+              csv(r.device?.name ?? ''),
+              csv(r.status),
+              String(r.attempts),
+              csv(r.sentAt?.toISOString() ?? ''),
+              csv(r.error ?? ''),
+            ].join(',') + '\n',
+          )
+          rows += 1
+        }
+
+        if (!hasMore) break
+        cursor = slice[slice.length - 1]?.id
+      }
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        stream.on('error', reject)
+        stream.on('finish', () => resolve())
+        stream.end()
+      })
+    }
+
+    return { filePath, rows }
   })
 
   registerHandler('campaign:recipients', async ({ id, status, cursor, limit }) => {
