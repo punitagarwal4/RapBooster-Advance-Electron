@@ -54,7 +54,7 @@ export async function activateWith(
  * land on it. A tight bound here fails the first test in a suite while passing
  * in isolation, which looks like flakiness but is just a cold start.
  */
-const READY_TIMEOUT_MS = 60_000
+const READY_TIMEOUT_MS = 90_000
 
 /**
  * Launch and end up inside the licensed application.

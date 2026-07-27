@@ -16,7 +16,7 @@ Last updated: **2026-07-28**
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
-| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 5/7 | 16 passing | `28b626f` |
+| 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
@@ -24,7 +24,8 @@ Last updated: **2026-07-28**
 
 ### Current status
 
-> 🟢 **Sprint 1 complete.** Sprint 2 (devices, contacts, templates) is next.
+> 🟢 **Sprints 0–2 complete.** Sprint 3 (campaign engine and groups) is next — it contains
+> T3.3, crash-safe resume, the highest-risk item in the project.
 >
 > The build is proceeding without a filled REQUIREMENTS.md, on customer instruction
 > (2026-07-27). Anything depending on an unanswered question is built against a documented
@@ -105,11 +106,11 @@ platforms.
 | T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | 🟢 | **baileys 7.0.0-rc13** pinned exact; backoff + jitter + circuit breaker; loggedOut terminal; auth purged on logout |
 | T2.3 | Devices screen | 🟢 | Card grid, live status via push events, Add Device dialog with QR + pairing tabs, reconnect, two-step logout, limit surfaced |
 | T2.4 | Contacts: lists, virtualized table, CSV import/export | 🟢 | Cursor pagination, SQL search, virtualized table with infinite scroll, list tabs, import dialog with column mapping, streaming export. **50k import + 10k UI verified** |
-| T2.5 | Templates: four types, media store, preview | ⬜ | |
-| T2.6 | Merge tags + live preview | ⬜ | |
+| T2.5 | Templates: four types, media store, preview | 🟢 | Four types, managed media store with size/type limits, WhatsApp-style preview, delete guarded by campaign usage |
+| T2.6 | Merge tags + live preview | 🟢 | Shared render engine used by both preview and send path, insert-token buttons, unknown-tag warning |
 | T2.7 | Mock transport | 🟢 | Transport interface + deterministic mock (scriptable failure rate, latency, drops) + Baileys 7 implementation. Unblocks CI testing for Sprints 3–4 |
 
-**E2E:** **9 written, 9 passing** — E2.1 (QR connect), E2.2 (pairing code), E2.3 (restart recovery), E2.3b (Devices screen QR flow), E2.6 (logout purges credentials), E2.6b (two-step logout in UI), E2.8 (20 concurrent devices), E2.9 (device limit), E2.10 (service state). Remaining land with T2.4–T2.6.
+**E2E:** **21 written, 21 passing**, stable across two consecutive runs. Devices (E2.1–E2.10), contacts and CSV (E2.11–E2.17), templates and merge tags (E2.18–E2.22).
 
 **Exit gate:** device links by QR and pairing code and survives restart · 20 mock devices
 concurrent · 50k CSV imports cleanly · all four template types with working merge tags.
@@ -189,6 +190,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D39 | 2026-07-28 | **Preload converts an unhandled-channel rejection into the error envelope** | `ipcRenderer.invoke` rejects when no handler is registered, which happens for channels declared in the contract ahead of their implementation. Found by E2.21 calling `campaign:create` before Sprint 3 exists. Without this the promise-never-rejects guarantee the renderer is written against would be false, and every call site would need a try/catch |
+| D40 | 2026-07-28 | Merge-tag rendering lives in `shared/`, used by both preview and send | Two implementations would eventually disagree, and the failure mode — a preview that does not match what was sent — is only discovered after messaging thousands of people |
+| D41 | 2026-07-28 | Template media is **copied** into a managed store, not referenced in place | A campaign scheduled for next week must still send its image after the user has moved or deleted the original. A failed copy deletes the template rather than leaving one that fails at send time |
 | D35 | 2026-07-28 | **Prisma `skipDuplicates` is unsupported on SQLite** — duplicates filtered explicitly | One indexed `IN` query per 1,000-row batch, then `createMany`. Far cheaper than per-row upserts, and the alternative (letting the unique constraint throw) would fail the whole batch |
 | D36 | 2026-07-28 | CSV parsing is hand-written rather than a library | The importer streams line by line to hold 50k rows without loading the file; the common parsers want to own the whole stream. Handles the RFC 4180 cases that actually appear in exported contact lists — quoted fields, embedded commas, doubled quotes — all asserted by E2.15 |
 | D37 | 2026-07-28 | Import mapping is **explicit**, not positional | The prototype mapped columns by position. A column-order change in an exported file would then silently shuffle every contact's data into the wrong fields |
@@ -244,6 +248,7 @@ every earlier suite.
 | 2026-07-28 | 2 (partial) | 2 | 35 | 37 pass / 0 fail | ✅ | ✅ | ✅ | T2.3 Devices screen. Stable across 2 consecutive runs |
 | 2026-07-28 | 2 (partial) | 6 | 37 | 43 pass / 0 fail | ✅ | ✅ | ✅ | T2.4 contacts backend. E2.12 imports 50,000 rows; E2.16 asserts the <500ms search budget. Stable across 2 runs |
 | 2026-07-28 | 2 (partial) | 1 | 43 | 44 pass / 0 fail | ✅ | ✅ | ✅ | T2.4 contacts UI. E2.17 asserts virtualization holds <100 rows in the DOM at 10,000 contacts. Stable across 2 runs |
+| 2026-07-28 | **2 (complete)** | 5 | 44 | **49 pass / 0 fail** | ✅ | ✅ | ✅ | T2.5 + T2.6. Preload gap fixed (D39). **Stable across 2 consecutive runs** |
 
 ---
 

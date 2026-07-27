@@ -20,6 +20,7 @@ import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
+import { registerTemplateHandlers } from './ipc/template.ipc'
 import { emitToAll } from './ipc/router'
 import { waBridge } from './wa-bridge'
 import { getPrisma } from './db/client'
@@ -242,6 +243,7 @@ async function bootUi(): Promise<void> {
   registerSystemHandlers()
   registerDeviceHandlers()
   registerContactHandlers()
+  registerTemplateHandlers()
 
   startWaService()
   const pending = unregisteredChannels()

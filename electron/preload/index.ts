@@ -38,7 +38,20 @@ const api = {
         },
       })
     }
-    return ipcRenderer.invoke(channel, request)
+
+    // The router never throws, but `ipcRenderer.invoke` itself rejects when no
+    // handler is registered — which happens for channels declared in the
+    // contract ahead of their implementation. Converting that to the error
+    // envelope keeps the promise-never-rejects guarantee the whole renderer is
+    // written against; otherwise every call site would need a try/catch.
+    return ipcRenderer.invoke(channel, request).catch((err: unknown) => ({
+      ok: false as const,
+      error: {
+        code: 'UNKNOWN' as const,
+        userMessage: 'That feature is not available yet.',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+    }))
   },
 
   /** Subscribe to a push event. Returns an unsubscribe function. */
