@@ -14,7 +14,7 @@ Last updated: **2026-07-27**
 
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Documentation | 🟡 In progress | 2026-07-27 | — | 4/5 | n/a | — |
+| 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | ⬜ Blocked | — | — | 0/11 | 0/16 | — |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
@@ -41,9 +41,9 @@ Last updated: **2026-07-27**
 | T0.2 | `REQUIREMENTS.md` | 🟢 | 8 sections, awaiting customer input |
 | T0.3 | `SPRINTS.md` | 🟢 | Includes full Prisma schema, IPC contract, algorithms |
 | T0.4 | `SPRINT-TRACKER.md` | 🟢 | This file |
-| T0.5 | `CLAUDE.md` | 🟡 | In progress |
-| T0.6 | Rewrite `README.md` | ⬜ | |
-| T0.7 | Commit + push to `main` | ⬜ | |
+| T0.5 | `CLAUDE.md` | 🟢 | Architecture invariants, multi-agent mode, Graphify, production standards |
+| T0.6 | Rewrite `README.md` | 🟢 | Points at the four documents |
+| T0.7 | Commit + push to `main` | 🟢 | `9968d08` |
 
 **Definition of done:** all documents committed; every prototype field assigned to a sprint;
 customer has the questionnaire.
