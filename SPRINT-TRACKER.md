@@ -15,19 +15,26 @@ Last updated: **2026-07-27**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 0/11 | 0/16 | — |
+| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 3/11 | 8/16 | `b1c2829` |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
-### Current blocker
+### Current status
 
-> 🔴 **Sprint 1 cannot start until [REQUIREMENTS.md](./REQUIREMENTS.md) is filled.**
-> Specifically §1 (license server API), §2 (branding), §6 (sending defaults) are required
-> before the first line of Sprint 1 code. §3, §4, §5 and §7 are needed by Sprint 4 but should
-> be answered at the same time.
+> 🟡 **Sprint 1 is proceeding without a filled REQUIREMENTS.md**, on customer instruction
+> (2026-07-27). Anything that depends on an unanswered question is built against a documented
+> default or behind a swappable interface; all of them are listed in
+> [REQUIREMENTS.md §0](./REQUIREMENTS.md#section-0--working-assumptions-in-effect).
+>
+> Two tasks genuinely cannot finish until answers arrive: **T1.8** (licensing) needs §1 to talk
+> to a real server — it will ship against the interface with a mock — and **T4.5** (signing and
+> auto-update) needs §2, §3 and §4. Everything else is unblocked.
+>
+> The assumption most worth an early correction is **A7**: phone normalization defaults to
+> `+91` and is applied at CSV import, so changing it after a large import means re-importing.
 
 ---
 
@@ -52,14 +59,15 @@ customer has the questionnaire.
 
 ## 3. Sprint 1 — Foundation, licensing, app shell
 
-**Blocked on REQUIREMENTS §1, §2, §6.**
+**Proceeding under the assumptions in REQUIREMENTS §0.** T1.8 will ship against the
+`LicenseService` interface with a mock until §1 is answered.
 
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | T1.1 | Prisma/Electron packaging spike (timebox 1 day) | 🟢 | **Passed packaged** — see D8, D10–D12. Drizzle fallback not needed |
 | T1.2 | Project scaffold, tooling, scripts | 🟢 | Electron + Next static export + Tailwind 4 + ESLint 10 + Prettier; `build`/`pack`/`typecheck`/`lint`/`test:e2e`/`test:smoke` all green |
 | T1.3 | Electron shell + security baseline | ⬜ | |
-| T1.4 | Database layer, full schema, boot migrator | ⬜ | All tables created here |
+| T1.4 | Database layer, full schema, boot migrator | 🟢 | 17 tables, forward-only migrator, WAL, integrity check + quarantine, pre-migration backups |
 | T1.5 | IPC contract + router + renderer hooks | ⬜ | Full channel list written now |
 | T1.6 | Design system (Tailwind + shadcn + tokens) | ⬜ | |
 | T1.7 | App shell, sidebar, nine routes | ⬜ | |
@@ -68,7 +76,9 @@ customer has the questionnaire.
 | T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
 | T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 5 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
 
-**E2E:** E1.1 – E1.16 — 0/16 passing.
+**E2E:** E1.1 – E1.16 — **8 written, 8 passing**. Remaining: E1.1–E1.9 (licensing, with T1.8),
+E1.11 (tamper, T1.8), E1.15 (log redaction, T1.10). E1.16's packaged half runs via
+`npm run test:smoke`.
 
 **Exit gate:** fresh install gates on license · valid key persists across restart · conflict
 transfer works · offline grace honored · all nine routes navigate · installers build on both
@@ -178,7 +188,7 @@ explicitly accepted with a reason.
 | # | Sprint found | Issue | Severity | Status |
 | --- | --- | --- | --- | --- |
 | K1 | 3 (by design) | A message in flight during a crash may send twice; bounded at one per device per crash | Accepted | Documented in SPRINTS §6.4 — WhatsApp offers no dedup primitive to eliminate it |
-| K2 | 1 | The `init` migration creates a spike-only `SpikeProbe` table | Must fix | **Delete the migration and regenerate a clean baseline in T1.4** with the real schema. Safe to do because nothing has shipped — migrations only become forward-only after first release |
+| K2 | 1 | ~~The `init` migration creates a spike-only `SpikeProbe` table~~ | ✅ Resolved | Baseline regenerated in T1.4 with the real 17-table schema; E1.13 asserts `SpikeProbe` is absent |
 | K3 | 1 | Builds are unsigned; `electron-builder` reports "default Electron icon is used" | Expected | Resolved in T4.5 once REQUIREMENTS §2 (icon) and §4 (certificates) are supplied |
 
 ---
@@ -190,7 +200,8 @@ every earlier suite.
 
 | Date | Sprint | New | Regression | Total | Typecheck | Lint | Packaged smoke | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-07-27 | 1 (partial) | 5 | n/a | 5 pass / 0 fail | ✅ | ✅ | ✅ | T1.1, T1.2 complete; T1.11 harness up. Covers E1.10, E1.10b, E1.12, E1.14, E1.16 |
+| 2026-07-27 | 1 (partial) | 5 | n/a | 5 pass / 0 fail | ✅ | ✅ | ✅ | T1.1, T1.2 complete; T1.11 harness up |
+| 2026-07-27 | 1 (partial) | 3 | 5 | 8 pass / 0 fail | ✅ | ✅ | ✅ | T1.4 complete. Adds E1.13, E1.13b, E1.13c (real two-launch restart) |
 
 ---
 

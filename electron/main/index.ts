@@ -6,7 +6,7 @@
  * the minimum needed to prove the renderer load path in both dev and packaged
  * builds.
  */
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, dialog, shell } from 'electron'
 import { join } from 'node:path'
 import {
   APP_ORIGIN,
@@ -14,6 +14,8 @@ import {
   rendererRoot,
   serveRendererBundle,
 } from './app-protocol'
+import { bootDatabase } from './db/boot'
+import { checkpoint, disconnectPrisma } from './db/client'
 
 app.setName('RapBooster Advance')
 
@@ -82,6 +84,31 @@ async function bootUi(): Promise<void> {
 
   await app.whenReady()
 
+  // The database must be migrated before any window can query it. A failure
+  // here is fatal and must be visible — starting with an unmigrated database
+  // would fail later in ways that look like application bugs.
+  try {
+    const report = await bootDatabase()
+    if (report.recovered) {
+      console.warn(
+        `database was corrupt and has been quarantined to ${report.integrity.quarantinedTo}`,
+      )
+    }
+    if (report.migrations.applied.length > 0) {
+      console.log(`applied migrations: ${report.migrations.applied.join(', ')}`)
+    }
+  } catch (err) {
+    console.error('FATAL: database boot failed', err)
+    dialog.showErrorBox(
+      'RapBooster Advance could not start',
+      `The local database could not be prepared.\n\n${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    )
+    app.exit(1)
+    return
+  }
+
   // Only needed when serving the static export; in dev the Vite/Next server does it.
   if (RENDERER_URL === undefined) {
     serveRendererBundle(rendererRoot(__dirname))
@@ -95,13 +122,21 @@ async function bootUi(): Promise<void> {
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
   })
+
+  // Graceful shutdown (CLAUDE.md §5.5): release the client and fold the WAL back
+  // into the database so the next launch starts clean.
+  app.on('before-quit', () => {
+    void disconnectPrisma()
+      .then(() => checkpoint())
+      .catch((err) => console.error('shutdown: checkpoint failed', err))
+  })
 }
 
 // `--self-test` runs the headless database/packaging probe instead of opening a
 // window. This is how the packaged build is verified (SPRINTS.md §13.4) —
 // native modules and asar layout only break in a real packaged binary.
 if (process.argv.includes('--self-test')) {
-  void import('./spike')
+  void import('./self-test')
 } else {
   void bootUi()
 }

@@ -1,12 +1,41 @@
-import { existsSync } from 'node:fs'
+import { _electron as electron } from '@playwright/test'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { expect, test } from './fixtures/electron-app'
 
 /**
  * Sprint 1 E2E. Test IDs map to SPRINTS.md §9.3 so the spec and the suite stay
- * in sync. Licensing cases (E1.1–E1.9) arrive with T1.8; these cover the
- * scaffold and shell that T1.2/T1.3 deliver.
+ * in sync. Licensing cases (E1.1–E1.9) arrive with T1.8.
+ *
+ * WHY node:sqlite and not better-sqlite3: `electron-builder install-app-deps`
+ * rebuilds better-sqlite3 for Electron's ABI (146), so it cannot load in
+ * Playwright's plain-Node runner (ABI 137). Node's built-in SQLite has no
+ * native-ABI coupling and reads the same file.
  */
+
+/** Inspect the database file directly, read-only. */
+function inspectSchema(userData: string) {
+  const db = new DatabaseSync(join(userData, 'rapbooster.db'), { readOnly: true })
+  try {
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+      .all()
+      .map((r) => String((r as { name: string }).name))
+    const applied = db.prepare('SELECT COUNT(*) AS n FROM _migrations').get() as { n: number }
+    const journal = db.prepare('PRAGMA journal_mode').get() as { journal_mode: string }
+    const quick = db.prepare('PRAGMA quick_check').get() as { quick_check: string }
+    return {
+      tables,
+      appliedCount: Number(applied.n),
+      journalMode: String(journal.journal_mode),
+      quickCheck: String(quick.quick_check),
+    }
+  } finally {
+    db.close()
+  }
+}
 
 test('E1.10 — window opens and the renderer loads', async ({ app }) => {
   const win = await app.firstWindow()
@@ -29,10 +58,82 @@ test('E1.10b — renderer reports no console errors on load', async ({ app }) =>
 test('E1.12 — database is created under the isolated userData path', async ({ app }) => {
   const userData = await app.evaluate(({ app: a }) => a.getPath('userData'))
 
-  // The boot migrator lands in T1.4; until then assert the path itself is
-  // isolated, which is what makes every other DB assertion trustworthy.
   expect(userData).toContain('rapbooster-e2e-')
-  expect(existsSync(userData)).toBe(true)
+  expect(existsSync(join(userData, 'rapbooster.db'))).toBe(true)
+  // Backups directory is created as part of the boot sequence.
+  expect(existsSync(join(userData, 'backups'))).toBe(true)
+})
+
+test('E1.13 — migrations run from empty and create the full schema', async ({ app }) => {
+  const userData = await app.evaluate(({ app: a }) => a.getPath('userData'))
+  const { tables, appliedCount } = inspectSchema(userData)
+
+  // Every model in SPRINTS.md §4, plus the migrator's own tracking table.
+  const expected = [
+    'License',
+    'Device',
+    'ContactList',
+    'Contact',
+    'Template',
+    'Campaign',
+    'CampaignDevice',
+    'CampaignList',
+    'CampaignRecipient',
+    'Group',
+    'GroupSendJob',
+    'GroupSendTarget',
+    'GroupCreateJob',
+    'Chat',
+    'Message',
+    'ChatbotConfig',
+    'Setting',
+    '_migrations',
+  ]
+  for (const table of expected) {
+    expect(tables).toContain(table)
+  }
+
+  // The spike table must not survive into the shipped schema (tracker K2).
+  expect(tables).not.toContain('SpikeProbe')
+  expect(appliedCount).toBeGreaterThan(0)
+})
+
+test('E1.13b — database is in WAL mode and passes its integrity check', async ({ app }) => {
+  const userData = await app.evaluate(({ app: a }) => a.getPath('userData'))
+  const { journalMode, quickCheck } = inspectSchema(userData)
+  expect(journalMode).toBe('wal')
+  expect(quickCheck).toBe('ok')
+})
+
+test('E1.13c — the boot sequence is idempotent across a real restart', async () => {
+  // Deliberately does not use the `app` fixture: proving the migrator is a safe
+  // no-op on every launch requires actually launching twice against one
+  // database, which means owning the lifecycle here.
+  const userDataDir = mkdtempSync(join(tmpdir(), 'rapbooster-e2e-restart-'))
+  const launch = () =>
+    electron.launch({
+      args: ['out/main/index.js', `--user-data-dir=${userDataDir}`],
+      env: { ...process.env, ELECTRON_RENDERER_URL: undefined } as NodeJS.ProcessEnv,
+    })
+
+  try {
+    const first = await launch()
+    await first.firstWindow()
+    const before = inspectSchema(userDataDir)
+    await first.close()
+
+    const second = await launch()
+    await second.firstWindow()
+    const after = inspectSchema(userDataDir)
+    await second.close()
+
+    expect(before.appliedCount).toBeGreaterThan(0)
+    expect(after.appliedCount).toBe(before.appliedCount)
+    expect(after.tables.sort()).toEqual(before.tables.sort())
+    expect(after.quickCheck).toBe('ok')
+  } finally {
+    rmSync(userDataDir, { recursive: true, force: true })
+  }
 })
 
 test('E1.14 — renderer is sandboxed with no Node access', async ({ app }) => {
@@ -51,9 +152,9 @@ test('E1.14 — renderer is sandboxed with no Node access', async ({ app }) => {
   expect(exposure.hasApi).toBe(true)
 })
 
-test('E1.16 — packaged self-test artifacts are present in the build', async () => {
-  // Guards the smoke-test contract: scripts/smoke.mjs depends on these existing.
+test('E1.16 — build artifacts the smoke test depends on are present', async () => {
   expect(existsSync(join('out', 'main', 'index.js'))).toBe(true)
-  expect(existsSync(join('out', 'main', 'spike.js'))).toBe(true)
+  expect(existsSync(join('out', 'main', 'self-test.js'))).toBe(true)
   expect(existsSync(join('renderer', 'out', 'index.html'))).toBe(true)
+  expect(existsSync(join('out', 'renderer', 'index.html'))).toBe(true)
 })

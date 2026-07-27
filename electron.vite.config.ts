@@ -17,7 +17,7 @@ export default defineConfig({
         external: nativeExternals,
         input: {
           index: resolve(__dirname, 'electron/main/index.ts'),
-          spike: resolve(__dirname, 'electron/main/spike.ts'),
+          'self-test': resolve(__dirname, 'electron/main/self-test.ts'),
         },
       },
     },

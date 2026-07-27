@@ -1,6 +1,11 @@
-// Prisma 7: no datasource url here — the CLI reads it from prisma.config.ts,
-// and the runtime supplies it to the driver adapter (userData path is only
-// known at runtime in Electron).
+// RapBooster Advance — full schema (SPRINTS.md §4).
+//
+// Prisma 7: no datasource url here. The CLI reads it from prisma.config.ts and
+// the runtime hands it to the driver adapter, because in Electron the database
+// path (app.getPath('userData')) is only known at runtime.
+//
+// SQLite has no native enums; the string unions are defined once in
+// shared/types.ts and validated by zod at every boundary.
 
 generator client {
   provider = "prisma-client"
@@ -11,10 +16,334 @@ datasource db {
   provider = "sqlite"
 }
 
-/// Spike-only model. The full schema (SPRINTS.md §4) lands in T1.4 once the
-/// packaging question is settled.
-model SpikeProbe {
-  id        Int      @id @default(autoincrement())
-  note      String
+// ─────────────────────────────── Licensing ───────────────────────────────
+
+model License {
+  id                String    @id @default("singleton")
+  keyEncrypted      String
+  keyMasked         String
+  status            String
+  remarks           String?
+  deviceFingerprint String
+  deviceName        String?
+  activatedAt       DateTime?
+  expiresAt         DateTime?
+  lastValidatedAt   DateTime?
+  graceUntil        DateTime?
+  serverPayload     String?
+  signature         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ──────────────────────────────── Devices ────────────────────────────────
+
+model Device {
+  id                  String    @id @default(cuid())
+  name                String
+  phone               String?
+  jid                 String?
+  status              String    @default("disconnected")
+  authFolder          String
+  lastActiveAt        DateTime?
+  lastError           String?
+  consecutiveFailures Int       @default(0)
+  dailySentCount      Int       @default(0)
+  dailyCountResetAt   DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  campaignLinks   CampaignDevice[]
+  recipients      CampaignRecipient[]
+  groups          Group[]
+  chats           Chat[]
+  groupCreateJobs GroupCreateJob[]
+
+  @@index([status])
+}
+
+// ──────────────────────────────── Contacts ───────────────────────────────
+
+model ContactList {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  /// JSON string[] — always begins ["Name","Mobile"]
+  fields       String
+  /// Denormalized; maintained inside the same transaction as contact writes
+  contactCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  contacts  Contact[]
+  campaigns CampaignList[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  listId    String
+  /// Promoted out of `data` so it can be indexed
+  name      String
+  /// Normalized to E.164, promoted so it can be indexed
+  phone     String
+  /// JSON object of every field, including this list's custom columns
+  data      String   @default("{}")
+  isValid   Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  list       ContactList         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  recipients CampaignRecipient[]
+
+  @@unique([listId, phone])
+  @@index([listId, name])
+  @@index([phone])
+}
+
+// ─────────────────────────────── Templates ───────────────────────────────
+
+model Template {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  content   String
+  mediaType String?
+  mediaPath String?
+  /// JSON string[] — interactive options
+  options   String?
+  /// JSON string[], max 3 — button labels
+  buttons   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns Campaign[]
+  groupJobs GroupSendJob[]
+}
+
+// ─────────────────────────────── Campaigns ───────────────────────────────
+
+model Campaign {
+  id            String    @id @default(cuid())
+  name          String
+  status        String    @default("draft")
+  templateId    String
+  scheduledAt   DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  delayFrom     Int       @default(0)
+  delayTo       Int       @default(5)
+  sleepDuration Int       @default(10)
+  sleepAfter    Int       @default(10)
+  retryAttempts Int       @default(2)
+  totalCount    Int       @default(0)
+  sentCount     Int       @default(0)
+  failedCount   Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  template   Template            @relation(fields: [templateId], references: [id])
+  devices    CampaignDevice[]
+  lists      CampaignList[]
+  recipients CampaignRecipient[]
+
+  @@index([status, scheduledAt])
+}
+
+model CampaignDevice {
+  campaignId String
+  deviceId   String
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  device   Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, deviceId])
+  @@index([deviceId])
+}
+
+model CampaignList {
+  campaignId String
+  listId     String
+
+  campaign Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  list     ContactList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, listId])
+  @@index([listId])
+}
+
+/// The durable send queue — one row per recipient. This is what makes campaigns
+/// pausable and crash-resumable (SPRINTS.md §6.2–§6.4).
+model CampaignRecipient {
+  id         String    @id @default(cuid())
+  campaignId String
+  contactId  String
+  deviceId   String
+  /// Snapshot, so editing a contact mid-run cannot corrupt the queue
+  phone      String
+  status     String    @default("pending")
+  attempts   Int       @default(0)
+  messageId  String?
+  error      String?
+  /// Set when the row is claimed (flipped to "sending")
+  claimedAt  DateTime?
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  device   Device   @relation(fields: [deviceId], references: [id])
+
+  /// Hard guarantee: a contact can never be queued twice in one campaign
+  @@unique([campaignId, contactId])
+  @@index([campaignId, status])
+  @@index([deviceId, status])
+}
+
+// ───────────────────────────────── Groups ────────────────────────────────
+
+model Group {
+  id          String   @id
+  deviceId    String
+  name        String
+  memberCount Int      @default(0)
+  isAdmin     Boolean  @default(false)
+  syncedAt    DateTime @default(now())
+
+  device  Device            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  targets GroupSendTarget[]
+
+  @@index([deviceId])
+}
+
+model GroupSendJob {
+  id           String    @id @default(cuid())
+  templateId   String
+  status       String    @default("pending")
+  delaySeconds Int       @default(2)
+  totalCount   Int       @default(0)
+  sentCount    Int       @default(0)
+  failedCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  template Template          @relation(fields: [templateId], references: [id])
+  targets  GroupSendTarget[]
+
+  @@index([status])
+}
+
+model GroupSendTarget {
+  id      String    @id @default(cuid())
+  jobId   String
+  groupId String
+  status  String    @default("pending")
+  error   String?
+  sentAt  DateTime?
+
+  job   GroupSendJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  group Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, status])
+  @@index([groupId])
+}
+
+model GroupCreateJob {
+  id               String    @id @default(cuid())
+  deviceId         String
+  prefix           String
+  /// "number" | "alphabet" | "timestamp" | "none"
+  suffixRule       String
+  count            Int
+  delaySeconds     Int       @default(2)
+  /// JSON string[] of ContactList ids to seed members from
+  listIds          String    @default("[]")
+  contactsPerGroup Int       @default(0)
+  status           String    @default("pending")
+  createdCount     Int       @default(0)
+  failedCount      Int       @default(0)
+  /// JSON — per-group outcome, including per-participant add failures
+  resultLog        String?
+  createdAt        DateTime  @default(now())
+  completedAt      DateTime?
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([status])
+}
+
+// ───────────────────────────── Inbox / chatbot ───────────────────────────
+
+model Chat {
+  id              String    @id
+  deviceId        String
+  name            String
+  phone           String
+  isGroup         Boolean   @default(false)
+  lastMessageAt   DateTime?
+  lastMessage     String?
+  unreadCount     Int       @default(0)
+  isEscalated     Boolean   @default(false)
+  autoReplyOptOut Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  device   Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([deviceId, lastMessageAt])
+}
+
+model Message {
+  id        String   @id
+  chatId    String
+  direction String
+  type      String
+  body      String?
+  mediaPath String?
+  mediaType String?
+  fileName  String?
+  fileSize  Int?
+  /// JSON string[]
+  buttons   String?
+  status    String   @default("sent")
+  isAiReply Boolean  @default(false)
+  timestamp DateTime
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, timestamp])
+}
+
+model ChatbotConfig {
+  id                  String   @id @default("singleton")
+  enabled             Boolean  @default(true)
+  systemInstructions  String   @default("")
+  businessName        String?
+  businessEmail       String?
+  businessPhone       String?
+  responseDelay       Int      @default(2)
+  tone                String   @default("professional")
+  industry            String?
+  primaryGoal         String   @default("support")
+  responseStyle       String   @default("conversational")
+  language            String   @default("english")
+  escalationTrigger   String   @default("keywords")
+  /// JSON string[]
+  escalationKeywords  String   @default("[]")
+  escalationMessage   String?
+  confidenceThreshold Int      @default(75)
+  /// Raw bulk text, "Name | Description" per line
+  products            String   @default("")
+  /// Raw bulk text, "Q: … | A: …" per line
+  knowledgeBase       String   @default("")
+  updatedAt           DateTime @updatedAt
+}
+
+// ──────────────────────────────── Settings ───────────────────────────────
+
+model Setting {
+  key         String   @id
+  value       String
+  isEncrypted Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
 }

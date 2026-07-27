@@ -45,7 +45,7 @@ try {
 
 console.log(output)
 
-if (!output.includes('SPIKE PASSED')) {
+if (!output.includes('SELF-TEST PASSED')) {
   console.error('SMOKE FAILED — self-test did not report success')
   process.exit(1)
 }
