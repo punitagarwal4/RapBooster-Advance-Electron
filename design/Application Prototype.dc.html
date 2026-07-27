@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Segoe UI, sans-serif; background: #f5f5f5; }
+    .container { display: flex; height: 100vh; }
+    .sidebar { width: 200px; background: #f9f9f9; border-right: 1px solid #ddd; display: flex; flex-direction: column; padding-top: 60px; }
+    .nav-item { padding: 12px 16px; font-size: 12px; color: #333; cursor: pointer; border-left: 3px solid transparent; display: flex; align-items: center; gap: 12px; }
+    .nav-item:hover { background: #f0f0f0; }
+    .nav-item.active { background: #f0f0f0; border-left-color: #0078d4; }
+    .nav-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .sidebar-bottom { margin-top: auto; padding: 16px; border-top: 1px solid #ddd; }
+    .content { flex: 1; display: flex; flex-direction: column; }
+    .title-bar { background: #e0e0e0; padding: 12px 16px; border-bottom: 1px solid #bbb; font-weight: bold; font-size: 13px; color: #333; }
+    .main { flex: 1; padding: 24px; overflow-y: auto; }
+    .section-title { font-size: 14px; font-weight: 600; margin-bottom: 20px; color: #333; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .search-box { border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; margin-bottom: 16px; }
+    .dialog-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); justify-content: center; align-items: center; z-index: 1000; }
+    .dialog-overlay.open { display: flex; }
+    .dialog-box { background: white; border: 1px solid #ddd; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .status { font-size: 11px; padding: 4px 8px; background: #f0f0f0; display: inline-block; }
+    .status.active { background: #d4edda; color: #155724; }
+    .button { background: #0078d4; color: white; border: none; padding: 6px 12px; font-size: 11px; cursor: pointer; }
+    .button:hover { background: #106ebe; }
+    .button.secondary { background: #e0e0e0; color: #333; }
+    .button.secondary:hover { background: #d0d0d0; }
+    .button.danger { background: #c50f1f; }
+    .button.danger:hover { background: #a4081f; }
+    .status-bar { background: #f0f0f0; border-top: 1px solid #ccc; padding: 8px 16px; font-size: 11px; color: #666; }
+    .list-selector { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .list-tab { padding: 8px 12px; background: #e0e0e0; border: 1px solid #999; cursor: pointer; font-size: 11px; }
+    .list-tab.active { background: #0078d4; color: white; border-color: #0078d4; }
+  </style>
+</helmet>
+
+<div class="container">
+  <div class="sidebar">
+    <div style="padding: 12px 16px; border-bottom: 1px solid #ddd;">
+      <div style="font-size: 12px; font-weight: 600; color: #333;">Navigation</div>
+    </div>
+    <div style="flex: 1; padding: 16px 0;">
+      <div class="nav-item active" data-page="dashboard"><div class="nav-icon">📊</div><span>Dashboard</span></div>
+      <div class="nav-item" data-page="inbox"><div class="nav-icon">📧</div><span>Inbox</span></div>
+      <div class="nav-item" data-page="campaigns"><div class="nav-icon">📢</div><span>Campaigns</span></div>
+      <div class="nav-item" data-page="groups"><div class="nav-icon">👥</div><span>WA Groups</span></div>
+      <div class="nav-item" data-page="devices"><div class="nav-icon">📱</div><span>Devices</span></div>
+      <div class="nav-item" data-page="contacts"><div class="nav-icon">👤</div><span>Contacts</span></div>
+      <div class="nav-item" data-page="templates"><div class="nav-icon">📋</div><span>Templates</span></div>
+      <div class="nav-item" data-page="chatbot"><div class="nav-icon">🤖</div><span>AI Bot</span></div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="nav-item" data-page="settings"><div class="nav-icon">⚙</div><span>Settings</span></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="title-bar">RapBooster Advance</div>
+    <div id="dashboard-page" class="page active">
+      <div class="main">
+        <div class="section-title">Dashboard</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;"><div style="font-size: 11px; color: #666; margin-bottom: 8px;">Total Contacts</div><div style="font-size: 24px; font-weight: 600; color: #333;">248</div></div>
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;"><div style="font-size: 11px; color: #666; margin-bottom: 8px;">Active Devices</div><div style="font-size: 24px; font-weight: 600; color: #333;">5</div></div>
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;"><div style="font-size: 11px; color: #666; margin-bottom: 8px;">Running Campaigns</div><div style="font-size: 24px; font-weight: 600; color: #333;">12</div></div>
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;"><div style="font-size: 11px; color: #666; margin-bottom: 8px;">Templates</div><div style="font-size: 24px; font-weight: 600; color: #333;">34</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="contacts-page" class="page">
+      <div class="main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="section-title" style="margin: 0;">Contact Lists</div>
+          <button class="button new-list-btn" style="font-size: 11px; padding: 8px 12px;">+ New List</button>
+        </div>
+        <div class="list-selector" id="list-selector"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <input type="text" class="search-box contact-search" placeholder="Search contacts..." style="flex: 1; margin: 0;">
+          <div style="display: flex; gap: 8px; margin-left: 16px;">
+            <button class="button add-contact-btn" style="font-size: 11px; padding: 8px 12px; width: auto;">+ Add Contact</button>
+            <button class="button secondary import-btn" style="font-size: 11px; padding: 8px 12px; width: auto;">📥 Import</button>
+            <button class="button secondary export-btn" style="font-size: 11px; padding: 8px 12px; width: auto;">📤 Export</button>
+          </div>
+        </div>
+        <div style="border: 1px solid #ddd; background: white; font-size: 11px; overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+              <tr id="table-header"></tr>
+            </thead>
+            <tbody id="contacts-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="templates-page" class="page">
+      <div class="main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="section-title" style="margin: 0;">WhatsApp Templates</div>
+          <button class="button new-template-btn" style="font-size: 11px; padding: 8px 12px;">+ New Template</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;" id="templates-grid"></div>
+      </div>
+    </div>
+
+    <div id="chatbot-page" class="page">
+      <div class="main">
+        <div class="section-title">AI Chatbot Configuration</div>
+        
+        <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa; margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">System Instructions (Bot Behavior & Motive)</div>
+          <textarea class="chatbot-system-instruction" placeholder="Define bot personality, behavior rules, communication goals, and response patterns..." style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 11px; box-sizing: border-box; height: 100px; font-family: monospace;"></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Business Information</div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Business Name</label>
+              <input type="text" class="chatbot-business-name" placeholder="Your business name" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Email</label>
+              <input type="email" class="chatbot-business-email" placeholder="support@company.com" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Phone</label>
+              <input type="tel" class="chatbot-business-phone" placeholder="+1-800-SUPPORT" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Auto-Reply Settings</div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #333;"><input type="checkbox" class="chatbot-enabled" checked> Enable Auto-Replies</label>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Response Delay (sec)</label>
+              <select class="chatbot-delay-preset" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 4px;">
+                <option value="0">Instant (0 sec)</option>
+                <option value="1">Very Quick (1 sec)</option>
+                <option value="2" selected>Quick (2 sec)</option>
+                <option value="3">Normal (3 sec)</option>
+                <option value="5">Thoughtful (5 sec)</option>
+              </select>
+              <input type="number" class="chatbot-delay-custom" value="2" min="0" max="30" placeholder="Or custom value (0-30)" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Tone</label>
+              <select class="chatbot-tone" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly & Approachable</option>
+                <option value="formal">Formal & Official</option>
+                <option value="casual">Casual & Conversational</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 2px;">Industry</label>
+              <select class="chatbot-industry-select" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 4px;">
+                <option value="">-- Select or Type Custom --</option>
+                <option value="e-commerce">E-Commerce</option>
+                <option value="saas">SaaS</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="hospitality">Hospitality</option>
+                <option value="real-estate">Real Estate</option>
+                <option value="support">Customer Support</option>
+                <option value="education">Education</option>
+                <option value="finance">Finance</option>
+              </select>
+              <input type="text" class="chatbot-industry-custom" placeholder="Or type custom industry..." style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Bot Personality & Goals</div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Primary Goal</label>
+              <select class="chatbot-goal" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="support">Customer Support</option>
+                <option value="sales">Sales & Lead Generation</option>
+                <option value="inquiry">Inquiry Handling</option>
+                <option value="appointment">Appointment Booking</option>
+                <option value="feedback">Feedback Collection</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Response Style</label>
+              <select class="chatbot-response-format" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="conversational">Conversational</option>
+                <option value="bullet-points">Bullet Points</option>
+                <option value="detailed">Detailed/Long Form</option>
+                <option value="concise">Concise/Short</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Language</label>
+              <select class="chatbot-language" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="english">English</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="portuguese">Portuguese</option>
+                <option value="hindi">Hindi</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Escalation & Handling</div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Escalation Trigger</label>
+              <select class="chatbot-escalation-trigger" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="keywords">Keywords (urgent, complaint, etc)</option>
+                <option value="confidence">Low Confidence Threshold</option>
+                <option value="message-count">After N Messages</option>
+                <option value="time-elapsed">After Time Elapsed</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Escalation Message</label>
+              <select class="chatbot-escalation-msg-select" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 4px;">
+                <option value="">-- Select Template or Type Custom --</option>
+                <option value="1">Connecting you with support team...</option>
+                <option value="2">Let me transfer you to a specialist</option>
+                <option value="3">I'm having trouble, let me get human help</option>
+              </select>
+              <input type="text" class="chatbot-escalation-msg-custom" placeholder="Or type custom message..." style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 8px;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Confidence Threshold (%)</label>
+              <input type="number" class="chatbot-confidence" value="75" min="0" max="100" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Products & Services (Bulk)</div>
+            <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Format: Name | Description</label>
+            <textarea class="chatbot-products-bulk" placeholder="Product A | Premium solution&#10;Product B | Enterprise package" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 11px; box-sizing: border-box; height: 120px; font-family: monospace;"></textarea>
+          </div>
+          <div style="padding: 16px; border: 1px solid #ddd; background: #fafafa;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Knowledge Base (Bulk)</div>
+            <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Format: Q: Question | A: Answer</label>
+            <textarea class="chatbot-kb-bulk" placeholder="Q: How do I start? | A: Click signup...&#10;Q: Payment methods? | A: Credit card, PayPal..." style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 11px; box-sizing: border-box; height: 120px; font-family: monospace;"></textarea>
+          </div>
+        </div>
+
+        <button class="button save-chatbot-config" style="width: 100%;">Save Configuration</button>
+      </div>
+    </div>
+
+    <div id="campaigns-page" class="page">
+      <div class="main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="section-title" style="margin: 0;">WhatsApp Bulk Campaigns</div>
+          <button class="button create-campaign-btn" style="font-size: 11px; padding: 8px 12px;">+ Create Campaign</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;" id="campaigns-grid"></div>
+      </div>
+    </div>
+
+    <!-- CREATE CAMPAIGN MODAL -->
+    <div id="create-campaign-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 550px; max-height: 90vh; overflow-y: auto;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Create Campaign</div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Campaign Name</label>
+          <input type="text" class="campaign-name-input" placeholder="e.g., Spring Sale 2024" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Select Devices</label>
+          <div style="border: 1px solid #999; padding: 8px; max-height: 100px; overflow-y: auto; background: white; border-radius: 4px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;" id="devices-checkbox-list"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Select Contact Lists</label>
+          <div style="border: 1px solid #999; padding: 8px; max-height: 100px; overflow-y: auto; background: white; border-radius: 4px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;" id="lists-checkbox-list"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Select Template</label>
+          <select class="campaign-template-select" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+            <option value="">-- Choose a template --</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 12px; padding: 12px; background: #f5f5f5; border-radius: 4px; min-height: 60px; border: 1px solid #eee;">
+          <div style="font-size: 10px; font-weight: 600; color: #666; margin-bottom: 6px;">Template Preview</div>
+          <div id="campaign-template-preview" style="font-size: 11px; color: #333; font-family: monospace;">(Select a template to preview)</div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Schedule Send (optional)</label>
+          <input type="datetime-local" class="campaign-schedule" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Random Delay From (sec)</label>
+            <input type="number" class="campaign-delay-from" value="0" min="0" max="300" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Random Delay To (sec)</label>
+            <input type="number" class="campaign-delay-to" value="5" min="0" max="300" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Sleep Duration (sec)</label>
+            <input type="number" class="campaign-sleep-duration" value="10" min="0" max="600" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Sleep After N Messages</label>
+            <input type="number" class="campaign-sleep-after" value="10" min="1" max="100" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button create-campaign-submit" style="flex: 1;">Create Campaign</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="groups-page" class="page">
+      <div class="main">
+        <div style="display: flex; gap: 16px; height: calc(100vh - 180px);">
+          <!-- Left: Groups List -->
+          <div style="width: 300px; border: 1px solid #ddd; background: white; border-radius: 8px; display: flex; flex-direction: column;">
+            <div style="padding: 16px; border-bottom: 1px solid #ddd;">
+              <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">WhatsApp Groups</div>
+              <button class="button create-groups-bulk-btn" style="font-size: 11px; padding: 8px 12px; width: 100%;">+ Create Bulk</button>
+            </div>
+            <div style="padding: 12px; border-bottom: 1px solid #ddd;">
+              <label style="display: block; font-size: 10px; font-weight: 600; color: #333; margin-bottom: 4px;">Filter by Device</label>
+              <select class="groups-device-filter" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 8px;">
+                <option value="">-- All Devices --</option>
+              </select>
+              <button class="button select-all-groups-btn" style="font-size: 10px; padding: 6px 8px; width: 100%;">Select All</button>
+            </div>
+            <div class="groups-list" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px;"></div>
+          </div>
+
+          <!-- Right: Message Composer -->
+          <div style="flex: 1; border: 1px solid #ddd; background: white; border-radius: 8px; display: flex; flex-direction: column;">
+            <div style="padding: 16px; border-bottom: 1px solid #ddd;">
+              <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Send Messages to Groups</div>
+            </div>
+            <div style="flex: 1; padding: 16px; overflow-y: auto;">
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 8px;">Selected Groups (<span id="selected-groups-count">0</span>)</label>
+                <div class="selected-groups-display" style="border: 1px solid #eee; padding: 8px; border-radius: 4px; min-height: 60px; background: #f9f9f9; font-size: 10px; color: #666;"></div>
+              </div>
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 8px;">Select Template</label>
+                <select class="groups-template-select" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+                  <option value="">-- Choose template --</option>
+                </select>
+              </div>
+              <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; min-height: 80px; border: 1px solid #eee;">
+                <div style="font-size: 10px; font-weight: 600; color: #666; margin-bottom: 6px;">Message Preview</div>
+                <div id="groups-message-preview" style="font-size: 11px; color: #333; font-family: monospace; white-space: pre-wrap;">(Select a template to preview)</div>
+              </div>
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 8px;">Delay Between Messages (seconds)</label>
+                <input type="number" class="groups-message-delay" value="2" min="0" max="300" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+              </div>
+              <button class="button send-group-messages-btn" style="width: 100%; padding: 10px;">Send to Selected Groups</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATE GROUPS BULK MODAL -->
+    <div id="create-groups-bulk-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 450px;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Create Groups in Bulk</div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Select Device</label>
+          <select class="bulk-create-device-select" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+            <option value="">-- Choose device --</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Group Name Prefix</label>
+          <input type="text" class="bulk-group-prefix" placeholder="e.g., Sales Team" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Suffix Rule</label>
+          <select class="bulk-group-suffix" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+            <option value="number">Sequential Numbers (001, 002, 003...)</option>
+            <option value="alphabet">Alphabet (A, B, C...)</option>
+            <option value="timestamp">Timestamp (auto-generated)</option>
+            <option value="none">No Suffix</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Number of Groups to Create</label>
+          <input type="number" class="bulk-group-count" value="5" min="1" max="100" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Delay Between Groups (seconds)</label>
+          <input type="number" class="bulk-group-delay" value="2" min="0" max="60" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Add Contacts from Lists</label>
+          <div style="border: 1px solid #999; padding: 8px; max-height: 80px; overflow-y: auto; background: white; border-radius: 4px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;" id="bulk-lists-checkbox-list"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Contacts per Group</label>
+          <input type="number" class="bulk-contacts-per-group" value="10" min="0" max="500" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px; font-size: 10px; color: #666;">
+          <strong>Preview:</strong><br>
+          <span id="bulk-group-preview">Sales Team 001, Sales Team 002, Sales Team 003...</span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button bulk-create-submit" style="flex: 1;">Create Groups</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="devices-page" class="page">
+      <div class="main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="section-title" style="margin: 0;">WhatsApp Devices</div>
+          <button class="button add-device-btn" style="font-size: 11px; padding: 8px 12px;">+ Add Device</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;" id="devices-grid"></div>
+      </div>
+    </div>
+
+    <!-- ADD DEVICE MODAL -->
+    <div id="add-device-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 500px;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Add WhatsApp Device</div>
+        
+        <div style="margin-bottom: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+          <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 12px;">📱 Steps to Connect:</div>
+          <ol style="font-size: 11px; color: #666; margin: 0; padding-left: 20px; line-height: 1.6;">
+            <li>Open WhatsApp on your phone</li>
+            <li>Go to <strong>Settings</strong> → <strong>Linked Devices</strong></li>
+            <li>Tap <strong>Link a Device</strong></li>
+            <li>Point your phone at the QR code below to scan</li>
+            <li>Confirm the device name and allow access</li>
+          </ol>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 8px;">Device Name</label>
+          <input type="text" class="device-name-input" placeholder="e.g., Main Device, Office PC" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 16px; background: #f0f0f0; border: 2px dashed #999; border-radius: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #666; margin-bottom: 8px;">QR Code (Scan with WhatsApp)</div>
+          <div id="qr-code-placeholder" style="width: 200px; height: 200px; background: white; border: 1px solid #ccc; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
+            [QR Code will appear here]
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button" style="flex: 1;">Generate QR & Connect</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="inbox-page" class="page">
+      <div class="main">
+        <div style="display: flex; gap: 16px; height: calc(100vh - 180px);">
+          <!-- Left: Chat List -->
+          <div style="width: 300px; border: 1px solid #ddd; background: white; border-radius: 8px; display: flex; flex-direction: column;">
+            <div style="padding: 16px; border-bottom: 1px solid #ddd;">
+              <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">Messages</div>
+              <input type="text" placeholder="Search chats..." style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box; margin-bottom: 8px;">
+              <select class="inbox-device-filter" style="border: 1px solid #999; padding: 6px 8px; width: 100%; font-size: 11px; box-sizing: border-box;">
+                <option value="">-- All Devices --</option>
+              </select>
+            </div>
+            <div class="inbox-chats-list" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+          </div>
+
+          <!-- Right: Chat View -->
+          <div style="flex: 1; border: 1px solid #ddd; background: white; border-radius: 8px; display: flex; flex-direction: column;">
+            <div class="chat-header" style="padding: 16px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 12px; font-weight: 600; color: #333;" id="chat-name">Select a chat</div>
+                <div style="font-size: 10px; color: #666;" id="chat-status"></div>
+              </div>
+            </div>
+            <div class="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div style="padding: 16px; border-top: 1px solid #ddd;">
+              <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <button class="inbox-media-btn" style="padding: 6px 12px; background: #f0f0f0; border: 1px solid #999; border-radius: 4px; font-size: 11px; cursor: pointer;">📷 Media</button>
+                <button class="inbox-emoji-btn" style="padding: 6px 12px; background: #f0f0f0; border: 1px solid #999; border-radius: 4px; font-size: 11px; cursor: pointer;">😊 Emoji</button>
+                <button class="inbox-buttons-btn" style="padding: 6px 12px; background: #f0f0f0; border: 1px solid #999; border-radius: 4px; font-size: 11px; cursor: pointer;">🔘 Buttons</button>
+                <button class="inbox-attachment-btn" style="padding: 6px 12px; background: #f0f0f0; border: 1px solid #999; border-radius: 4px; font-size: 11px; cursor: pointer;">📎 Attach</button>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" placeholder="Type a message..." class="inbox-message-input" style="border: 1px solid #999; padding: 8px 10px; flex: 1; font-size: 12px; box-sizing: border-box;">
+                <button class="button inbox-send-btn" style="padding: 8px 12px;">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-page" class="page">
+      <div class="main">
+        <div class="section-title">Settings</div>
+      </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="create-list-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 400px;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Create New List</div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">List Name</label>
+          <input type="text" class="list-name-input" placeholder="e.g., Leads, Customers" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Custom Fields (comma-separated)</label>
+          <input type="text" class="custom-fields-input" placeholder="e.g., Company, Status, Notes" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button" style="flex: 1;">Create List</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="add-contact-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 450px;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Add Contact</div>
+        <div id="contact-form-fields"></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button" style="flex: 1;">Add Contact</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="create-template-modal" class="dialog-overlay">
+      <div class="dialog-box" style="width: 500px; max-height: 80vh; overflow-y: auto;">
+        <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 16px;">Create Template</div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Template Name</label>
+          <input type="text" class="template-name-input" placeholder="e.g., Welcome Message" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Template Type</label>
+          <select class="template-type-select" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+            <option value="text">Text Only</option>
+            <option value="media">With Media (Image/Video)</option>
+            <option value="interactive">Interactive Message</option>
+            <option value="button">Button Message</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Message Content</label>
+          <textarea class="template-content-input" placeholder="Type your message..." style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box; height: 100px; font-family: monospace;"></textarea>
+        </div>
+        <div id="template-extra-fields"></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="button secondary" style="flex: 1;">Cancel</button>
+          <button class="button" style="flex: 1;">Create Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    currentPage: 'contacts',
+    lists: [{ id: 1, name: 'All Contacts', fields: ['Name', 'Mobile'], contacts: [
+      { id: 1, Name: 'John Doe', Mobile: '+1-555-0100' },
+      { id: 2, Name: 'Jane Smith', Mobile: '+1-555-0101' },
+      { id: 3, Name: 'Bob Johnson', Mobile: '+1-555-0102' }
+    ]}],
+    activeListId: 1,
+    templates: [
+      { id: 1, name: 'Welcome Message', type: 'text', content: 'Welcome! Thanks for reaching out. How can we help?' },
+      { id: 2, name: 'Order Confirmation', type: 'text', content: 'Your order has been confirmed.' },
+      { id: 3, name: 'Product Showcase', type: 'media', content: 'Check out our latest product!', mediaType: 'image' }
+    ],
+    chatbotConfig: {
+      enabled: true, delay: 2, tone: 'professional', industry: 'E-commerce', goal: 'support', language: 'english',
+      businessName: 'Acme Corp', email: 'support@acme.com', phone: '+1-800-ACME'
+    },
+    devices: [
+      { id: 1, name: 'Main Device', phone: '+1-555-0100', status: 'connected', createdAt: '2024-01-15', lastActive: '2 min ago' },
+      { id: 2, name: 'Office PC', phone: '+1-555-0101', status: 'connected', createdAt: '2024-01-10', lastActive: '1 hour ago' }
+    ],
+    campaigns: [
+      { id: 1, name: 'Spring Sale 2024', status: 'running', devices: 2, contacts: 150, template: 'Welcome Message', sent: 142, failed: 8, scheduled: '2024-02-01', createdAt: '2024-01-20' },
+      { id: 2, name: 'Product Launch', status: 'paused', devices: 1, contacts: 200, template: 'Product Showcase', sent: 95, failed: 5, scheduled: null, createdAt: '2024-01-18' }
+    ],
+    groups: [
+      { id: 1, name: 'Sales Team 001', deviceId: 1, members: 15, createdAt: '2024-01-15' },
+      { id: 2, name: 'Support Group A', deviceId: 1, members: 8, createdAt: '2024-01-10' },
+      { id: 3, name: 'Marketing Team 001', deviceId: 2, members: 12, createdAt: '2024-01-12' }
+    ],
+    selectedGroups: [],
+    chats: [
+      { id: 1, deviceId: 1, name: 'John Doe', phone: '+1-555-0100', lastMessage: 'Thanks for the update', timestamp: '2:30 PM', messages: [
+        { sender: 'them', text: 'Hi there', time: '2:15 PM' },
+        { sender: 'you', text: 'Hello! How are you? 😊', time: '2:20 PM' },
+        { sender: 'them', type: 'media', content: '📷 photo.jpg', time: '2:25 PM' },
+        { sender: 'them', type: 'buttons', text: 'Which time works?', buttons: ['2:00 PM', '3:00 PM', '4:00 PM'], time: '2:27 PM' },
+        { sender: 'them', text: 'Thanks for the update', time: '2:30 PM' }
+      ]},
+      { id: 2, deviceId: 1, name: 'Jane Smith', phone: '+1-555-0101', lastMessage: 'See you tomorrow', timestamp: '1:45 PM', messages: [
+        { sender: 'you', text: 'Meeting at 3 PM?', time: '1:30 PM' },
+        { sender: 'you', type: 'attachment', fileName: 'agenda.pdf', fileSize: '2.3 MB', time: '1:35 PM' },
+        { sender: 'them', text: 'See you tomorrow 👋', time: '1:45 PM' }
+      ]},
+      { id: 3, deviceId: 2, name: 'Bob Johnson', phone: '+1-555-0102', lastMessage: 'Looks good', timestamp: '11:20 AM', messages: [
+        { sender: 'you', text: 'Check the document', time: '10:45 AM' },
+        { sender: 'you', type: 'media', content: '📊 report.png', time: '10:50 AM' },
+        { sender: 'them', type: 'buttons', text: 'Approve?', buttons: ['✅ Approve', '❌ Reject', '💬 Review'], time: '11:15 AM' },
+        { sender: 'them', text: 'Looks good', time: '11:20 AM' }
+      ]}
+    ],
+    activeChat: null
+  };
+
+  componentDidMount() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => this.showPage(item.getAttribute('data-page')));
+    });
+    
+    document.querySelector('.new-list-btn')?.addEventListener('click', () => {
+      document.getElementById('create-list-modal').classList.add('open');
+    });
+    
+    const createListModal = document.getElementById('create-list-modal');
+    createListModal?.querySelector('.button.secondary')?.addEventListener('click', () => createListModal.classList.remove('open'));
+    createListModal?.querySelector('.button:not(.secondary)')?.addEventListener('click', () => this.createList());
+    
+    const addContactModal = document.getElementById('add-contact-modal');
+    addContactModal?.querySelector('.button.secondary')?.addEventListener('click', () => addContactModal.classList.remove('open'));
+    addContactModal?.querySelector('.button:not(.secondary)')?.addEventListener('click', () => this.addContact());
+    
+    document.querySelector('.add-contact-btn')?.addEventListener('click', () => {
+      document.getElementById('add-contact-modal').classList.add('open');
+      this.populateContactForm();
+    });
+    document.querySelector('.import-btn')?.addEventListener('click', () => this.importCSV());
+    document.querySelector('.export-btn')?.addEventListener('click', () => this.exportCSV());
+    document.querySelector('.contact-search')?.addEventListener('keyup', (e) => this.filterContacts(e.target.value));
+    
+    document.querySelector('.new-template-btn')?.addEventListener('click', () => {
+      document.getElementById('create-template-modal').classList.add('open');
+      this.renderTemplateForm();
+    });
+    
+    const createTemplateModal = document.getElementById('create-template-modal');
+    createTemplateModal?.querySelector('.button.secondary')?.addEventListener('click', () => createTemplateModal.classList.remove('open'));
+    createTemplateModal?.querySelector('.button:not(.secondary)')?.addEventListener('click', () => this.createTemplate());
+    document.querySelector('.template-type-select')?.addEventListener('change', () => this.renderTemplateForm());
+    
+    document.querySelector('.save-chatbot-config')?.addEventListener('click', () => this.saveChatbotConfig());
+    
+    document.querySelector('.add-device-btn')?.addEventListener('click', () => {
+      document.getElementById('add-device-modal').classList.add('open');
+    });
+    
+    const addDeviceModal = document.getElementById('add-device-modal');
+    addDeviceModal?.querySelector('.button.secondary')?.addEventListener('click', () => addDeviceModal.classList.remove('open'));
+    addDeviceModal?.querySelector('.button:not(.secondary)')?.addEventListener('click', () => this.addDevice());
+    
+    document.querySelector('.create-campaign-btn')?.addEventListener('click', () => {
+      document.getElementById('create-campaign-modal').classList.add('open');
+      this.populateCampaignModal();
+    });
+    
+    const createCampaignModal = document.getElementById('create-campaign-modal');
+    createCampaignModal?.querySelector('.button.secondary')?.addEventListener('click', () => createCampaignModal.classList.remove('open'));
+    createCampaignModal?.querySelector('.button.create-campaign-submit')?.addEventListener('click', () => this.createCampaign());
+    document.querySelector('.campaign-template-select')?.addEventListener('change', () => this.updateCampaignPreview());
+    
+    document.querySelector('.create-groups-bulk-btn')?.addEventListener('click', () => {
+      document.getElementById('create-groups-bulk-modal').classList.add('open');
+      this.populateBulkGroupsModal();
+    });
+    
+    const createGroupsModal = document.getElementById('create-groups-bulk-modal');
+    createGroupsModal?.querySelector('.button.secondary')?.addEventListener('click', () => createGroupsModal.classList.remove('open'));
+    createGroupsModal?.querySelector('.button.bulk-create-submit')?.addEventListener('click', () => this.createGroupsBulk());
+    document.querySelector('.bulk-group-prefix')?.addEventListener('input', () => this.updateBulkGroupPreview());
+    document.querySelector('.bulk-group-suffix')?.addEventListener('change', () => this.updateBulkGroupPreview());
+    document.querySelector('.bulk-group-count')?.addEventListener('change', () => this.updateBulkGroupPreview());
+    
+    document.querySelector('.groups-device-filter')?.addEventListener('change', () => this.renderGroupsList());
+    document.querySelector('.select-all-groups-btn')?.addEventListener('click', () => this.selectAllGroups());
+    document.querySelector('.groups-template-select')?.addEventListener('change', () => this.updateGroupsMessagePreview());
+    document.querySelector('.send-group-messages-btn')?.addEventListener('click', () => this.sendGroupMessages());
+    
+    document.querySelector('.inbox-device-filter')?.addEventListener('change', () => this.renderInboxChats());
+    document.querySelector('.inbox-send-btn')?.addEventListener('click', () => this.sendInboxMessage());
+    document.querySelector('.inbox-message-input')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.sendInboxMessage();
+    });
+    document.querySelector('.inbox-emoji-btn')?.addEventListener('click', () => this.showEmojiPicker());
+    document.querySelector('.inbox-media-btn')?.addEventListener('click', () => this.addMedia());
+    document.querySelector('.inbox-buttons-btn')?.addEventListener('click', () => this.addButtonMessage());
+    document.querySelector('.inbox-attachment-btn')?.addEventListener('click', () => this.addAttachment());
+    
+    this.renderListTabs();
+    this.renderTable();
+    this.renderTemplates();
+    this.renderChatbotConfig();
+    this.renderDevices();
+    this.renderCampaigns();
+    this.renderGroupsPage();
+    this.renderInboxPage();
+  }
+
+  showPage(page) {
+    this.setState({ currentPage: page });
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`${page}-page`)?.classList.add('active');
+  }
+
+  renderListTabs() {
+    const selector = document.getElementById('list-selector');
+    selector.innerHTML = this.state.lists.map(list => `
+      <button class="list-tab ${list.id === this.state.activeListId ? 'active' : ''}" data-list-id="${list.id}">${list.name}</button>
+    `).join('');
+    selector.querySelectorAll('.list-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        this.setState({ activeListId: parseInt(tab.getAttribute('data-list-id')) });
+        this.renderListTabs();
+        this.renderTable();
+      });
+    });
+  }
+
+  renderTable() {
+    const list = this.state.lists.find(l => l.id === this.state.activeListId);
+    const header = document.getElementById('table-header');
+    const tbody = document.getElementById('contacts-table-body');
+    
+    header.innerHTML = [...list.fields.map(f => `<th style="padding: 12px; text-align: left; font-weight: 600; color: #333; border-right: 1px solid #eee;">${f}</th>`),
+      '<th style="padding: 12px; text-align: center; font-weight: 600; color: #333;">Actions</th>'].join('');
+    
+    tbody.innerHTML = list.contacts.map(c => `
+      <tr style="border-bottom: 1px solid #eee;" data-contact-id="${c.id}">
+        ${list.fields.map(f => `<td style="padding: 12px; color: #333; border-right: 1px solid #eee;">${c[f] || ''}</td>`).join('')}
+        <td style="padding: 12px; text-align: center; display: flex; gap: 6px; justify-content: center;">
+          <button class="button delete-contact-btn" data-contact-id="${c.id}" style="font-size: 10px; padding: 4px 8px; width: auto;">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+    
+    document.querySelectorAll('.delete-contact-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteContact(parseInt(btn.getAttribute('data-contact-id'))));
+    });
+  }
+
+  createList() {
+    const name = document.querySelector('.list-name-input')?.value.trim();
+    const customFields = document.querySelector('.custom-fields-input')?.value.split(',').map(f => f.trim()).filter(f => f) || [];
+    const fields = ['Name', 'Mobile', ...customFields];
+    this.setState({ lists: [...this.state.lists, { id: Date.now(), name, fields, contacts: [] }] });
+    document.getElementById('create-list-modal').classList.remove('open');
+    this.renderListTabs();
+    this.renderTable();
+  }
+
+  populateContactForm() {
+    const list = this.state.lists.find(l => l.id === this.state.activeListId);
+    document.getElementById('contact-form-fields').innerHTML = list.fields.map(field => `
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">${field}</label>
+        <input type="text" class="contact-field-${field}" placeholder="${field}" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;">
+      </div>
+    `).join('');
+  }
+
+  addContact() {
+    const list = this.state.lists.find(l => l.id === this.state.activeListId);
+    const contact = { id: Date.now() };
+    list.fields.forEach(field => {
+      contact[field] = document.querySelector(`.contact-field-${field}`)?.value.trim() || '';
+    });
+    list.contacts.push(contact);
+    this.setState({ lists: [...this.state.lists] });
+    document.getElementById('add-contact-modal').classList.remove('open');
+    this.renderTable();
+  }
+
+  deleteContact(id) {
+    const list = this.state.lists.find(l => l.id === this.state.activeListId);
+    list.contacts = list.contacts.filter(c => c.id !== id);
+    this.setState({ lists: [...this.state.lists] });
+    this.renderTable();
+  }
+
+  importCSV() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.csv';
+    input.onchange = (e) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const list = this.state.lists.find(l => l.id === this.state.activeListId);
+        ev.target.result.split('\n').filter(l => l.trim()).slice(1).forEach(line => {
+          const values = line.split(',').map(s => s.replace(/"/g, '').trim());
+          const contact = { id: Date.now() + Math.random() };
+          list.fields.forEach((field, i) => { contact[field] = values[i] || ''; });
+          list.contacts.push(contact);
+        });
+        this.setState({ lists: [...this.state.lists] });
+        this.renderTable();
+      };
+      reader.readAsText(e.target.files[0]);
+    };
+    input.click();
+  }
+
+  exportCSV() {
+    const list = this.state.lists.find(l => l.id === this.state.activeListId);
+    const csv = [list.fields.map(f => `"${f}"`).join(','), ...list.contacts.map(c => list.fields.map(f => `"${c[f] || ''}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${list.name}.csv`;
+    a.click();
+  }
+
+  filterContacts(query) {
+    document.querySelectorAll('#contacts-table-body tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+    });
+  }
+
+  renderTemplates() {
+    const grid = document.getElementById('templates-grid');
+    grid.innerHTML = this.state.templates.map(t => {
+      let preview = '';
+      if (t.type === 'text') {
+        preview = `<div style="padding: 12px; background: #dcf8c6; border-radius: 12px; max-width: 80%; font-size: 12px; color: #333;">${t.content}</div>`;
+      } else if (t.type === 'media') {
+        preview = `<div style="padding: 12px; background: #dcf8c6; border-radius: 12px; max-width: 80%;"><div style="width: 150px; height: 100px; background: #e0e0e0; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">[${t.mediaType?.toUpperCase()}]</div><div style="font-size: 12px; color: #333;">${t.content}</div></div>`;
+      }
+      return `
+        <div style="border: 1px solid #ddd; background: white; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+          <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 8px;">${t.name}</div>
+          <div style="font-size: 10px; color: #999; margin-bottom: 12px; padding: 4px 6px; background: #f0f0f0; border-radius: 4px; width: fit-content;">${t.type}</div>
+          <div style="flex: 1; padding: 12px; background: #f5f5f5; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; min-height: 120px;">${preview}</div>
+          <button class="button danger delete-template-btn" data-template-id="${t.id}" style="font-size: 10px; padding: 6px 10px;">Delete</button>
+        </div>
+      `;
+    }).join('');
+    document.querySelectorAll('.delete-template-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteTemplate(parseInt(btn.getAttribute('data-template-id'))));
+    });
+  }
+
+  renderTemplateForm() {
+    const type = document.querySelector('.template-type-select')?.value;
+    const fieldsDiv = document.getElementById('template-extra-fields');
+    let html = '';
+    if (type === 'media') {
+      html = `<div style="margin-bottom: 16px;"><label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Media Type</label><select class="template-media-type" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box;"><option value="image">Image</option><option value="video">Video</option></select></div>`;
+    } else if (type === 'interactive') {
+      html = `<div style="margin-bottom: 16px;"><label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Options (one per line)</label><textarea class="template-options" placeholder="Option 1&#10;Option 2" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box; height: 80px;"></textarea></div>`;
+    } else if (type === 'button') {
+      html = `<div style="margin-bottom: 16px;"><label style="display: block; font-size: 11px; font-weight: 600; color: #333; margin-bottom: 4px;">Buttons (one per line, max 3)</label><textarea class="template-buttons" placeholder="Button 1&#10;Button 2" style="border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; box-sizing: border-box; height: 80px;"></textarea></div>`;
+    }
+    fieldsDiv.innerHTML = html;
+  }
+
+  createTemplate() {
+    const name = document.querySelector('.template-name-input')?.value.trim();
+    const type = document.querySelector('.template-type-select')?.value;
+    const content = document.querySelector('.template-content-input')?.value.trim();
+    if (!name || !content) return;
+    const newTemplate = { id: Date.now(), name, type, content };
+    if (type === 'media') newTemplate.mediaType = document.querySelector('.template-media-type')?.value || 'image';
+    else if (type === 'interactive') newTemplate.options = document.querySelector('.template-options')?.value.split('\n').filter(o => o.trim()) || [];
+    else if (type === 'button') newTemplate.buttons = document.querySelector('.template-buttons')?.value.split('\n').filter(b => b.trim()).slice(0, 3) || [];
+    this.setState({ templates: [...this.state.templates, newTemplate] });
+    document.getElementById('create-template-modal').classList.remove('open');
+    this.renderTemplates();
+  }
+
+  deleteTemplate(id) {
+    this.setState({ templates: this.state.templates.filter(t => t.id !== id) });
+    this.renderTemplates();
+  }
+
+  renderChatbotConfig() {
+    const cfg = this.state.chatbotConfig;
+    const checkboxEl = document.querySelector('.chatbot-enabled');
+    if (checkboxEl) { checkboxEl.checked = cfg.enabled; checkboxEl.defaultChecked = cfg.enabled; }
+    document.querySelector('.chatbot-delay-custom').value = cfg.delay;
+    document.querySelector('.chatbot-delay-preset').value = cfg.delay;
+    document.querySelector('.chatbot-tone').value = cfg.tone;
+    document.querySelector('.chatbot-industry-select').value = cfg.industry.toLowerCase().replace(' ', '-');
+    document.querySelector('.chatbot-business-name').value = cfg.businessName;
+    document.querySelector('.chatbot-business-email').value = cfg.email;
+    document.querySelector('.chatbot-business-phone').value = cfg.phone;
+    document.querySelector('.chatbot-goal').value = cfg.goal;
+    document.querySelector('.chatbot-language').value = cfg.language;
+  }
+
+  saveChatbotConfig() {
+    const cfg = { ...this.state.chatbotConfig };
+    cfg.enabled = document.querySelector('.chatbot-enabled').checked;
+    cfg.delay = parseInt(document.querySelector('.chatbot-delay-custom').value) || 2;
+    cfg.tone = document.querySelector('.chatbot-tone').value;
+    cfg.industry = document.querySelector('.chatbot-industry-custom').value || document.querySelector('.chatbot-industry-select').value;
+    cfg.businessName = document.querySelector('.chatbot-business-name').value;
+    cfg.email = document.querySelector('.chatbot-business-email').value;
+    cfg.phone = document.querySelector('.chatbot-business-phone').value;
+    cfg.goal = document.querySelector('.chatbot-goal').value;
+    cfg.language = document.querySelector('.chatbot-language').value;
+    this.setState({ chatbotConfig: cfg });
+    alert('Chatbot configuration saved!');
+  }
+
+  renderDevices() {
+    const grid = document.getElementById('devices-grid');
+    grid.innerHTML = this.state.devices.map(d => `
+      <div style="border: 1px solid #ddd; background: white; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="flex: 1;">
+            <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 4px;">📱 ${d.name}</div>
+            <div style="font-size: 11px; color: #666; margin-bottom: 2px;">${d.phone}</div>
+            <div style="font-size: 10px; color: #999;">Added: ${d.createdAt}</div>
+          </div>
+          <div style="font-size: 10px; padding: 4px 8px; background: #d4edda; color: #155724; border-radius: 4px; font-weight: 600;">${d.status}</div>
+        </div>
+        <div style="padding: 8px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 8px 0; font-size: 10px; color: #666;">
+          Last active: ${d.lastActive}
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button class="button" style="flex: 1; font-size: 10px; padding: 6px 8px;">Reconnect</button>
+          <button class="button danger logout-device-btn" data-device-id="${d.id}" style="flex: 1; font-size: 10px; padding: 6px 8px;">Logout</button>
+        </div>
+      </div>
+    `).join('');
+    
+    document.querySelectorAll('.logout-device-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.logoutDevice(parseInt(btn.getAttribute('data-device-id'))));
+    });
+  }
+
+  addDevice() {
+    const name = document.querySelector('.device-name-input')?.value.trim();
+    if (!name) return;
+    const newDevice = {
+      id: Date.now(),
+      name,
+      phone: '+1-555-' + Math.random().toString().slice(2, 6),
+      status: 'connected',
+      createdAt: new Date().toLocaleDateString(),
+      lastActive: 'just now'
+    };
+    this.setState({ devices: [...this.state.devices, newDevice] });
+    document.getElementById('add-device-modal').classList.remove('open');
+    document.querySelector('.device-name-input').value = '';
+    this.renderDevices();
+  }
+
+  logoutDevice(id) {
+    if (confirm('Are you sure you want to logout this device?')) {
+      this.setState({ devices: this.state.devices.filter(d => d.id !== id) });
+      this.renderDevices();
+    }
+  }
+
+  populateCampaignModal() {
+    const deviceList = document.getElementById('devices-checkbox-list');
+    deviceList.innerHTML = this.state.devices.map(d => `
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
+        <input type="checkbox" class="campaign-device-${d.id}" value="${d.id}"> ${d.name}
+      </label>
+    `).join('');
+
+    const listList = document.getElementById('lists-checkbox-list');
+    listList.innerHTML = this.state.lists.map(l => `
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
+        <input type="checkbox" class="campaign-list-${l.id}" value="${l.id}"> ${l.name} (${l.contacts.length})
+      </label>
+    `).join('');
+
+    const templateSelect = document.querySelector('.campaign-template-select');
+    templateSelect.innerHTML = '<option value="">-- Choose a template --</option>' + this.state.templates.map(t => `
+      <option value="${t.id}">${t.name}</option>
+    `).join('');
+  }
+
+  updateCampaignPreview() {
+    const templateId = parseInt(document.querySelector('.campaign-template-select').value);
+    const template = this.state.templates.find(t => t.id === templateId);
+    const previewEl = document.getElementById('campaign-template-preview');
+    if (template) {
+      previewEl.innerHTML = `<strong>${template.name}</strong><br><br>${template.content}`;
+    } else {
+      previewEl.innerHTML = '(Select a template to preview)';
+    }
+  }
+
+  createCampaign() {
+    const name = document.querySelector('.campaign-name-input')?.value.trim();
+    const templateId = parseInt(document.querySelector('.campaign-template-select').value);
+    const template = this.state.templates.find(t => t.id === templateId);
+    
+    if (!name || !template) return alert('Fill all required fields');
+
+    const selectedDevices = document.querySelectorAll('[class^="campaign-device-"]:checked').length;
+    const selectedLists = document.querySelectorAll('[class^="campaign-list-"]:checked').length;
+    
+    if (!selectedDevices || !selectedLists) return alert('Select at least one device and contact list');
+
+    const totalContacts = Array.from(document.querySelectorAll('[class^="campaign-list-"]:checked')).reduce((sum, cb) => {
+      const listId = parseInt(cb.className.match(/campaign-list-(\d+)/)[1]);
+      const list = this.state.lists.find(l => l.id === listId);
+      return sum + (list?.contacts.length || 0);
+    }, 0);
+
+    const newCampaign = {
+      id: Date.now(),
+      name,
+      status: 'draft',
+      devices: selectedDevices,
+      contacts: totalContacts,
+      template: template.name,
+      sent: 0,
+      failed: 0,
+      scheduled: document.querySelector('.campaign-schedule')?.value || null,
+      delayFrom: parseInt(document.querySelector('.campaign-delay-from')?.value || 0),
+      delayTo: parseInt(document.querySelector('.campaign-delay-to')?.value || 5),
+      sleepDuration: parseInt(document.querySelector('.campaign-sleep-duration')?.value || 10),
+      sleepAfter: parseInt(document.querySelector('.campaign-sleep-after')?.value || 10),
+      createdAt: new Date().toLocaleDateString()
+    };
+
+    this.setState({ campaigns: [...this.state.campaigns, newCampaign] });
+    document.getElementById('create-campaign-modal').classList.remove('open');
+    this.renderCampaigns();
+  }
+
+  renderCampaigns() {
+    const grid = document.getElementById('campaigns-grid');
+    grid.innerHTML = this.state.campaigns.map(c => {
+      const statusColor = c.status === 'running' ? '#d4edda' : c.status === 'paused' ? '#fff3cd' : '#e2e3e5';
+      const statusTextColor = c.status === 'running' ? '#155724' : c.status === 'paused' ? '#856404' : '#383d41';
+      return `
+        <div style="border: 1px solid #ddd; background: white; border-radius: 8px; padding: 16px; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <div style="flex: 1;">
+              <div style="font-size: 12px; font-weight: 600; color: #333; margin-bottom: 4px;">${c.name}</div>
+              <div style="font-size: 10px; color: #666;">${c.createdAt}</div>
+            </div>
+            <div style="font-size: 10px; padding: 4px 8px; background: ${statusColor}; color: ${statusTextColor}; border-radius: 4px; font-weight: 600; text-transform: capitalize;">${c.status}</div>
+          </div>
+          
+          <div style="padding: 8px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 8px 0; font-size: 10px; color: #666;">
+            <div style="margin-bottom: 4px;"><strong>📱 Devices:</strong> ${c.devices}</div>
+            <div style="margin-bottom: 4px;"><strong>👥 Contacts:</strong> ${c.contacts}</div>
+            <div style="margin-bottom: 4px;"><strong>📋 Template:</strong> ${c.template}</div>
+            <div style="margin-bottom: 4px;"><strong>✓ Sent:</strong> ${c.sent} | <strong>✗ Failed:</strong> ${c.failed}</div>
+            <div style="margin-bottom: 4px;"><strong>⏱️ Delay:</strong> ${c.delayFrom}-${c.delayTo}s | <strong>💤 Sleep:</strong> ${c.sleepDuration}s/${c.sleepAfter}msg</div>
+            ${c.scheduled ? `<div style="margin-top: 4px;"><strong>⏰ Scheduled:</strong> ${c.scheduled}</div>` : ''}
+          </div>
+
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;">
+            ${c.status === 'running' ? `
+              <button class="button secondary pause-campaign-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Pause</button>
+              <button class="button danger stop-campaign-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Stop</button>
+            ` : c.status === 'paused' ? `
+              <button class="button resume-campaign-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Resume</button>
+              <button class="button danger stop-campaign-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Stop</button>
+            ` : ''}
+            <button class="button secondary export-report-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Report</button>
+            <button class="button danger delete-campaign-btn" data-campaign-id="${c.id}" style="flex: 1; font-size: 10px; padding: 6px 4px;">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('.pause-campaign-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.updateCampaignStatus(parseInt(btn.getAttribute('data-campaign-id')), 'paused'));
+    });
+    document.querySelectorAll('.resume-campaign-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.updateCampaignStatus(parseInt(btn.getAttribute('data-campaign-id')), 'running'));
+    });
+    document.querySelectorAll('.stop-campaign-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.updateCampaignStatus(parseInt(btn.getAttribute('data-campaign-id')), 'completed'));
+    });
+    document.querySelectorAll('.delete-campaign-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteCampaign(parseInt(btn.getAttribute('data-campaign-id'))));
+    });
+    document.querySelectorAll('.export-report-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.exportReport(parseInt(btn.getAttribute('data-campaign-id'))));
+    });
+  }
+
+  updateCampaignStatus(id, status) {
+    const campaign = this.state.campaigns.find(c => c.id === id);
+    if (campaign) {
+      campaign.status = status;
+      this.setState({ campaigns: [...this.state.campaigns] });
+      this.renderCampaigns();
+    }
+  }
+
+  deleteCampaign(id) {
+    if (confirm('Delete this campaign?')) {
+      this.setState({ campaigns: this.state.campaigns.filter(c => c.id !== id) });
+      this.renderCampaigns();
+    }
+  }
+
+  exportReport(id) {
+    const campaign = this.state.campaigns.find(c => c.id === id);
+    if (campaign) {
+      const report = `Campaign Report\n\nName: ${campaign.name}\nStatus: ${campaign.status}\nDevices: ${campaign.devices}\nContacts: ${campaign.contacts}\nTemplate: ${campaign.template}\nSent: ${campaign.sent}\nFailed: ${campaign.failed}\n\nGenerated: ${new Date().toLocaleString()}`;
+      const blob = new Blob([report], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${campaign.name}-report.txt`;
+      a.click();
+    }
+  }
+
+  renderGroupsPage() {
+    const deviceSelect = document.querySelector('.groups-device-filter');
+    deviceSelect.innerHTML = '<option value="">-- All Devices --</option>' + this.state.devices.map(d => `
+      <option value="${d.id}">${d.name}</option>
+    `).join('');
+
+    const templateSelect = document.querySelector('.groups-template-select');
+    templateSelect.innerHTML = '<option value="">-- Choose template --</option>' + this.state.templates.map(t => `
+      <option value="${t.id}">${t.name}</option>
+    `).join('');
+
+    const bulkDeviceSelect = document.querySelector('.bulk-create-device-select');
+    bulkDeviceSelect.innerHTML = '<option value="">-- Choose device --</option>' + this.state.devices.map(d => `
+      <option value="${d.id}">${d.name}</option>
+    `).join('');
+
+    this.renderGroupsList();
+  }
+
+  renderGroupsList() {
+    const filterValue = document.querySelector('.groups-device-filter')?.value;
+    const filtered = filterValue ? this.state.groups.filter(g => g.deviceId === parseInt(filterValue)) : this.state.groups;
+    
+    const groupsList = document.querySelector('.groups-list');
+    groupsList.innerHTML = filtered.map(g => `
+      <div style="padding: 8px; background: ${this.state.selectedGroups.includes(g.id) ? '#d4edda' : 'white'}; border: 1px solid ${this.state.selectedGroups.includes(g.id) ? '#28a745' : '#ddd'}; border-radius: 4px; cursor: pointer;" class="group-item" data-group-id="${g.id}">
+        <div style="font-size: 11px; font-weight: 600; color: #333;">${g.name}</div>
+        <div style="font-size: 9px; color: #666; margin-top: 2px;">👥 ${g.members} members</div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.group-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const groupId = parseInt(item.getAttribute('data-group-id'));
+        const idx = this.state.selectedGroups.indexOf(groupId);
+        if (idx > -1) {
+          this.state.selectedGroups.splice(idx, 1);
+        } else {
+          this.state.selectedGroups.push(groupId);
+        }
+        this.updateGroupsSelectionDisplay();
+        this.renderGroupsList();
+      });
+    });
+  }
+
+  updateGroupsSelectionDisplay() {
+    const count = this.state.selectedGroups.length;
+    document.getElementById('selected-groups-count').textContent = count;
+    const display = document.querySelector('.selected-groups-display');
+    if (count === 0) {
+      display.innerHTML = '<span style="color: #999;">No groups selected</span>';
+    } else {
+      const names = this.state.groups.filter(g => this.state.selectedGroups.includes(g.id)).map(g => g.name).join(', ');
+      display.innerHTML = names;
+    }
+  }
+
+  updateGroupsMessagePreview() {
+    const templateId = parseInt(document.querySelector('.groups-template-select').value);
+    const template = this.state.templates.find(t => t.id === templateId);
+    const preview = document.getElementById('groups-message-preview');
+    if (template) {
+      preview.innerHTML = `${template.name}\n\n${template.content}`;
+    } else {
+      preview.innerHTML = '(Select a template to preview)';
+    }
+  }
+
+  populateBulkGroupsModal() {
+    const listList = document.getElementById('bulk-lists-checkbox-list');
+    listList.innerHTML = this.state.lists.map(l => `
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
+        <input type="checkbox" class="bulk-list-${l.id}" value="${l.id}"> ${l.name} (${l.contacts.length})
+      </label>
+    `).join('');
+    this.updateBulkGroupPreview();
+  }
+
+  updateBulkGroupPreview() {
+    const prefix = document.querySelector('.bulk-group-prefix')?.value || 'Group';
+    const suffix = document.querySelector('.bulk-group-suffix')?.value || 'number';
+    const count = parseInt(document.querySelector('.bulk-group-count')?.value || 5);
+    
+    let names = [];
+    if (suffix === 'number') {
+      names = Array.from({ length: Math.min(count, 3) }, (_, i) => `${prefix} ${String(i + 1).padStart(3, '0')}`);
+    } else if (suffix === 'alphabet') {
+      names = Array.from({ length: Math.min(count, 3) }, (_, i) => `${prefix} ${String.fromCharCode(65 + i)}`);
+    } else if (suffix === 'timestamp') {
+      names = Array.from({ length: Math.min(count, 3) }, (_, i) => `${prefix} ${Date.now() + i}`);
+    } else {
+      names = Array.from({ length: Math.min(count, 3) }, () => prefix);
+    }
+    
+    document.getElementById('bulk-group-preview').textContent = names.join(', ') + (count > 3 ? '...' : '');
+  }
+
+  createGroupsBulk() {
+    const deviceId = parseInt(document.querySelector('.bulk-create-device-select')?.value);
+    const prefix = document.querySelector('.bulk-group-prefix')?.value.trim();
+    const suffix = document.querySelector('.bulk-group-suffix')?.value;
+    const count = parseInt(document.querySelector('.bulk-group-count')?.value);
+    const delay = parseInt(document.querySelector('.bulk-group-delay')?.value || 0);
+    const contactsPerGroup = parseInt(document.querySelector('.bulk-contacts-per-group')?.value || 0);
+    const selectedLists = Array.from(document.querySelectorAll('[class^="bulk-list-"]:checked')).map(cb => parseInt(cb.value));
+
+    if (!deviceId || !prefix || !count) return alert('Fill all required fields');
+
+    for (let i = 1; i <= count; i++) {
+      let name = prefix;
+      if (suffix === 'number') name += ` ${String(i).padStart(3, '0')}`;
+      else if (suffix === 'alphabet') name += ` ${String.fromCharCode(64 + i)}`;
+      else if (suffix === 'timestamp') name += ` ${Date.now() + i}`;
+
+      const totalContacts = selectedLists.reduce((sum, listId) => {
+        const list = this.state.lists.find(l => l.id === listId);
+        return sum + Math.min(contactsPerGroup || list?.contacts.length || 0, list?.contacts.length || 0);
+      }, 0);
+
+      this.state.groups.push({
+        id: Date.now() + i,
+        name,
+        deviceId,
+        members: totalContacts || Math.floor(Math.random() * 20) + 5,
+        createdAt: new Date().toLocaleDateString(),
+        delay,
+        selectedLists,
+        contactsPerGroup
+      });
+    }
+
+    this.setState({ groups: [...this.state.groups] });
+    document.getElementById('create-groups-bulk-modal').classList.remove('open');
+    this.renderGroupsList();
+  }
+
+  selectAllGroups() {
+    const filterValue = document.querySelector('.groups-device-filter')?.value;
+    const filtered = filterValue ? this.state.groups.filter(g => g.deviceId === parseInt(filterValue)) : this.state.groups;
+    
+    if (this.state.selectedGroups.length === filtered.length) {
+      this.state.selectedGroups = [];
+    } else {
+      this.state.selectedGroups = filtered.map(g => g.id);
+    }
+    this.updateGroupsSelectionDisplay();
+    this.renderGroupsList();
+  }
+
+  sendGroupMessages() {
+    if (this.state.selectedGroups.length === 0) return alert('Select at least one group');
+    const templateId = parseInt(document.querySelector('.groups-template-select').value);
+    if (!templateId) return alert('Select a template');
+    
+    alert(`Sending template to ${this.state.selectedGroups.length} group(s)`);
+    this.state.selectedGroups = [];
+    this.updateGroupsSelectionDisplay();
+    this.renderGroupsList();
+  }
+
+  renderInboxPage() {
+    const deviceSelect = document.querySelector('.inbox-device-filter');
+    deviceSelect.innerHTML = '<option value="">-- All Devices --</option>' + this.state.devices.map(d => `
+      <option value="${d.id}">${d.name}</option>
+    `).join('');
+    this.renderInboxChats();
+  }
+
+  renderInboxChats() {
+    const filterValue = document.querySelector('.inbox-device-filter')?.value;
+    const filtered = filterValue ? this.state.chats.filter(c => c.deviceId === parseInt(filterValue)) : this.state.chats;
+    
+    const chatsList = document.querySelector('.inbox-chats-list');
+    chatsList.innerHTML = filtered.map(chat => `
+      <div style="padding: 8px; background: ${this.state.activeChat === chat.id ? '#dcf8c6' : 'white'}; border: 1px solid ${this.state.activeChat === chat.id ? '#28a745' : '#eee'}; border-radius: 4px; cursor: pointer;" class="inbox-chat-item" data-chat-id="${chat.id}">
+        <div style="font-size: 11px; font-weight: 600; color: #333;">${chat.name}</div>
+        <div style="font-size: 9px; color: #999;">${chat.phone}</div>
+        <div style="font-size: 10px; color: #666; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${chat.lastMessage}</div>
+        <div style="font-size: 9px; color: #999; margin-top: 2px;">${chat.timestamp}</div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.inbox-chat-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const chatId = parseInt(item.getAttribute('data-chat-id'));
+        this.setState({ activeChat: chatId });
+        this.renderInboxChats();
+        this.renderChatMessages();
+      });
+    });
+  }
+
+  renderChatMessages() {
+    const chat = this.state.chats.find(c => c.id === this.state.activeChat);
+    if (!chat) return;
+
+    document.getElementById('chat-name').textContent = chat.name;
+    document.getElementById('chat-status').textContent = 'Online';
+
+    const messagesDiv = document.querySelector('.chat-messages');
+    messagesDiv.innerHTML = chat.messages.map(msg => {
+      const isYou = msg.sender === 'you';
+      let content = '';
+      
+      if (msg.type === 'media') {
+        content = `<div style="background: #e0e0e0; padding: 8px; border-radius: 8px; margin-bottom: 4px; font-size: 24px;">${msg.content}</div>`;
+      } else if (msg.type === 'attachment') {
+        content = `<div style="background: #f5f5f5; padding: 10px; border-radius: 8px; border-left: 3px solid #128c7e; margin-bottom: 4px;">
+          <div style="font-size: 11px; font-weight: 600; color: #333;">${msg.fileName}</div>
+          <div style="font-size: 9px; color: #999;">${msg.fileSize}</div>
+        </div>`;
+      } else if (msg.type === 'buttons') {
+        const buttons = msg.buttons.map(btn => `<button style="display: block; width: 100%; padding: 8px; margin: 4px 0; background: white; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; cursor: pointer;">${btn}</button>`).join('');
+        content = `<div style="font-size: 11px; margin-bottom: 8px; color: #333;">${msg.text}</div><div>${buttons}</div>`;
+      } else {
+        content = `<div style="font-size: 11px; color: #333;">${msg.text}</div>`;
+      }
+
+      return `
+        <div style="display: flex; justify-content: ${isYou ? 'flex-end' : 'flex-start'};">
+          <div style="max-width: 70%; padding: 8px 12px; background: ${isYou ? '#dcf8c6' : '#f0f0f0'}; border-radius: 12px;">
+            ${content}
+            <div style="font-size: 9px; color: #999; margin-top: 4px; text-align: right;">${msg.time}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  sendInboxMessage() {
+    if (!this.state.activeChat) return alert('Select a chat first');
+    const input = document.querySelector('.inbox-message-input');
+    const text = input?.value.trim();
+    if (!text) return;
+
+    const chat = this.state.chats.find(c => c.id === this.state.activeChat);
+    if (chat) {
+      chat.messages.push({ 
+        sender: 'you', 
+        text, 
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      });
+      chat.lastMessage = text;
+      chat.timestamp = 'just now';
+      this.setState({ chats: [...this.state.chats] });
+      input.value = '';
+      this.renderInboxChats();
+      this.renderChatMessages();
+    }
+  }
+
+  showEmojiPicker() {
+    const emojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '💯', '✨', '😍', '🤔', '😢', '😡'];
+    const picker = `
+      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000;">
+        <div style="margin-bottom: 8px; font-size: 12px; font-weight: 600;">Select emoji:</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          ${emojis.map(e => `<button style="padding: 8px; font-size: 20px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;" onclick="document.querySelector('.inbox-message-input').value += '${e}'; this.closest('[style*=position]').remove();">${e}</button>`).join('')}
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', picker);
+  }
+
+  addMedia() {
+    if (!this.state.activeChat) return alert('Select a chat first');
+    const chat = this.state.chats.find(c => c.id === this.state.activeChat);
+    if (chat) {
+      chat.messages.push({ 
+        sender: 'you', 
+        type: 'media',
+        content: '📸 image.jpg',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      });
+      this.setState({ chats: [...this.state.chats] });
+      this.renderInboxChats();
+      this.renderChatMessages();
+    }
+  }
+
+  addAttachment() {
+    if (!this.state.activeChat) return alert('Select a chat first');
+    const chat = this.state.chats.find(c => c.id === this.state.activeChat);
+    if (chat) {
+      chat.messages.push({ 
+        sender: 'you', 
+        type: 'attachment',
+        fileName: 'document.pdf',
+        fileSize: '1.5 MB',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      });
+      this.setState({ chats: [...this.state.chats] });
+      this.renderInboxChats();
+      this.renderChatMessages();
+    }
+  }
+
+  addButtonMessage() {
+    if (!this.state.activeChat) return alert('Select a chat first');
+    const chat = this.state.chats.find(c => c.id === this.state.activeChat);
+    if (chat) {
+      chat.messages.push({ 
+        sender: 'you', 
+        type: 'buttons',
+        text: 'Choose an option:',
+        buttons: ['Option 1', 'Option 2', 'Option 3'],
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      });
+      this.setState({ chats: [...this.state.chats] });
+      this.renderInboxChats();
+      this.renderChatMessages();
+    }
+  }
+
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

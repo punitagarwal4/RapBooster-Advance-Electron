@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Segoe UI, sans-serif; background: #f5f5f5; padding: 20px; }
+    .window { background: white; border: 1px solid #ccc; min-height: 400px; display: flex; align-items: center; justify-content: center; }
+    .dialog-box { background: white; border: 1px solid #999; width: 400px; }
+    .dialog-title { background: #e0e0e0; padding: 12px 16px; border-bottom: 1px solid #bbb; font-weight: bold; font-size: 13px; }
+    .dialog-content { padding: 16px; font-size: 12px; line-height: 1.6; color: #333; }
+    .dialog-content p { margin-bottom: 12px; }
+    .dialog-buttons { padding: 12px 16px; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; justify-content: flex-end; }
+    .button { border: none; padding: 10px 16px; font-size: 12px; cursor: pointer; }
+    .button.secondary { background: #e0e0e0; color: #333; }
+    .button.secondary:hover { background: #d0d0d0; }
+    .button.primary { background: #0078d4; color: white; }
+    .button.primary:hover { background: #106ebe; }
+  </style>
+</helmet>
+
+<div class="window">
+  <div class="dialog-box">
+    <div class="dialog-title">License Already Active</div>
+    <div class="dialog-content">
+      <p>This license key is already activated on another system.</p>
+      <p><strong>Device:</strong> Another Computer (Last used: 2 days ago)</p>
+      <p>Would you like to deactivate the license on the other system and activate it here?</p>
+    </div>
+    <div class="dialog-buttons">
+      <button class="button secondary">Cancel</button>
+      <button class="button primary">Deactivate & Activate Here</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

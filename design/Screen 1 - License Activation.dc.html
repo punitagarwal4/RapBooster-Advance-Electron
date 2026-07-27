@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Segoe UI, sans-serif; background: #f5f5f5; padding: 20px; }
+    .wireframe { background: white; border: 1px solid #ccc; width: 500px; margin: 0 auto; }
+    .title-bar { background: #e0e0e0; padding: 12px 16px; border-bottom: 1px solid #bbb; font-weight: bold; font-size: 13px; color: #333; }
+    .content { padding: 24px; }
+    .form-group { margin-bottom: 20px; }
+    .label { display: block; font-size: 12px; font-weight: 600; color: #333; margin-bottom: 6px; }
+    .input-box { border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; font-family: inherit; background: white; }
+    .textarea-box { border: 1px solid #999; padding: 8px 10px; width: 100%; font-size: 12px; font-family: inherit; background: white; resize: vertical; min-height: 80px; }
+    .button { background: #0078d4; color: white; border: none; padding: 10px 20px; font-size: 12px; cursor: pointer; margin-top: 4px; }
+    .button:hover { background: #106ebe; }
+    .error-message { color: #c50f1f; font-size: 11px; margin-top: 6px; display: none; }
+    .error-message.show { display: block; }
+    .success-message { color: #107c10; font-size: 11px; margin-top: 6px; display: none; }
+    .success-message.show { display: block; }
+    .helper-text { font-size: 11px; color: #666; margin-top: 6px; }
+    .demo-note { background: #f9f9f9; border: 1px solid #ddd; padding: 12px; font-size: 11px; color: #666; margin-bottom: 16px; }
+  </style>
+</helmet>
+
+<div style="max-width: 600px; margin: 0 auto;">
+  <div class="demo-note">
+    <strong>Demo:</strong> <code style="background:#e0e0e0;padding:2px 4px;">VALID-2024-001</code> or <code style="background:#e0e0e0;padding:2px 4px;">VALID-2024-002</code> to activate.
+  </div>
+
+  <div class="wireframe">
+    <div class="title-bar">Windows Desktop Application</div>
+    <div class="content">
+      <h2 style="font-size: 14px; font-weight: 600; margin-bottom: 20px; color: #333;">Activate License</h2>
+      
+      <div class="form-group">
+        <label class="label">License Key *</label>
+        <input id="licenseKeyInput" type="text" class="input-box" placeholder="Enter your license key here">
+        <div class="helper-text">Example: VALID-2024-001</div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">Remarks (optional)</label>
+        <textarea id="remarksInput" class="textarea-box" placeholder="Add any remarks or notes..."></textarea>
+      </div>
+
+      <button id="activateBtn" class="button">Activate</button>
+      <div id="errorMsg" class="error-message"></div>
+      <div id="successMsg" class="success-message"></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    const activateBtn = document.getElementById('activateBtn');
+    const licenseKeyInput = document.getElementById('licenseKeyInput');
+
+    activateBtn.addEventListener('click', () => this.handleActivate());
+    licenseKeyInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.handleActivate();
+    });
+  }
+
+  handleActivate() {
+    const keyInput = document.getElementById('licenseKeyInput');
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+    const key = keyInput.value.trim();
+
+    errorMsg.classList.remove('show');
+    successMsg.classList.remove('show');
+
+    if (!key) {
+      errorMsg.textContent = 'License key is required.';
+      errorMsg.classList.add('show');
+      return;
+    }
+
+    const validKeys = ['VALID-2024-001', 'VALID-2024-002'];
+    const conflictKeys = ['CONFLICT-2024-001'];
+
+    if (validKeys.includes(key)) {
+      successMsg.textContent = '✓ Valid license key';
+      successMsg.classList.add('show');
+    } else if (conflictKeys.includes(key)) {
+      errorMsg.textContent = '⚠ License conflict detected (key in use elsewhere)';
+      errorMsg.classList.add('show');
+    } else {
+      errorMsg.textContent = 'Invalid license key. Please check and try again.';
+      errorMsg.classList.add('show');
+    }
+  }
+
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
