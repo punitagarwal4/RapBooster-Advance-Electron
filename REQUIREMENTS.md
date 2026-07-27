@@ -24,7 +24,7 @@ real app must call your server. Everything below is needed to write that client.
 ### 1.1 Connection
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Base URL (production) | `___` |
 | Base URL (staging/test, if any) | `___` |
 | Auth scheme | ⬜ None ⬜ API key header ⬜ Bearer token ⬜ HMAC signature ⬜ Other: `___` |
@@ -39,7 +39,7 @@ Fill in the path and method for each operation. If your server combines any of t
 endpoint, say so.
 
 | Operation | Method | Path | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Activate a license on this machine | `___` | `___` | |
 | Validate / heartbeat an existing activation | `___` | `___` | How often should the app re-validate? `___` |
 | Deactivate this machine | `___` | `___` | |
@@ -50,43 +50,43 @@ endpoint, say so.
 
 Paste real JSON (redact any secret values).
 
-**Activate — request**
+#### Activate — request
 
 ```json
 TODO
 ```
 
-**Activate — success response**
+#### Activate — success response
 
 ```json
 TODO
 ```
 
-**Activate — response when the key is already in use on another machine (the "conflict" case)**
+#### Activate — response when the key is already in use on another machine (the "conflict" case)
 
 ```json
 TODO
 ```
 
-**Activate — response when the key is invalid / expired / revoked**
+#### Activate — response when the key is invalid / expired / revoked
 
 ```json
 TODO
 ```
 
-**Validate/heartbeat — request and response**
+#### Validate / heartbeat — request and response
 
 ```json
 TODO
 ```
 
-**Deactivate — request and response**
+#### Deactivate — request and response
 
 ```json
 TODO
 ```
 
-**Transfer — request and response**
+#### Transfer — request and response
 
 ```json
 TODO
@@ -98,7 +98,7 @@ The UI has exactly three outcomes (`valid`, `invalid`, `conflict`) plus a networ
 Tell me how to distinguish them.
 
 | Outcome | HTTP status | Body field + value that identifies it |
-|---|---|---|
+| --- | --- | --- |
 | Valid / activated | `___` | `___` |
 | Invalid key | `___` | `___` |
 | Expired | `___` | `___` |
@@ -110,7 +110,7 @@ Tell me how to distinguish them.
 ### 1.5 Device identity
 
 | Question | Answer |
-|---|---|
+| --- | --- |
 | What field name does your server expect for the machine fingerprint? | `___` |
 | What format? (UUID, MAC hash, arbitrary string, max length) | `___` |
 | Do you want a human-readable device name sent too? Field name? | `___` |
@@ -121,7 +121,7 @@ Tell me how to distinguish them.
 ### 1.6 Policy
 
 | Question | Answer |
-|---|---|
+| --- | --- |
 | The mockup has an optional **"Remarks"** field on activation. Is it sent to the server? Under what field name? | `___` |
 | Does a license expire? How is expiry communicated? | `___` |
 | **Offline grace period** — how long may the app run without reaching the server before it locks? (0 = must always be online) | `___` |
@@ -143,7 +143,7 @@ TODO
 ## Section 2 — Branding and Identity ⬜
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Final product name (shown in title bar, installer, About) | `___` (mockup says "RapBooster Advance") |
 | Short name / executable name | `___` |
 | Company / publisher name (appears in the signed installer) | `___` |
@@ -170,7 +170,7 @@ TODO
 You chose auto-update via **your own server / S3**.
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Feed base URL | `___` (e.g. `https://updates.example.com/rapbooster/`) |
 | Hosting type | ⬜ S3 ⬜ Generic HTTPS ⬜ Other: `___` |
 | Is the feed publicly readable? | ⬜ Yes ⬜ No — auth method: `___` |
@@ -186,20 +186,20 @@ You chose auto-update via **your own server / S3**.
 
 Without these, Windows shows a SmartScreen warning and macOS refuses to open the app.
 
-**Windows**
+### 4.1 Windows
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Do you have a code-signing certificate? | ⬜ Yes ⬜ No — need to purchase ⬜ Skip signing for now |
 | Certificate type | ⬜ OV (`.pfx` file) ⬜ EV (hardware token / cloud HSM) ⬜ Azure Trusted Signing |
 | Where is the cert file, and where is its password stored? | `___` (value → `REQUIREMENTS.local.md`) |
 | If Azure Trusted Signing: endpoint, account, cert profile | `___` |
 | Timestamp server URL preference | `___` (default `http://timestamp.digicert.com`) |
 
-**macOS**
+### 4.2 macOS
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Do you have a paid Apple Developer account? | ⬜ Yes ⬜ No ⬜ Skip macOS signing for now |
 | Apple Team ID | `___` |
 | "Developer ID Application" certificate installed on the build machine? | ⬜ Yes ⬜ No |
@@ -208,10 +208,12 @@ Without these, Windows shows a SmartScreen warning and macOS refuses to open the
 | Which Macs must be supported? | ⬜ Apple Silicon only ⬜ Intel only ⬜ Universal build (both) |
 | Minimum macOS version | `___` (default: macOS 11 Big Sur) |
 
-**Build machine** — macOS artifacts can only be signed and notarized on a Mac.
+### 4.3 Build machine
+
+macOS artifacts can only be signed and notarized on a Mac.
 
 | Question | Answer |
-|---|---|
+| --- | --- |
 | Do you have a Mac available for builds? | ⬜ Yes ⬜ No — use CI (GitHub Actions macOS runner) ⬜ Ship Windows only for now |
 
 ---
@@ -221,7 +223,7 @@ Without these, Windows shows a SmartScreen warning and macOS refuses to open the
 You chose OpenAI, with the end user pasting their own key.
 
 | Item | Value |
-|---|---|
+| --- | --- |
 | Default model to preselect in Settings | `___` |
 | Models to offer in the dropdown | `___` |
 | Does a key ever ship with the app, or must every user supply one? | ⬜ User always supplies ⬜ Bundled fallback key (⚠ extractable from the app — not recommended) |
@@ -248,7 +250,7 @@ messages. Confirm or override these as the app-wide factory defaults (users can 
 them per campaign in Settings → Sending Defaults).
 
 | Setting | Prototype default | Your default |
-|---|---|---|
+| --- | --- | --- |
 | Random delay from (sec) | 0 | `___` |
 | Random delay to (sec) | 5 | `___` |
 | Sleep duration (sec) | 10 | `___` |
@@ -271,7 +273,7 @@ your own.
 Campaigns / Templates with hardcoded numbers. Confirm what each should actually count:
 
 | Card | Suggested definition | OK? |
-|---|---|---|
+| --- | --- | --- |
 | Total Contacts | Unique contacts across all lists | ⬜ / `___` |
 | Active Devices | Devices currently `connected` | ⬜ / `___` |
 | Running Campaigns | Campaigns with status `running` or `paused` | ⬜ / `___` |
@@ -333,7 +335,7 @@ TODO
 ## Sign-off
 
 | | |
-|---|---|
+| --- | --- |
 | Filled by | `___` |
 | Date | `___` |
 | Ready to start Sprint 1? | ⬜ Yes |

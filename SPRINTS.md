@@ -1013,7 +1013,7 @@ prototype's emoji. Light theme only. Sidebar 200px fixed, matching the prototype
 **Deliverables:** `REQUIREMENTS.md`, `SPRINTS.md`, `SPRINT-TRACKER.md`, `CLAUDE.md`, updated
 `README.md`.
 
-**Definition of done**
+**Definition of done:**
 
 - All five documents committed and pushed to `main`.
 - Every prototype screen and modal field in §2 is assigned to exactly one sprint.
