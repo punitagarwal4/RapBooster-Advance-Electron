@@ -112,9 +112,8 @@ async function main(): Promise<void> {
   check('migrations dir found', existsSync(migrationsDir), migrationsDir)
 
   // 3. Native module loads (this is what asar most often breaks)
-  let appliedCount = -1
   try {
-    appliedCount = migrate(dbPath, migrationsDir)
+    const appliedCount = migrate(dbPath, migrationsDir)
     check('better-sqlite3 loads + migrations apply', true, `${appliedCount} applied`)
   } catch (err) {
     check('better-sqlite3 loads + migrations apply', false, String(err))

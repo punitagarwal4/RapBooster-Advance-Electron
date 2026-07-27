@@ -14,6 +14,10 @@ files:
   - package.json
   - '!**/*.map'
   - '!**/*.ts'
+  # out/renderer is produced by scripts/copy-renderer.mjs during build:renderer,
+  # so out/**/* above already covers the static export. Keeping the copy in the
+  # build (not here) means the unpackaged build and the packaged build share one
+  # layout, and E2E exercises the same load path the shipped app uses.
 
 # Native .node binaries cannot be dlopen'd from inside an asar archive.
 asar: true

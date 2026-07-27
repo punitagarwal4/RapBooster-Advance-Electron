@@ -1,0 +1,11 @@
+node_modules
+out
+dist
+generated
+renderer/.next
+renderer/out
+test-results
+playwright-report
+package-lock.json
+design
+prisma/migrations

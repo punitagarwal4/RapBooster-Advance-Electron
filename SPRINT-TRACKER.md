@@ -57,7 +57,7 @@ customer has the questionnaire.
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | T1.1 | Prisma/Electron packaging spike (timebox 1 day) | 🟢 | **Passed packaged** — see D8, D10–D12. Drizzle fallback not needed |
-| T1.2 | Project scaffold, tooling, scripts | ⬜ | |
+| T1.2 | Project scaffold, tooling, scripts | 🟢 | Electron + Next static export + Tailwind 4 + ESLint 10 + Prettier; `build`/`pack`/`typecheck`/`lint`/`test:e2e`/`test:smoke` all green |
 | T1.3 | Electron shell + security baseline | ⬜ | |
 | T1.4 | Database layer, full schema, boot migrator | ⬜ | All tables created here |
 | T1.5 | IPC contract + router + renderer hooks | ⬜ | Full channel list written now |
@@ -66,7 +66,7 @@ customer has the questionnaire.
 | T1.8 | Licensing: service, fingerprint, activation, conflict, gate | ⬜ | |
 | T1.9 | Settings — license panel | ⬜ | |
 | T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
-| T1.11 | Playwright harness + packaged smoke test | ⬜ | |
+| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 5 specs green; licensing specs (E1.1–E1.9) land with T1.8 |
 
 **E2E:** E1.1 – E1.16 — 0/16 passing.
 
@@ -154,6 +154,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D10 | 2026-07-27 | **Electron pinned to 42.7.1, not 43.x** | Electron 43 is ABI 148; `better-sqlite3` publishes prebuilds only up to ABI 146 (Electron 42). On 43 every install fell back to `node-gyp`, which needs Python + VS Build Tools on every build machine — unacceptable for CI and the macOS build. Revisit when better-sqlite3 ships ABI 148 prebuilds |
 | D11 | 2026-07-27 | `better-sqlite3` pinned to 12.11.1 | `@prisma/adapter-better-sqlite3@7.9.1` requires `^12.6.0`. Pinning 13.x produced two copies (hoisted 13.0.1 + nested 12.11.1) and the nested one had no Electron prebuild. One hoisted copy is required for `install-app-deps` to work |
 | D12 | 2026-07-27 | Packaged build verified via a `--self-test` flag on the main entry | Native-module and asar-layout breakage only reproduces in a real packaged binary. Making it a flag on the shipped entry means the same probe backs the per-sprint smoke test in SPRINTS.md §13.4 |
+| D13 | 2026-07-27 | **Renderer served over a custom `app://` scheme, not `file://`** | The Next static export references assets at absolute `/_next/...` paths, which under `file://` resolve to the filesystem root and 404. A relative `assetPrefix` fixes the root page but breaks nested routes (`/campaigns/` would seek `/campaigns/_next/...`) and the app has nine. The scheme also gives the renderer a real origin, which is what makes a strict CSP possible in T1.3. Path traversal is contained in `app-protocol.ts` |
+| D14 | 2026-07-27 | `scripts/copy-renderer.mjs` copies the export to `out/renderer` at build time | Next cannot export outside its own directory. Doing the copy in the build rather than in `electron-builder` means the unpackaged and packaged layouts are identical, so E2E exercises the same load path the shipped app uses instead of a test-only one |
+| D15 | 2026-07-27 | Renderer load path keyed on `ELECTRON_RENDERER_URL`, not `app.isPackaged` | `isPackaged` is false under Playwright, which would have forced tests down a dev-server path the shipped app never takes. Keying on the env var means absence of a dev server === production behaviour |
 
 ---
 
@@ -187,7 +190,7 @@ every earlier suite.
 
 | Date | Sprint | New | Regression | Total | Typecheck | Lint | Packaged smoke | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — | — | — | *(no runs yet)* |
+| 2026-07-27 | 1 (partial) | 5 | n/a | 5 pass / 0 fail | ✅ | ✅ | ✅ | T1.1, T1.2 complete; T1.11 harness up. Covers E1.10, E1.10b, E1.12, E1.14, E1.16 |
 
 ---
 
