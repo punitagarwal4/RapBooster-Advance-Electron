@@ -3,46 +3,10 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import {
-  activateWith,
   cleanupUserDataDir,
-  launchWith,
+  launchLicensed,
   newUserDataDir,
 } from './fixtures/licensed-app'
-
-/**
- * Sprint 2 — wa-service, session manager and device lifecycle
- * (SPRINTS.md §10.3, E2.1–E2.10).
- *
- * Everything runs against the mock transport. Pointing an automated suite at a
- * real WhatsApp account risks a permanent ban (CLAUDE.md §5.4).
- */
-
-/**
- * Launch and end up inside the licensed app.
- *
- * Activation only happens on a fresh userData directory — on a relaunch the
- * stored license is still valid and the app opens straight to the dashboard,
- * so there is no key field to fill.
- */
-async function launchLicensed(dir: string) {
-  const app = await launchWith(dir)
-  const win = await app.firstWindow()
-
-  // Wait for whichever screen actually renders before deciding. `isVisible()`
-  // does not wait, so on a slow first paint it returns false and activation
-  // would be skipped on a fresh install.
-  await win
-    .locator('[data-testid="license-key"], [data-testid="nav-dashboard"]')
-    .first()
-    .waitFor({ state: 'visible', timeout: 30_000 })
-
-  if (await win.getByTestId('license-key').isVisible()) {
-    await activateWith(win, 'VALID-E2E-0001')
-  }
-
-  await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: 20_000 })
-  return { app, win }
-}
 
 function deviceRows(dir: string) {
   const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })

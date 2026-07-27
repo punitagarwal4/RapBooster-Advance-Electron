@@ -16,6 +16,7 @@ import {
 } from './app-protocol'
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
+import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
@@ -240,6 +241,7 @@ async function bootUi(): Promise<void> {
   registerLicenseHandlers(refreshGate)
   registerSystemHandlers()
   registerDeviceHandlers()
+  registerContactHandlers()
 
   startWaService()
   const pending = unregisteredChannels()

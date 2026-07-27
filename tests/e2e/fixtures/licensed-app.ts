@@ -48,6 +48,44 @@ export async function activateWith(
   await win.getByTestId('license-activate').click()
 }
 
+/**
+ * Generous because the *first* Electron launch after a build is much slower
+ * than later ones — module loading, Prisma initialisation and V8 warm-up all
+ * land on it. A tight bound here fails the first test in a suite while passing
+ * in isolation, which looks like flakiness but is just a cold start.
+ */
+const READY_TIMEOUT_MS = 60_000
+
+/**
+ * Launch and end up inside the licensed application.
+ *
+ * Activation only happens on a fresh userData directory; on a relaunch the
+ * stored license is still valid and the app opens straight to the dashboard,
+ * so there is no key field to fill.
+ */
+export async function launchLicensed(
+  userDataDir: string,
+  key = 'VALID-E2E-0001',
+): Promise<{ app: ElectronApplication; win: Page }> {
+  const app = await launchWith(userDataDir)
+  const win = await app.firstWindow()
+
+  // Wait for whichever screen renders before deciding. `isVisible()` does not
+  // wait, so on a slow first paint it returns false and a fresh install would
+  // skip activation entirely.
+  await win
+    .locator('[data-testid="license-key"], [data-testid="nav-dashboard"]')
+    .first()
+    .waitFor({ state: 'visible', timeout: READY_TIMEOUT_MS })
+
+  if (await win.getByTestId('license-key').isVisible()) {
+    await activateWith(win, key)
+  }
+
+  await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: READY_TIMEOUT_MS })
+  return { app, win }
+}
+
 export async function launchWith(userDataDir: string): Promise<ElectronApplication> {
   const app = await electron.launch({
     args: ['out/main/index.js', `--user-data-dir=${userDataDir}`],

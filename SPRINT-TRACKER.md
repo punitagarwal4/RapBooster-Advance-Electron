@@ -16,7 +16,7 @@ Last updated: **2026-07-28**
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
-| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 4/7 | 9 passing | `a1627ee` |
+| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 4.5/7 | 15 passing | `34af163` |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
@@ -104,7 +104,7 @@ platforms.
 | T2.1 | `wa-service` utility process + supervisor | 🟢 | utilityProcess fork, typed protocol, health ping, restart ladder, recovery hook rebuilding sessions from SQLite |
 | T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | 🟢 | **baileys 7.0.0-rc13** pinned exact; backoff + jitter + circuit breaker; loggedOut terminal; auth purged on logout |
 | T2.3 | Devices screen | 🟢 | Card grid, live status via push events, Add Device dialog with QR + pairing tabs, reconnect, two-step logout, limit surfaced |
-| T2.4 | Contacts: lists, virtualized table, CSV import/export | ⬜ | 50k-row target |
+| T2.4 | Contacts: lists, virtualized table, CSV import/export | 🟡 | Backend complete: cursor pagination, SQL search, streaming import with column mapping + E.164 normalization + duplicate policy, streaming export. **50k import verified.** Virtualized table UI still to build |
 | T2.5 | Templates: four types, media store, preview | ⬜ | |
 | T2.6 | Merge tags + live preview | ⬜ | |
 | T2.7 | Mock transport | 🟢 | Transport interface + deterministic mock (scriptable failure rate, latency, drops) + Baileys 7 implementation. Unblocks CI testing for Sprints 3–4 |
@@ -189,6 +189,10 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D35 | 2026-07-28 | **Prisma `skipDuplicates` is unsupported on SQLite** — duplicates filtered explicitly | One indexed `IN` query per 1,000-row batch, then `createMany`. Far cheaper than per-row upserts, and the alternative (letting the unique constraint throw) would fail the whole batch |
+| D36 | 2026-07-28 | CSV parsing is hand-written rather than a library | The importer streams line by line to hold 50k rows without loading the file; the common parsers want to own the whole stream. Handles the RFC 4180 cases that actually appear in exported contact lists — quoted fields, embedded commas, doubled quotes — all asserted by E2.15 |
+| D37 | 2026-07-28 | Import mapping is **explicit**, not positional | The prototype mapped columns by position. A column-order change in an exported file would then silently shuffle every contact's data into the wrong fields |
+| D38 | 2026-07-28 | E2E launch timeout raised to 60s and the helper centralized | The first Electron launch after a build is far slower (module load, Prisma init, V8 warm-up). A 20s bound failed the first test in a suite while passing in isolation — cold start, not flakiness |
 | D31 | 2026-07-28 | **`wa-service` is built as an extra entry of the main bundle** (`out/main/wa-service/index.js`) | It needs the same externals as main (better-sqlite3 is excluded, Baileys is not) and must ship inside the asar. A separate electron-vite config would have duplicated that configuration and drifted |
 | D32 | 2026-07-28 | Baileys is imported **lazily**, only when the real transport is selected | The mock path must not pay to load it, and a Baileys import failure must not be able to break the test transport — which is what every automated test depends on |
 | D33 | 2026-07-28 | A missed health ping **kills** the child rather than waiting | A wedged process never exits on its own, so without this a hang would be unrecoverable. Killing converts it into the restart path that is already tested |
@@ -238,6 +242,7 @@ every earlier suite.
 | 2026-07-28 | **1 (complete)** | 3 | 25 | **28 pass / 0 fail** | ✅ | ✅ | ✅ | T1.9 + T1.10 + T1.11. Adds E1.9b, E1.9c, E1.15 (redaction). Two flaky specs fixed at the root — see D28. **Stable across 3 consecutive runs** |
 | 2026-07-28 | 2 (partial) | 7 | 28 | 35 pass / 0 fail | ✅ | ✅ | ✅ | T2.1 + T2.2 + T2.7. wa-service verified inside the packaged asar |
 | 2026-07-28 | 2 (partial) | 2 | 35 | 37 pass / 0 fail | ✅ | ✅ | ✅ | T2.3 Devices screen. Stable across 2 consecutive runs |
+| 2026-07-28 | 2 (partial) | 6 | 37 | 43 pass / 0 fail | ✅ | ✅ | ✅ | T2.4 contacts backend. E2.12 imports 50,000 rows; E2.16 asserts the <500ms search budget. Stable across 2 runs |
 
 ---
 
