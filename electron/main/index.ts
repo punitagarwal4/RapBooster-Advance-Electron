@@ -1,10 +1,10 @@
 /**
  * Main process entry.
  *
- * Boot order: scheme registration → single-instance lock → ready → session
- * security → database (integrity/backup/migrate) → IPC handlers → renderer
- * protocol → window. The license gate joins between database and window in
- * T1.8; the logger replaces console in T1.10.
+ * Boot order: app name → logger + crash handlers → scheme registration →
+ * single-instance lock → ready → session security → database
+ * (integrity/backup/migrate) → license load + gate → IPC handlers → renderer
+ * protocol → window.
  */
 import { app, BrowserWindow, dialog } from 'electron'
 import { join } from 'node:path'
@@ -26,8 +26,16 @@ import {
   REVALIDATE_INTERVAL_MS,
 } from './services/license/manager'
 import { applySessionSecurity, applyWindowSecurity } from './security'
+import { initLogger, installCrashHandlers } from './services/logger'
 
+// The app name determines the userData path, so it must be set before the
+// logger resolves its file location — otherwise logs land under "Electron".
 app.setName('RapBooster Advance')
+
+// Then logging, before anything else can fail: every subsequent console call is
+// captured and redacted rather than escaping to a bare terminal.
+initLogger()
+installCrashHandlers()
 
 // Privileged scheme registration must happen before the app is ready.
 registerAppScheme()
@@ -47,16 +55,27 @@ function entryRoute(): string {
   return isUnlocked() ? 'index.html' : 'activation/index.html'
 }
 
+/** The route the window is currently showing, so we only reload on a change. */
+let loadedRoute: string | undefined
+
 /**
  * Swap the window between the activation screen and the application without
  * recreating it, so activating feels immediate rather than flashing a new
  * window.
+ *
+ * No-ops when the lock state has not changed. Reloading unconditionally would
+ * destroy renderer state on every routine revalidation — the user would lose
+ * their place, and any in-flight UI (a toast, an open dialog, typed input)
+ * would vanish for no reason.
  */
 export function refreshGate(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return
-  const target = RENDERER_URL
-    ? `${RENDERER_URL}/${entryRoute()}`
-    : `${APP_ORIGIN}/${entryRoute()}`
+
+  const route = entryRoute()
+  if (route === loadedRoute) return
+  loadedRoute = route
+
+  const target = RENDERER_URL ? `${RENDERER_URL}/${route}` : `${APP_ORIGIN}/${route}`
   void mainWindow.loadURL(target)
 }
 
@@ -85,9 +104,9 @@ function createWindow(): void {
   applyWindowSecurity(win, RENDERER_URL)
   mainWindow = win
 
-  void win.loadURL(
-    RENDERER_URL ? `${RENDERER_URL}/${entryRoute()}` : `${APP_ORIGIN}/${entryRoute()}`,
-  )
+  const route = entryRoute()
+  loadedRoute = route
+  void win.loadURL(RENDERER_URL ? `${RENDERER_URL}/${route}` : `${APP_ORIGIN}/${route}`)
 }
 
 async function bootUi(): Promise<void> {

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron as electron, type ElectronApplication } from '@playwright/test'
+import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test'
 
 /**
  * Launch helpers for licensing specs, which need control over the userData
@@ -18,6 +18,34 @@ export function newUserDataDir(): string {
 
 export function cleanupUserDataDir(dir: string): void {
   rmSync(dir, { recursive: true, force: true })
+}
+
+/**
+ * Fill the activation form and submit.
+ *
+ * WHY it asserts the value before clicking: the inputs are React-controlled, so
+ * their state only updates once hydration has attached the change handler.
+ * Clicking Activate before then submits an empty form and the test fails with
+ * "License key is required." — a race, not a bug in the app. A controlled input
+ * renders its value from state, so seeing the value in the DOM proves state is
+ * in sync.
+ */
+export async function activateWith(
+  win: Page,
+  key: string,
+  remarks?: string,
+): Promise<void> {
+  const keyInput = win.getByTestId('license-key')
+  await keyInput.fill(key)
+  await expect(keyInput).toHaveValue(key)
+
+  if (remarks !== undefined) {
+    const remarksInput = win.getByTestId('license-remarks')
+    await remarksInput.fill(remarks)
+    await expect(remarksInput).toHaveValue(remarks)
+  }
+
+  await win.getByTestId('license-activate').click()
 }
 
 export async function launchWith(userDataDir: string): Promise<ElectronApplication> {

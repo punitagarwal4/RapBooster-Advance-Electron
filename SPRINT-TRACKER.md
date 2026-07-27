@@ -15,7 +15,7 @@ Last updated: **2026-07-28**
 | Sprint | Scope | Status | Started | Completed | Tasks | E2E | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
-| 1 | Foundation · Licensing · Shell | 🟡 In progress | 2026-07-27 | — | 8/11 | 25 passing | `db9d729` |
+| 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
@@ -24,18 +24,23 @@ Last updated: **2026-07-28**
 
 ### Current status
 
-> 🟡 **Sprint 1 is proceeding without a filled REQUIREMENTS.md**, on customer instruction
-> (2026-07-27). Anything that depends on an unanswered question is built against a documented
-> default or behind a swappable interface; all of them are listed in
+> 🟢 **Sprint 1 complete.** Sprint 2 (devices, contacts, templates) is next.
+>
+> The build is proceeding without a filled REQUIREMENTS.md, on customer instruction
+> (2026-07-27). Anything depending on an unanswered question is built against a documented
+> default or behind a swappable interface; all are listed in
 > [REQUIREMENTS.md §0](./REQUIREMENTS.md#section-0--working-assumptions-in-effect).
 >
-> **T1.8 shipped against the `LicenseService` interface with the mock implementation.** The
-> real client (`services/license/http.ts`) is written against an assumed conventional JSON API;
-> when §1 arrives, that one file changes and nothing above it moves. **T4.5** (signing and
-> auto-update) still needs §2, §3 and §4. Everything else is unblocked.
+> **What is genuinely waiting on you, in order of cost-to-change:**
 >
-> The assumption most worth an early correction is **A7**: phone normalization defaults to
-> `+91` and is applied at CSV import, so changing it after a large import means re-importing.
+> 1. **§7.5 — default country code (assumption A7, currently `+91`).** Applied at CSV import
+>    and stored, so correcting it after a large import means re-importing. Sprint 2 builds the
+>    importer; this is the last comfortable moment to change it.
+> 2. **§1 — license server API.** T1.8 shipped against the interface with a mock;
+>    `services/license/http.ts` is the only file that changes when the real endpoints arrive.
+> 3. **§7.6 — Baileys version (assumption A12).** Sprint 2 pins it; changing later means a
+>    regression run.
+> 4. **§2, §3, §4 — branding, update feed, signing.** Needed by T4.5, not before.
 
 ---
 
@@ -60,8 +65,8 @@ customer has the questionnaire.
 
 ## 3. Sprint 1 — Foundation, licensing, app shell
 
-**Proceeding under the assumptions in REQUIREMENTS §0.** T1.8 will ship against the
-`LicenseService` interface with a mock until §1 is answered.
+**Complete.** Built under the assumptions in REQUIREMENTS §0; T1.8 ships against the
+`LicenseService` interface with the mock implementation until §1 is answered.
 
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
@@ -73,14 +78,14 @@ customer has the questionnaire.
 | T1.6 | Design system (Tailwind + shadcn + tokens) | 🟢 | Tokens from the prototype palette; hand-written primitives (Button, StatusPill, EmptyState, PageHeader) instead of the shadcn CLI — see D20 |
 | T1.7 | App shell, sidebar, nine routes | 🟢 | Sidebar in prototype order with Settings pinned, all nine routes prerendered, toast provider, per-route error boundary |
 | T1.8 | Licensing: service, fingerprint, activation, conflict, gate | 🟢 | LicenseService interface + Http/Mock, composite fingerprint, safeStorage cache with HMAC tamper check, activation + conflict UI, window gate + IPC guard, offline grace |
-| T1.9 | Settings — license panel | ⬜ | |
-| T1.10 | Logging, redaction, crash handlers, diagnostics | ⬜ | |
-| T1.11 | Playwright harness + packaged smoke test | 🟡 | Harness + isolated-userData fixture + 25 specs green across two suites; log-redaction spec (E1.15) lands with T1.10 |
+| T1.9 | Settings — license panel | 🟢 | Status, masked key, bound device, remarks, dates, re-check, two-step deactivate, paths + diagnostics export |
+| T1.10 | Logging, redaction, crash handlers, diagnostics | 🟢 | electron-log with rotation, automatic redaction hook, console capture, crash handlers, diagnostics bundle |
+| T1.11 | Playwright harness + packaged smoke test | 🟢 | 28 specs green across two suites, stable over 3 consecutive runs; packaged smoke via `npm run test:smoke` |
 
-**E2E:** **25 written, 25 passing** (stable across consecutive runs), split across
+**E2E:** **28 written, 28 passing**, stable across three consecutive runs. Split across
 `sprint-1.spec.ts` (shell, IPC, security, database) and `sprint-1-license.spec.ts`
-(E1.1–E1.9, E1.11, E1.14f). Remaining: E1.15 (log redaction) with T1.10. E1.16's packaged half
-runs via `npm run test:smoke`.
+(licensing, Settings panel, log redaction). E1.16's packaged half runs via
+`npm run test:smoke`.
 
 **Exit gate:** fresh install gates on license · valid key persists across restart · conflict
 transfer works · offline grace honored · all nine routes navigate · installers build on both
@@ -181,6 +186,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
 | D27 | 2026-07-28 | `app://` flattened-payload resolver made **recursive** | Route groups add a nesting level (`__next.!KGFwcCk/devices/__PAGE__.txt` requested as `__next.!KGFwcCk.devices.__PAGE__.txt`), which the single-level version could not reach. Depth now varies with route structure, so the resolver must too |
+| D28 | 2026-07-28 | **`refreshGate()` only reloads when the lock state actually changes** | It previously reloaded on every revalidation, destroying renderer state — the user would lose their place and any open dialog or typed input would vanish. Found because a toast disappeared in E1.9b; the test was right and the app was wrong |
+| D29 | 2026-07-28 | Redaction lives in an `electron-log` hook, not at call sites | Call-site discipline fails eventually — someone logs an error object containing a phone number. The hook applies to every transport, so no level or code path can bypass it. `console.*` in main is routed through the logger so existing calls are covered without a mechanical rewrite |
+| D30 | 2026-07-28 | Activation E2E asserts the input value before clicking | The form is React-controlled, so its state only updates once hydration attaches the handler. Clicking first submitted an empty form intermittently. This is a real property of the app (it *is* empty until hydrated), so the test waits for readiness rather than the app adding a test hook |
 
 ---
 
@@ -219,6 +227,7 @@ every earlier suite.
 | 2026-07-28 | 1 (partial) | 5 | 8 | 13 pass / 0 fail | ✅ | ✅ | ✅ | T1.3 + T1.5 complete. Adds E1.3 (CSP), E1.14b–e (IPC contract, allowlist, path containment). Stable across 2 consecutive runs |
 | 2026-07-28 | 1 (partial) | 2 | 13 | 15 pass / 0 fail | ✅ | ✅ | ✅ | T1.6 + T1.7 complete. Adds E1.10c (all nine routes navigate, zero console errors) and E1.10d (active nav state). Stable across 2 consecutive runs |
 | 2026-07-28 | 1 (partial) | 10 | 15 | 25 pass / 0 fail | ✅ | ✅ | ✅ | T1.8 complete. Adds the full licensing suite: E1.1–E1.7, E1.9, E1.11, E1.14f. Stable across 2 consecutive runs |
+| 2026-07-28 | **1 (complete)** | 3 | 25 | **28 pass / 0 fail** | ✅ | ✅ | ✅ | T1.9 + T1.10 + T1.11. Adds E1.9b, E1.9c, E1.15 (redaction). Two flaky specs fixed at the root — see D28. **Stable across 3 consecutive runs** |
 
 ---
 
