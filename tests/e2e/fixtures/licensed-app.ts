@@ -55,6 +55,7 @@ export async function launchWith(userDataDir: string): Promise<ElectronApplicati
       ...process.env,
       ELECTRON_RENDERER_URL: undefined,
       LICENSE_SERVICE: 'mock',
+      WA_TRANSPORT: 'mock',
       NODE_ENV: 'test',
     } as NodeJS.ProcessEnv,
   })

@@ -92,6 +92,7 @@ export const IPC_CHANNELS = [
   'system:restore',
   'system:clearData',
   'system:checkUpdate',
+  'system:waServiceState',
 ] as const
 
 export const IPC_EVENTS = [

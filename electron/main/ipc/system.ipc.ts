@@ -9,6 +9,7 @@ import { AppError } from '../../../shared/errors'
 import { getPrisma } from '../db/client'
 import { databasePath, logsDir, userDataDir } from '../db/paths'
 import { buildDiagnostics } from '../services/diagnostics'
+import { waBridge } from '../wa-bridge'
 import { registerHandler } from './router'
 
 export function registerSystemHandlers(): void {
@@ -45,6 +46,11 @@ export function registerSystemHandlers(): void {
 
   registerHandler('system:exportDiagnostics', async () => ({
     filePath: await buildDiagnostics(),
+  }))
+
+  registerHandler('system:waServiceState', () => ({
+    state: waBridge.currentState(),
+    restartCount: waBridge.restartCount(),
   }))
 
   registerHandler('system:dashboard', async () => {

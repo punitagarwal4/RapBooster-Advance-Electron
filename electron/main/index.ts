@@ -16,8 +16,12 @@ import {
 } from './app-protocol'
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
+import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
+import { emitToAll } from './ipc/router'
+import { waBridge } from './wa-bridge'
+import { getPrisma } from './db/client'
 import { setLicenseGate, unregisteredChannels } from './ipc/router'
 import {
   isUnlocked,
@@ -109,6 +113,78 @@ function createWindow(): void {
   void win.loadURL(RENDERER_URL ? `${RENDERER_URL}/${route}` : `${APP_ORIGIN}/${route}`)
 }
 
+/**
+ * Start wa-service and wire its events into the database and the renderer.
+ *
+ * Every device state change is persisted here, because wa-service holds no
+ * database handle. The renderer learns about changes through push events, so
+ * nothing polls for connection status.
+ */
+function startWaService(): void {
+  const windows = () => BrowserWindow.getAllWindows()
+
+  waBridge.setStateListener((state, restartCount) => {
+    emitToAll(windows(), 'wa:serviceState', { state, restartCount })
+    if (state === 'restarting') {
+      emitToAll(windows(), 'toast', {
+        level: 'warning',
+        message: 'The WhatsApp service restarted. Reconnecting devices…',
+      })
+    }
+  })
+
+  waBridge.setRecoveryHook(recoverDeviceSessions)
+
+  waBridge.on('status', ({ deviceId, status, phone, error }) => {
+    void getPrisma()
+      .device.update({
+        where: { id: deviceId },
+        data: {
+          status,
+          ...(phone ? { phone } : {}),
+          ...(error !== undefined ? { lastError: error } : {}),
+          ...(status === 'connected' ? { lastActiveAt: new Date(), consecutiveFailures: 0 } : {}),
+        },
+      })
+      .catch((err: unknown) => console.error(`could not persist status for ${deviceId}`, err))
+
+    emitToAll(windows(), 'device:status', {
+      deviceId,
+      status,
+      phone: phone ?? null,
+      error: error ?? null,
+    })
+  })
+
+  waBridge.on('qr', ({ deviceId, qr }) => {
+    emitToAll(windows(), 'device:qr', { deviceId, qr })
+  })
+
+  waBridge.on('pairingCode', ({ deviceId, code }) => {
+    emitToAll(windows(), 'device:pairingCode', { deviceId, code })
+  })
+
+  waBridge.on('giveUp', ({ deviceId, attempts }) => {
+    void getPrisma()
+      .device.update({ where: { id: deviceId }, data: { consecutiveFailures: attempts } })
+      .catch(() => {
+        // Non-fatal: the counter is diagnostic, the toast is what matters.
+      })
+    emitToAll(windows(), 'toast', {
+      level: 'error',
+      message: `A device stopped reconnecting after ${attempts} attempts. Open Devices to retry.`,
+    })
+  })
+
+  waBridge.on('log', ({ level, message }) => {
+    if (level === 'error') console.error(`[wa-service] ${message}`)
+    else if (level === 'warn') console.warn(`[wa-service] ${message}`)
+    else console.log(`[wa-service] ${message}`)
+  })
+
+  waBridge.start()
+}
+
 async function bootUi(): Promise<void> {
   // A second launch should focus the running window, not start a rival instance
   // that would contend for the same SQLite file.
@@ -163,6 +239,9 @@ async function bootUi(): Promise<void> {
   // Handlers must exist before the window can issue its first invoke.
   registerLicenseHandlers(refreshGate)
   registerSystemHandlers()
+  registerDeviceHandlers()
+
+  startWaService()
   const pending = unregisteredChannels()
   if (pending.length > 0) {
     // Expected during Sprint 1–4: the contract is fixed up front and handlers
@@ -199,7 +278,12 @@ async function bootUi(): Promise<void> {
   // Graceful shutdown (CLAUDE.md §5.5): release the client and fold the WAL back
   // into the database so the next launch starts clean.
   app.on('before-quit', () => {
-    void disconnectPrisma()
+    // Close sockets before releasing the database, so nothing tries to persist
+    // after the client is gone.
+    void waBridge
+      .stop()
+      .catch((err) => console.error('shutdown: wa-service stop failed', err))
+      .then(() => disconnectPrisma())
       .then(() => checkpoint())
       .catch((err) => console.error('shutdown: checkpoint failed', err))
   })

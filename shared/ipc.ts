@@ -493,6 +493,15 @@ export const ipcContract = {
     request: z.void(),
     response: z.object({ available: z.boolean(), version: z.string().nullable() }),
   },
+  /**
+   * Current wa-service state. Events alone are insufficient: a renderer that
+   * mounts after the last transition would have nothing to show, so the
+   * degraded-state banner needs to read the value on first paint.
+   */
+  'system:waServiceState': {
+    request: z.void(),
+    response: z.object({ state: waServiceState, restartCount: z.number().int().min(0) }),
+  },
 } as const
 
 export type IpcContract = typeof ipcContract

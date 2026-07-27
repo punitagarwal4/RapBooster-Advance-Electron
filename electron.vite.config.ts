@@ -18,6 +18,9 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'electron/main/index.ts'),
           'self-test': resolve(__dirname, 'electron/main/self-test.ts'),
+          // Built alongside main so it shares the same externals and lands at
+          // out/main/wa-service/index.js, which wa-bridge forks.
+          'wa-service/index': resolve(__dirname, 'electron/wa-service/index.ts'),
         },
       },
     },

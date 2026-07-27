@@ -26,6 +26,7 @@ export const test = base.extend<{ app: ElectronApplication }>({
         // the packaged build uses rather than a dev server.
         ELECTRON_RENDERER_URL: undefined,
         LICENSE_SERVICE: 'mock',
+        WA_TRANSPORT: 'mock',
         NODE_ENV: 'test',
       } as NodeJS.ProcessEnv,
     })
