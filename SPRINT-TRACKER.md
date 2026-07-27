@@ -16,7 +16,7 @@ Last updated: **2026-07-28**
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Documentation | 🟢 Complete | 2026-07-27 | 2026-07-27 | 7/7 | n/a | `9968d08` |
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
-| 2 | Devices · Contacts · Templates | ⬜ Not started | — | — | 0/7 | 0/22 | — |
+| 2 | Devices · Contacts · Templates | 🟡 In progress | 2026-07-28 | — | 1/7 | 0/22 | — |
 | 3 | Campaign engine · Groups | ⬜ Not started | — | — | 0/9 | 0/25 | — |
 | 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
 
@@ -33,14 +33,18 @@ Last updated: **2026-07-28**
 >
 > **What is genuinely waiting on you, in order of cost-to-change:**
 >
-> 1. **§7.5 — default country code (assumption A7, currently `+91`).** Applied at CSV import
+> 1. **§7.9 — Button and Interactive templates (assumption A14).** ⚠ New, and a platform
+>    limitation rather than a preference: WhatsApp has withdrawn tappable buttons from
+>    unofficial libraries. Two of your four template types are affected. Currently they send as
+>    numbered text, which always delivers.
+> 2. **§7.5 — default country code (assumption A7, currently `+91`).** Applied at CSV import
 >    and stored, so correcting it after a large import means re-importing. Sprint 2 builds the
 >    importer; this is the last comfortable moment to change it.
-> 2. **§1 — license server API.** T1.8 shipped against the interface with a mock;
+> 3. **§1 — license server API.** T1.8 shipped against the interface with a mock;
 >    `services/license/http.ts` is the only file that changes when the real endpoints arrive.
-> 3. **§7.6 — Baileys version (assumption A12).** Sprint 2 pins it; changing later means a
+> 4. **§7.6 — Baileys version (assumption A12).** Now pinned to `7.0.0-rc13`. Sprint 2 pins it; changing later means a
 >    regression run.
-> 4. **§2, §3, §4 — branding, update feed, signing.** Needed by T4.5, not before.
+> 5. **§2, §3, §4 — branding, update feed, signing.** Needed by T4.5, not before.
 
 ---
 
@@ -98,12 +102,12 @@ platforms.
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | T2.1 | `wa-service` utility process + supervisor | ⬜ | |
-| T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | ⬜ | Version pinned per REQUIREMENTS §7.6 |
+| T2.2 | Baileys session manager (QR · pairing · reconnect · logout) | 🟡 | Transport written against **baileys 7.0.0-rc13** (pinned exact, assumption A12) |
 | T2.3 | Devices screen | ⬜ | |
 | T2.4 | Contacts: lists, virtualized table, CSV import/export | ⬜ | 50k-row target |
 | T2.5 | Templates: four types, media store, preview | ⬜ | |
 | T2.6 | Merge tags + live preview | ⬜ | |
-| T2.7 | Mock transport | ⬜ | Unblocks all CI testing for Sprints 3–4 |
+| T2.7 | Mock transport | 🟢 | Transport interface + deterministic mock (scriptable failure rate, latency, drops) + Baileys 7 implementation. Unblocks CI testing for Sprints 3–4 |
 
 **E2E:** E2.1 – E2.22 — 0/22 passing.
 

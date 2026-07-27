@@ -35,6 +35,7 @@ decision.** Correct any of them by filling the linked section; nothing here is b
 | A11 | Dashboard stats use the suggested definitions in §7.1 | §7.1 | Low |
 | A12 | Baileys pinned to the **7.x line**; exact version recorded in the tracker's decision log | §7.6 | Medium — regression run required |
 | A13 | Escalation uses **keyword triggers**; the confidence-threshold control is stored but not enforced | §5 | Medium — prompt + logic change |
+| A14 | **Button and Interactive templates send as numbered text**, not real tappable buttons | §7.9 | See §7.9 — this is a platform limitation, not a preference |
 
 **A7 is the one worth checking early.** If your contact lists are not Indian numbers, tell me
 the right country code before a large CSV import happens, because normalization is applied at
@@ -346,6 +347,49 @@ tag — so "the latest Baileys" is presently a **release candidate**.
 - ⬜ Whatever is `latest` at the time Sprint 2 starts, pinned exactly then
 
 Either way the version is pinned exactly (no `^`) and upgrades are a deliberate, tested task.
+
+**7.9 Button and Interactive templates.** ⚠ **Needs your decision — platform limitation.**
+
+Your prototype defines four template types, two of which are **Button Message** and
+**Interactive Message**. WhatsApp has withdrawn tappable buttons from unofficial client
+libraries: Baileys 7's send API has no button type at all, and its protocol definitions cover
+only button *responses* — what arrives when someone taps a button sent by an official Business
+API account.
+
+Sending real buttons would mean hand-assembling raw protobuf that WhatsApp does not support
+for linked devices. In practice that means: it breaks without warning on WhatsApp's schedule,
+it frequently renders as a blank or broken message on the recipient's phone, and it is exactly
+the kind of protocol abuse that gets accounts banned — which is unrecoverable.
+
+**Current behaviour (A14):** Button and Interactive templates send their options as numbered
+text lines, e.g.
+
+```text
+Would you like to book a call?
+
+1. Yes, tomorrow
+2. Yes, next week
+3. No thanks
+```
+
+This always delivers and always renders. Recipients reply with a number.
+
+Pick one:
+
+- ⬜ **Keep numbered-text fallback** — reliable, no ban risk. *Recommended.*
+- ⬜ **Drop Button and Interactive template types entirely** — remove them from the Templates
+  screen so the app never promises something WhatsApp will not deliver.
+- ⬜ **Attempt real buttons anyway** — I will implement raw protobuf interactive messages.
+  Understand that they may not render, may stop working at any time, and increase ban risk on
+  your customers' accounts. I will not do this without an explicit instruction here.
+- ⬜ Other: `___`
+
+**7.10 WhatsApp Business API.** Related to §7.9: real buttons, templates and higher rate
+limits are only available through the official WhatsApp Business API (via Meta or a provider
+such as Twilio or 360dialog), which is a paid, approval-gated channel and a completely
+different integration from Baileys. Out of scope unless you say otherwise.
+
+- ⬜ Not interested — Baileys only ⬜ Tell me more later ⬜ Other: `___`
 
 **7.7 Language.** The chatbot config offers reply languages, but should the **app UI** itself be
 translatable?
