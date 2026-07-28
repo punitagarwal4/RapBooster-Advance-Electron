@@ -27,7 +27,8 @@
     "test:smoke": "npm run pack && node scripts/smoke.mjs",
     "postinstall": "prisma generate && electron-builder install-app-deps",
     "check:media": "node scripts/check-media-deps.mjs",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:media"
+    "verify": "npm run format:check && npm run lint && npm run lint:md && npm run typecheck && npm run check:media",
+    "lint:md": "markdownlint-cli2"
   },
   "dependencies": {
     "@hapi/boom": "10.0.1",
@@ -64,6 +65,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.8.0",
     "lucide-react": "1.27.0",
+    "markdownlint-cli2": "0.23.2",
     "next": "16.2.12",
     "postcss": "8.5.23",
     "prettier": "3.9.6",

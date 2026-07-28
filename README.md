@@ -4,19 +4,14 @@ An Electron + Next.js desktop application for WhatsApp marketing, built on
 [Baileys](https://github.com/WhiskeySockets/Baileys), with a local SQLite database created per
 user in the OS application-data directory.
 
-> **Status: planning complete, implementation not started.**
-> The repository currently contains the specification and the UI prototypes. Sprint 1 begins
-> once [REQUIREMENTS.md](./REQUIREMENTS.md) is filled in.
-
-## Documents
-
-| Document                                 | What it is                                                                                                               |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [REQUIREMENTS.md](./REQUIREMENTS.md)     | **Fill this first.** Customer inputs — license API, branding, signing, defaults. Blocks Sprint 1.                        |
-| [SPRINTS.md](./SPRINTS.md)               | The full specification: screens, architecture, database schema, IPC contract, algorithms, and the four sprints in detail |
-| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, deviations, test history                                                                      |
-| [CLAUDE.md](./CLAUDE.md)                 | Engineering rules for every coding session                                                                               |
-| `design/`                                | Original HTML prototypes — the feature reference                                                                         |
+> **Status: feature-complete, not yet shippable.**
+> All four sprints are built and the full test suite passes against a packaged build. What is
+> missing is the release itself — no build has been signed and no update has ever been
+> installed, because that needs branding, an update feed URL and code-signing certificates.
+> See [REQUIREMENTS.md §2–§4](./REQUIREMENTS.md) and [RELEASE.md](./RELEASE.md).
+>
+> **An unsigned macOS build will not open on a customer's machine.** That is the single item
+> standing between this and a shippable product.
 
 ## What it does
 
@@ -24,8 +19,6 @@ Nine screens, all derived from the prototypes in `design/`:
 
 **Dashboard** · **Inbox** · **Campaigns** · **WA Groups** · **Devices** · **Contacts** ·
 **Templates** · **AI Bot** · **Settings**, behind a license activation gate.
-
-Core capabilities:
 
 - Connect up to 20 WhatsApp accounts concurrently, by QR code or 8-digit pairing code
 - Contact lists with custom fields, CSV import/export at 50,000-row scale
@@ -35,30 +28,103 @@ Core capabilities:
 - Unified inbox across all connected devices
 - OpenAI-powered auto-replies with escalation rules
 
-## Tech stack
+## Requirements
 
-Electron · Next.js (static export) · React · TypeScript · Tailwind + shadcn/ui ·
-Prisma + better-sqlite3 · Baileys · OpenAI · Playwright · electron-builder
-
-## Delivery approach
-
-Four sprints, worked on `main`. Each ends with an automated Playwright E2E suite, a packaged
-build smoke test, a tracker update, and a commit + push:
-
-1. **Sprint 1** — Foundation, licensing, app shell
-2. **Sprint 2** — Devices, contacts, templates
-3. **Sprint 3** — Campaign engine, groups
-4. **Sprint 4** — Inbox, AI bot, settings, dashboard, release
-
-See [SPRINTS.md](./SPRINTS.md) for the complete breakdown.
+- **Node.js 20 or newer**
+- **Windows or macOS.** macOS builds must be produced on a Mac — signing and notarization call
+  Apple tooling that does not exist elsewhere.
+- No Python or C++ toolchain needed. Electron is pinned to 42.7.1 so the `better-sqlite3`
+  prebuilt binaries match its ABI; upgrading Electron without checking that forces a source
+  build on every machine.
 
 ## Getting started
 
-Nothing to install yet — the scaffold is created in Sprint 1. Once it exists:
-
 ```bash
-npm install
-npm run dev
+npm install          # also runs prisma generate + electron-builder install-app-deps
+npm run dev          # Next dev server + Electron, with hot reload
 ```
 
-Setup, build and release instructions are written into this file at the end of Sprint 4.
+The app creates its database at `app.getPath('userData')` on first launch and applies
+migrations automatically. Nothing to set up by hand.
+
+By default the app uses the **real** Baileys transport and the **real** license HTTP client —
+and since no license server is configured yet (REQUIREMENTS §1), it will gate at activation.
+To work on the app without a license server or a WhatsApp account, opt into the mocks:
+
+```bash
+LICENSE_SERVICE=mock WA_TRANSPORT=mock npm run dev
+```
+
+Both are opt-in rather than defaulted-on in development, so that nothing can ship with a mock
+silently active. The E2E suite sets them itself.
+
+## Commands
+
+| Command              | What it does                                                           |
+| -------------------- | ---------------------------------------------------------------------- |
+| `npm run dev`        | Development, with hot reload                                           |
+| `npm run verify`     | Format, lint, typecheck, and dependency checks — run before committing |
+| `npm run build`      | Production bundles for main, preload, wa-service and the renderer      |
+| `npm run pack`       | Unpacked build in `dist/`, no installer                                |
+| `npm run dist`       | Installers for the current platform                                    |
+| `npm run test:e2e`   | Full Playwright suite against a real Electron instance (81 specs)      |
+| `npm run test:smoke` | Packages the app and runs its self-test — catches asar/native issues   |
+| `npm run db:studio`  | Browse the local database                                              |
+
+Before committing, the gate is `npm run verify && npm run test:e2e && npm run test:smoke`.
+
+## Architecture
+
+Four processes, and the boundaries between them are enforced rules rather than conventions
+(see [CLAUDE.md §2](./CLAUDE.md)):
+
+| Process        | Responsibility                                                   |
+| -------------- | ---------------------------------------------------------------- |
+| **main**       | Owns the database. The only writer. Runs the campaign scheduler  |
+| **preload**    | Sandboxed bridge. Exposes one validated `window.api.invoke`      |
+| **renderer**   | Next.js static export. No Node access at all                     |
+| **wa-service** | Utility process. Owns every Baileys socket and the send throttle |
+
+The rules that matter most:
+
+- **Nothing calls `sock.sendMessage` directly.** Every outbound message goes through the
+  throttle scheduler — this is the anti-ban core, and bypassing it risks the user's accounts.
+- **Campaign state lives in SQLite, never in memory.** A crash mid-campaign resumes from the
+  first pending recipient without re-sending anything already delivered.
+- **`wa-service` never writes to the database.** One writer, no lock contention.
+
+## Measured behaviour
+
+Against the packaged Windows build, on the mock transport:
+
+| Metric                                         | Value                                 |
+| ---------------------------------------------- | ------------------------------------- |
+| Startup (process start → app + database ready) | ~950 ms                               |
+| Idle memory, all processes                     | ~530 MB                               |
+| Cost of 20 connected devices                   | +13 MB                                |
+| Memory drift over a running campaign           | none — falls as the heap is reclaimed |
+
+Reproduce with `npm run pack && node scripts/perf.mjs`, and
+`PERF=1 npx playwright test perf-load` for the 20-device profile.
+
+## Documents
+
+| Document                                 | What it is                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| [REQUIREMENTS.md](./REQUIREMENTS.md)     | **Customer inputs.** §2–§4 are what currently block shipping          |
+| [RELEASE.md](./RELEASE.md)               | How to build, sign, notarize and publish an update                    |
+| [SPRINTS.md](./SPRINTS.md)               | Full specification: screens, schema, IPC contract, algorithms         |
+| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, known issues, test history                 |
+| [CLAUDE.md](./CLAUDE.md)                 | Engineering rules for every coding session                            |
+| `design/`                                | Original HTML prototypes — the feature reference, never imported from |
+
+## Known limitations
+
+- **Button and Interactive templates send as numbered text.** WhatsApp has withdrawn tappable
+  buttons from unofficial libraries; numbered text always delivers. See REQUIREMENTS §7.9.
+- **The AI escalation confidence threshold is stored but not enforced** — OpenAI returns no
+  confidence score. The screen says so rather than showing a control that does nothing.
+- **A message in flight during a crash may send twice**, bounded at one per device per crash.
+  WhatsApp offers no deduplication primitive that would remove this.
+
+Full list, with reasoning, in [SPRINT-TRACKER.md](./SPRINT-TRACKER.md).

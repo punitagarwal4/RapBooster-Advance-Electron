@@ -1,0 +1,25 @@
+// Markdownlint is aligned to Prettier, which is the formatter of record here
+// (see .prettierrc, printWidth 90). Without this, markdownlint defaults to 80
+// and every document in the repo shows editor warnings for lines Prettier
+// itself produced — two tools disagreeing teaches everyone to ignore both.
+{
+  "config": {
+    // Off, deliberately. Prettier is configured with proseWrap "preserve", so
+    // it never rewraps prose — enforcing a line length here would mean
+    // rewrapping every paragraph by hand forever, with no tool able to fix it.
+    // A rule that cannot be satisfied automatically is a rule everyone learns
+    // to ignore, which then hides the rules that do matter.
+    "MD013": false,
+    // Prettier owns table pipe alignment and formats it consistently.
+    "MD060": false,
+    // Duplicate headings are fine when nested under different parents — the
+    // sprint documents legitimately repeat "Tasks" and "Exit gate" per sprint.
+    "MD024": { "siblings_only": true },
+    // Inline HTML is used deliberately for the status callouts.
+    "MD033": false,
+    // The first line of every document is its title; no front matter here.
+    "MD041": true
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/**", "dist/**", "out/**", "design/**", "renderer/.next/**"]
+}

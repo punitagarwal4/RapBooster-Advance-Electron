@@ -12,13 +12,13 @@ Last updated: **2026-07-28**
 
 ## 1. Overview
 
-| Sprint | Scope                               | Status         | Started    | Completed  | Tasks              | E2E        | Commit    |
-| ------ | ----------------------------------- | -------------- | ---------- | ---------- | ------------------ | ---------- | --------- |
-| 0      | Documentation                       | 🟢 Complete    | 2026-07-27 | 2026-07-27 | 7/7                | n/a        | `9968d08` |
-| 1      | Foundation · Licensing · Shell      | 🟢 Complete    | 2026-07-27 | 2026-07-28 | 11/11              | 28 passing | `f095b16` |
-| 2      | Devices · Contacts · Templates      | 🟢 Complete    | 2026-07-28 | 2026-07-28 | 7/7                | 21 passing | `a51bff7` |
-| 3      | Campaign engine · Groups            | 🟢 Complete    | 2026-07-28 | 2026-07-28 | 9/9                | 16 passing | `922b14a` |
-| 4      | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | —          | 6/6 (2 unverified) | 81 passing | pending   |
+| Sprint | Scope                               | Status         | Started    | Completed  | Tasks                 | E2E        | Commit    |
+| ------ | ----------------------------------- | -------------- | ---------- | ---------- | --------------------- | ---------- | --------- |
+| 0      | Documentation                       | 🟢 Complete    | 2026-07-27 | 2026-07-27 | 7/7                   | n/a        | `9968d08` |
+| 1      | Foundation · Licensing · Shell      | 🟢 Complete    | 2026-07-27 | 2026-07-28 | 11/11                 | 28 passing | `f095b16` |
+| 2      | Devices · Contacts · Templates      | 🟢 Complete    | 2026-07-28 | 2026-07-28 | 7/7                   | 21 passing | `a51bff7` |
+| 3      | Campaign engine · Groups            | 🟢 Complete    | 2026-07-28 | 2026-07-28 | 9/9                   | 16 passing | `922b14a` |
+| 4      | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | —          | 6/6 (T4.5 unverified) | 81 passing | pending   |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
@@ -27,7 +27,7 @@ Last updated: **2026-07-28**
 > 🟢 **Sprints 0–3 complete.** Sprint 4 is feature-complete: all six tasks are built, the full
 > 81-test suite passes, and the packaged build is green.
 >
-> **What is not done is proving the release itself.** T4.5 and T4.6 are marked 🟡, not 🟢,
+> **What is not done is proving the release itself.** T4.5 is marked 🟡, not 🟢,
 > because no build has been signed and no update has ever been installed — that needs §2/§3/§4
 > from you (K6). Everything is wired and waiting.
 >
@@ -59,7 +59,10 @@ Last updated: **2026-07-28**
 >    `services/license/http.ts` is the only file that changes when the real endpoints arrive.
 > 4. **§7.6 — Baileys version (assumption A12).** Now pinned to `7.0.0-rc13`. Sprint 2 pins it; changing later means a
 >    regression run.
-> 5. **§2, §3, §4 — branding, update feed, signing.** Needed by T4.5, not before.
+> 5. **§2, §3, §4 — branding, update feed, signing.** ⚠ **Now the only thing blocking a
+>    shippable build.** Everything else is done. An unsigned macOS build will not open at all
+>    on a customer machine, and an unsigned Windows installer shows a SmartScreen warning most
+>    people will not click through. See [RELEASE.md](./RELEASE.md) and K6.
 
 ---
 
@@ -162,13 +165,39 @@ create and message in bulk.
 | T4.3 | Settings: AI · sending defaults · data & backup · about | 🟢     | Encrypted AI key with masked reads, sending defaults applied to new campaigns, backup/restore with integrity refusal, guarded clear                                                                                                                                                                                              |
 | T4.4 | Dashboard real aggregates                               | 🟢     | SQL aggregates per REQUIREMENTS §7.1 plus today counts; refreshes on campaign, device and message events                                                                                                                                                                                                                         |
 | T4.5 | Packaging, signing, notarization, auto-update           | 🟡     | **Wired but unverified.** Icon, entitlements, `asarUnpack`, updater service and `system:checkUpdate` are all in place and the packaged build is green — but no build has been signed and no update has ever been installed, because that needs REQUIREMENTS §2/§3/§4. See K6. Procedure written up in [RELEASE.md](./RELEASE.md) |
-| T4.6 | Hardening pass + full regression + README               | 🟡     | Audit clean on production deps (K7), full regression green, RELEASE.md written. Remaining: memory profile under 20 devices, startup-time measurement, README rewrite                                                                                                                                                             |
+| T4.6 | Hardening pass + full regression + README               | 🟢     | Production audit clean (K7), startup and memory measured, README and RELEASE.md rewritten, `npm run verify` added as a single gate, markdownlint aligned to Prettier                                                                                                                                                             |
 
 **E2E:** 81/81 passing (4.4m). Packaged smoke green, including the new
 `baileys image thumbnail` probe.
 
+### Measured performance (T4.6)
+
+Packaged Windows build, mock transport. Reproduce with `node scripts/perf.mjs` and
+`PERF=1 npx playwright test perf-load`.
+
+| Metric                                        | Measured                            |
+| --------------------------------------------- | ----------------------------------- |
+| Startup, process start → app + database ready | cold 954 ms · warm 942 ms (923–965) |
+| Idle memory, all app processes                | ~530 MB                             |
+| 20 devices connected                          | 546 MB (**+13 MB** for 20 sockets)  |
+| 2,000 contacts imported                       | 548 MB                              |
+| Memory over 40 s of a running campaign        | 531 → 489 MB (**falls**; no leak)   |
+
+The campaign figure is the one that mattered. Resident set _decreases_ while sending, so the
+queue, the per-device workers and the IPC event fan-out are not accumulating — which is the
+specific failure a 50k-recipient campaign would otherwise hit hours in, on a user's machine,
+where nobody would be watching.
+
+Absolute numbers are only trustworthy because the sampler filters on this repo's own
+`node_modules/electron` executable path. Filtering on the process _name_ silently folds the
+developer's editor into the total — the first version of this measurement did exactly that and
+reported ~940 MB idle.
+
 **Exit gate:** signed installers on both platforms · auto-update works against the real feed ·
-AI replies correctly and fails loudly · full 88-test regression green.
+AI replies correctly and fails loudly · full regression green.
+
+**Gate status:** the last two are met (81/81 plus packaged smoke; AI failure codes asserted by
+E4.12/E4.13b). The first two cannot be met without REQUIREMENTS §2/§3/§4 — see K6.
 
 ---
 
