@@ -20,12 +20,47 @@ import { databasePath } from '../db/paths'
 import { renderTemplate } from '../../../shared/merge-tags'
 import type { WaOutgoing } from '../../../shared/wa-protocol'
 import { waBridge } from '../wa-bridge'
+import { dailyCapPerDevice } from '../ipc/settings.ipc'
 
 export interface CampaignCounters {
   total: number
   sent: number
   failed: number
   pending: number
+}
+
+/** True when a stored daily counter belongs to an earlier local day. */
+function isStale(resetAt: Date | null): boolean {
+  if (!resetAt) return true
+  const now = new Date()
+  return (
+    resetAt.getFullYear() !== now.getFullYear() ||
+    resetAt.getMonth() !== now.getMonth() ||
+    resetAt.getDate() !== now.getDate()
+  )
+}
+
+/**
+ * Increment a device's daily counter, rolling it over first if it belongs to a
+ * previous day. Without the rollover this column only ever grew, which turned
+ * the daily cap into a permanent one — see `seedDailyCount`.
+ */
+async function bumpDailyCount(deviceId: string): Promise<void> {
+  const prisma = getPrisma()
+  const device = await prisma.device.findUnique({ where: { id: deviceId } })
+  if (!device) return
+
+  if (isStale(device.dailyCountResetAt)) {
+    await prisma.device.update({
+      where: { id: deviceId },
+      data: { dailySentCount: 1, dailyCountResetAt: new Date() },
+    })
+    return
+  }
+  await prisma.device.update({
+    where: { id: deviceId },
+    data: { dailySentCount: { increment: 1 } },
+  })
 }
 
 /** Retryable failures are transient; terminal ones will fail identically forever. */
@@ -213,6 +248,62 @@ export class CampaignEngine {
     return created
   }
 
+  /**
+   * Seed the throttle with today's count for a device, rolling the day over
+   * first.
+   *
+   * WHY the rollover lives here: `Device.dailySentCount` is a running total,
+   * and nothing ever reset it — `dailyCountResetAt` existed in the schema but
+   * was never read or written. So the value handed to `throttle.seed()` was the
+   * device's *lifetime* total, and `seed()` writes it straight into `sentToday`
+   * with no day check. Once a device's all-time total passed the configured
+   * daily cap it could never send again: every campaign start reseeded a count
+   * already over the limit, and the very first cap check threw. The daily cap
+   * is an anti-ban feature, so the failure mode was that turning on protection
+   * eventually bricked sending altogether.
+   */
+  /** Send one device's pacing to wa-service, with today's count rolled over. */
+  private async configureThrottle(
+    campaign: {
+      delayFrom: number
+      delayTo: number
+      sleepDuration: number
+      sleepAfter: number
+    },
+    deviceId: string,
+  ): Promise<void> {
+    const sentToday = await this.seedDailyCount(deviceId)
+    // The cap is a global sending policy, not a per-campaign field, and it has
+    // to be sent explicitly — the throttle defaults to 0 (unlimited).
+    const dailyCap = await dailyCapPerDevice()
+    await waBridge
+      .request('throttle:configure', {
+        deviceId,
+        delayFromMs: campaign.delayFrom * 1_000,
+        delayToMs: campaign.delayTo * 1_000,
+        sleepDurationMs: campaign.sleepDuration * 1_000,
+        sleepAfter: campaign.sleepAfter,
+        dailyCap,
+        sentToday,
+      })
+      .catch((err: unknown) => console.error('throttle:configure failed', err))
+  }
+
+  private async seedDailyCount(deviceId: string): Promise<number> {
+    const prisma = getPrisma()
+    const device = await prisma.device.findUnique({ where: { id: deviceId } })
+    if (!device) return 0
+
+    if (isStale(device.dailyCountResetAt)) {
+      await prisma.device.update({
+        where: { id: deviceId },
+        data: { dailySentCount: 0, dailyCountResetAt: new Date() },
+      })
+      return 0
+    }
+    return device.dailySentCount
+  }
+
   async start(campaignId: string): Promise<void> {
     if (this.running.has(campaignId)) return
 
@@ -233,17 +324,7 @@ export class CampaignEngine {
     // Pacing is per device and comes from the campaign, so configure the
     // scheduler before any worker starts.
     for (const link of campaign.devices) {
-      const device = await prisma.device.findUnique({ where: { id: link.deviceId } })
-      await waBridge
-        .request('throttle:configure', {
-          deviceId: link.deviceId,
-          delayFromMs: campaign.delayFrom * 1_000,
-          delayToMs: campaign.delayTo * 1_000,
-          sleepDurationMs: campaign.sleepDuration * 1_000,
-          sleepAfter: campaign.sleepAfter,
-          ...(device ? { sentToday: device.dailySentCount } : {}),
-        })
-        .catch((err: unknown) => console.error('throttle:configure failed', err))
+      await this.configureThrottle(campaign, link.deviceId)
     }
 
     const controller = new AbortController()
@@ -313,10 +394,7 @@ export class CampaignEngine {
           where: { id: claimed.id },
           data: { status: 'sent', messageId, sentAt: new Date(), error: null },
         })
-        await prisma.device.update({
-          where: { id: deviceId },
-          data: { dailySentCount: { increment: 1 } },
-        })
+        await bumpDailyCount(deviceId)
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
         const attempts = claimed.attempts + 1
@@ -455,7 +533,37 @@ export class CampaignEngine {
       }
     }
 
+    // Campaigns already running in this process are skipped by `start()`, so
+    // their pacing would never be re-sent. See `reconfigureRunning`.
+    await this.reconfigureRunning()
+
     return { requeued: requeued.count, resumed }
+  }
+
+  /**
+   * Re-send pacing for every campaign this process still considers running.
+   *
+   * WHY this is separate from `start()`: recovery runs after wa-service is
+   * restarted, but wa-service crashing does not stop the *main* process, so
+   * `this.running` still holds those campaigns and `start()` returns at its
+   * already-running guard before reaching the throttle setup. Meanwhile the
+   * restarted wa-service built a brand-new scheduler whose devices fall back to
+   * `DEFAULT_THROTTLE` — no daily cap and generic delays. The anti-ban pacing
+   * the user configured would silently disappear for the rest of the run, on
+   * the single most likely production event.
+   */
+  async reconfigureRunning(): Promise<void> {
+    const prisma = getPrisma()
+    for (const campaignId of this.running.keys()) {
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        include: { devices: true },
+      })
+      if (!campaign) continue
+      for (const link of campaign.devices) {
+        await this.configureThrottle(campaign, link.deviceId)
+      }
+    }
   }
 
   /**

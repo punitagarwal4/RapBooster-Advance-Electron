@@ -32,6 +32,18 @@ async function readNumber(key: keyof typeof SENDING_DEFAULTS): Promise<number> {
   return Number.isFinite(parsed) ? parsed : SENDING_DEFAULTS[key]
 }
 
+/**
+ * The configured per-device daily send cap, or 0 for unlimited.
+ *
+ * Exported because the campaign engine has to push this into the wa-service
+ * throttle. It previously read nowhere: the setting was saved and shown in the
+ * UI, and the throttle supported a `dailyCap`, but nothing ever carried the
+ * value between them — so the cap silently did nothing at all.
+ */
+export async function dailyCapPerDevice(): Promise<number> {
+  return readNumber('sending.dailyCapPerDevice')
+}
+
 export function registerSettingsHandlers(): void {
   registerHandler('settings:get', async ({ key }) => {
     const row = await getPrisma().setting.findUnique({ where: { key } })
@@ -47,14 +59,30 @@ export function registerSettingsHandlers(): void {
 
   registerHandler('settings:set', async ({ key, value, encrypt }) => {
     const shouldEncrypt = encrypt || SECRET_KEY.test(key)
-    const stored = shouldEncrypt ? encryptValue(value).data : value
+
+    // Record what actually happened, not what was intended. When the OS keychain
+    // is unavailable `encryptValue` falls back to storing the value in the clear,
+    // and writing `isEncrypted: shouldEncrypt` claimed it was encrypted anyway —
+    // so the database asserted a protection the value did not have, and nothing
+    // could tell the difference afterwards.
+    const result = shouldEncrypt
+      ? encryptValue(value)
+      : { data: value, encrypted: false as const }
 
     await getPrisma().setting.upsert({
       where: { key },
-      create: { key, value: stored, isEncrypted: shouldEncrypt },
-      update: { value: stored, isEncrypted: shouldEncrypt },
+      create: { key, value: result.data, isEncrypted: result.encrypted },
+      update: { value: result.data, isEncrypted: result.encrypted },
     })
-    return { ok: true as const }
+
+    // The renderer needs this to warn the user. CLAUDE.md §5.6 requires an
+    // explicit degrade rather than silent plaintext, and a secret stored in the
+    // clear is something the user must be able to act on.
+    return {
+      ok: true as const,
+      encrypted: result.encrypted,
+      wantedEncryption: shouldEncrypt,
+    }
   })
 
   registerHandler('settings:getSendingDefaults', async () => ({

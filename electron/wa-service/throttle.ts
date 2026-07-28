@@ -81,9 +81,18 @@ export class ThrottleScheduler {
     return state
   }
 
-  /** Restore today's count after a restart, so the cap survives one. */
+  /**
+   * Restore today's count after a restart, so the cap survives one.
+   *
+   * Rolls the day over first. Without that, a seed value carried across
+   * midnight would be treated as today's usage and could exhaust the cap
+   * against sends that happened yesterday. The caller is expected to pass a
+   * count for the current day, but this is the layer that enforces the cap, so
+   * it does not rely on that.
+   */
   seed(deviceId: string, sentToday: number): void {
     const state = this.state(deviceId)
+    this.rollDay(state)
     state.sentToday = sentToday
   }
 

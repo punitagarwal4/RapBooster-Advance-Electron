@@ -11,7 +11,12 @@
 import { app } from 'electron'
 import { existsSync } from 'node:fs'
 import { bootDatabase } from './db/boot'
-import { checkpoint, disconnectPrisma, getPrisma } from './db/client'
+import {
+  checkpoint,
+  disconnectPrisma,
+  getPrisma,
+  verifyConnectionPragmas,
+} from './db/client'
 import { backupsDir, databasePath, migrationsDir, userDataDir } from './db/paths'
 import { listBackups } from './db/backup'
 
@@ -104,6 +109,22 @@ async function main(): Promise<void> {
     check('backup written', listBackups(backupsDir()).length > 0)
   } catch (err) {
     check('boot is idempotent', false, String(err))
+  }
+
+  // 3b. The per-connection pragmas must hold on the connection Prisma actually
+  //     uses. They were previously set on a separate short-lived connection, so
+  //     Prisma's own connection ran with foreign_keys OFF and busy_timeout 0 —
+  //     the latter turning any write that collided with a checkpoint or backup
+  //     into an immediate "database is locked" instead of a short wait.
+  try {
+    const pragmas = await verifyConnectionPragmas()
+    check(
+      'connection pragmas',
+      pragmas.foreignKeys === 1 && pragmas.busyTimeout === 5000,
+      `foreign_keys=${pragmas.foreignKeys} busy_timeout=${pragmas.busyTimeout}`,
+    )
+  } catch (err) {
+    check('connection pragmas', false, String(err))
   }
 
   // 4. Clean shutdown leaves no oversized WAL behind.

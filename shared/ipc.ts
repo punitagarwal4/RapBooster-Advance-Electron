@@ -498,7 +498,15 @@ export const ipcContract = {
       value: z.string(),
       encrypt: z.boolean().default(false),
     }),
-    response: ok,
+    // `encrypted` reports what actually happened, which is not always what was
+    // asked for: when the OS keychain is unavailable the value is stored in the
+    // clear. The renderer needs to know so it can tell the user, rather than the
+    // app silently keeping a secret unprotected (CLAUDE.md §5.6).
+    response: z.object({
+      ok: z.literal(true),
+      encrypted: z.boolean(),
+      wantedEncryption: z.boolean(),
+    }),
   },
   'settings:getSendingDefaults': { request: z.void(), response: sendingDefaults },
   'settings:setSendingDefaults': { request: sendingDefaults, response: sendingDefaults },

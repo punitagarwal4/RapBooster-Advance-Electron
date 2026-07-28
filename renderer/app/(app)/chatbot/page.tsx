@@ -154,6 +154,17 @@ export default function AIBotPage() {
       return
     }
     setApiKeyDraft('')
+
+    // The key can be stored unencrypted when the OS keychain is unavailable.
+    // Saying "saved" and nothing else would leave the user believing a secret is
+    // protected when it is sitting in the clear on disk (CLAUDE.md §5.6).
+    if (stored.data.wantedEncryption && !stored.data.encrypted) {
+      toast(
+        'error',
+        'API key saved, but this system has no secure storage available, so it is stored unencrypted on disk.',
+      )
+      return
+    }
     toast('success', 'API key saved')
   }
 
