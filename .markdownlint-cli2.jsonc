@@ -21,5 +21,16 @@
     "MD041": true
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/**", "dist/**", "out/**", "design/**", "renderer/.next/**"]
+  // test-results/ and playwright-report/ hold generated failure artifacts, not
+  // authored documents. Linting them turns any test failure into extra lint
+  // failures that point at nothing actionable.
+  "ignores": [
+    "node_modules/**",
+    "dist/**",
+    "out/**",
+    "design/**",
+    "renderer/.next/**",
+    "test-results/**",
+    "playwright-report/**"
+  ]
 }

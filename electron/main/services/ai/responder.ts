@@ -48,7 +48,21 @@ export async function apiKey(): Promise<string | null> {
 }
 
 function client(key: string): OpenAI {
-  return new OpenAI({ apiKey: key, timeout: REQUEST_TIMEOUT_MS, maxRetries: 1 })
+  // WHY the override exists: this is the only code path in the app that both
+  // calls a third-party API and then autonomously sends its output to the
+  // user's customers, and without a redirectable endpoint none of it could be
+  // tested — a wrong reply here goes to a real person. Mirrors LICENSE_API_URL,
+  // which the licence client already uses for the same reason.
+  //
+  // It also has a real production use: an OpenAI-compatible gateway or proxy
+  // (Azure OpenAI, LiteLLM, a corporate egress proxy) can be pointed at here.
+  const baseURL = process.env.OPENAI_BASE_URL?.trim()
+  return new OpenAI({
+    apiKey: key,
+    timeout: REQUEST_TIMEOUT_MS,
+    maxRetries: 1,
+    ...(baseURL ? { baseURL } : {}),
+  })
 }
 
 /** Map SDK failures onto the app's taxonomy so the UI can be specific. */
