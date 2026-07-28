@@ -18,7 +18,7 @@ Last updated: **2026-07-28**
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
 | 3 | Campaign engine · Groups | 🟢 Complete | 2026-07-28 | 2026-07-28 | 9/9 | 16 passing | `922b14a` |
-| 4 | Inbox · AI Bot · Settings · Release | ⬜ Not started | — | — | 0/6 | 0/25 | — |
+| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 1/6 | 5 passing | `120738a` |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
@@ -144,7 +144,7 @@ create and message in bulk.
 
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
-| T4.1 | Inbox (two-pane, live ingestion, composer) | ⬜ | |
+| T4.1 | Inbox (two-pane, live ingestion, composer) | 🟢 | Live ingestion with duplicate suppression, device filter, search, unread badges, all four message shapes, composer with emoji, delivery receipts |
 | T4.2 | AI Bot config + OpenAI auto-reply worker | ⬜ | |
 | T4.3 | Settings: AI · sending defaults · data & backup · about | ⬜ | |
 | T4.4 | Dashboard real aggregates | ⬜ | |
@@ -191,6 +191,8 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D50 | 2026-07-28 | Inbound messages are **ignored if the id already exists** | WhatsApp redelivers on reconnect. Without the check the user would see the same message twice, which reads as a bug in the app rather than a protocol behaviour. E4.1b asserts a relaunch adds nothing |
+| D51 | 2026-07-28 | Inbound test traffic is driven by an env var on the **mock transport**, not a "simulate" IPC channel | Keeps the test hook inside code that is already test-only. Production never ships the mock, so there is no simulate surface to secure or accidentally expose |
 | D48 | 2026-07-28 | Per-recipient view is a **dialog**, not a `/campaigns/[id]` route | The renderer is a static export, so a dynamic segment needs its parameters known at build time — campaign ids are not. **Deviation from SPRINTS §11.1 T3.5**, and arguably better UX: the list stays visible behind it |
 | D49 | 2026-07-28 | A dropped device's **pending** rows are reassigned; sent and in-flight rows are not | Only pending work is safe to move. Without reassignment one lost account strands its slice and a 10k campaign silently stalls at 80% looking finished. With no device left the campaign pauses with a reason rather than spinning against sockets that cannot send |
 | D46 | 2026-07-28 | **E2E gained a global warm-up launch** | The first launch after a build pages a ~200 MB binary plus fresh bundles from disk; on a loaded machine that took over 90s while the same test ran in 1.4s warm. The first test was absorbing the whole cost and failing on a budget that was fine for its actual work. Warming once keeps every per-test timeout meaningful instead of being a proxy for disk I/O |

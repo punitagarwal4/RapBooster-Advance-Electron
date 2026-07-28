@@ -73,6 +73,17 @@ export class MockTransport extends TransportEmitter implements Transport {
       if (!current) return
       current.connected = true
       this.emit('status', deviceId, 'connected', { phone: current.phone })
+
+      // Inbox specs need inbound traffic. Driving it from here rather than
+      // exposing a "simulate" IPC channel keeps the test hook inside code that
+      // is already test-only — production never ships this transport.
+      const inbound = num('WA_MOCK_INCOMING', 0)
+      for (let i = 0; i < inbound; i += 1) {
+        setTimeout(
+          () => this.simulateIncoming(deviceId, `Mock inbound ${i + 1}`, `+91999900${i}011`),
+          100 * (i + 1),
+        )
+      }
     }, num('WA_MOCK_CONNECT_MS', 50))
   }
 

@@ -17,6 +17,7 @@ import {
 import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
 import { registerCampaignHandlers } from './ipc/campaign.ipc'
+import { persistIncoming, registerChatHandlers } from './ipc/chat.ipc'
 import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerGroupHandlers } from './ipc/group.ipc'
@@ -228,6 +229,26 @@ function startWaService(): void {
     })
   })
 
+  waBridge.on('message', ({ deviceId, message }) => {
+    void persistIncoming(deviceId, message)
+      .then((saved) => {
+        // Null means the id was already known — WhatsApp redelivers on
+        // reconnect, and showing the same message twice looks like a bug.
+        if (saved) emitToAll(windows(), 'message:received', { chatId: saved.chatId, message: saved })
+      })
+      .catch((err: unknown) => console.error('could not persist incoming message', err))
+  })
+
+  waBridge.on('receipt', ({ messageId, status }) => {
+    void getPrisma()
+      .message.update({ where: { id: messageId }, data: { status } })
+      .then(() => emitToAll(windows(), 'message:status', { messageId, status }))
+      .catch(() => {
+        // A receipt for a message we never stored (sent before this install,
+        // or from another linked device) is not an error.
+      })
+  })
+
   waBridge.on('log', ({ level, message }) => {
     if (level === 'error') console.error(`[wa-service] ${message}`)
     else if (level === 'warn') console.warn(`[wa-service] ${message}`)
@@ -310,6 +331,7 @@ async function bootUi(): Promise<void> {
   registerTemplateHandlers()
   registerCampaignHandlers()
   registerGroupHandlers()
+  registerChatHandlers()
 
   startWaService()
   const pending = unregisteredChannels()
