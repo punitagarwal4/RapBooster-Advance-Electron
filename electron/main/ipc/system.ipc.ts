@@ -5,9 +5,12 @@
  * request validation, response validation, and the error envelope.
  */
 import { app, shell } from 'electron'
+import { copyFileSync, existsSync, rmSync } from 'node:fs'
 import { AppError } from '../../../shared/errors'
-import { getPrisma } from '../db/client'
-import { databasePath, logsDir, userDataDir } from '../db/paths'
+import { createBackup } from '../db/backup'
+import { checkpoint, disconnectPrisma, getPrisma } from '../db/client'
+import { checkIntegrity } from '../db/integrity'
+import { backupsDir, databasePath, logsDir, userDataDir } from '../db/paths'
 import { buildDiagnostics } from '../services/diagnostics'
 import { waBridge } from '../wa-bridge'
 import { registerHandler } from './router'
@@ -52,6 +55,87 @@ export function registerSystemHandlers(): void {
     state: waBridge.currentState(),
     restartCount: waBridge.restartCount(),
   }))
+
+  registerHandler('system:backup', async () => {
+    // Flush the WAL first, or the snapshot can miss recently committed writes.
+    checkpoint()
+    const filePath = await createBackup(databasePath(), backupsDir(), 'manual')
+    if (!filePath) {
+      throw new AppError('DB_ERROR', { userMessage: 'There is no database to back up yet.' })
+    }
+    return { filePath }
+  })
+
+  registerHandler('system:restore', async ({ filePath }) => {
+    if (!existsSync(filePath)) {
+      throw new AppError('NOT_FOUND', { userMessage: 'That backup file no longer exists.' })
+    }
+
+    // Verify before destroying anything: restoring a corrupt file over a
+    // working database would turn a recoverable situation into data loss.
+    const check = checkIntegrity(filePath)
+    if (check.status === 'corrupt') {
+      throw new AppError('INTEGRITY_FAILED', {
+        userMessage: 'That backup failed its integrity check and was not restored.',
+        detail: check.detail ?? '',
+      })
+    }
+
+    // Snapshot what is there now, so a restore is itself undoable.
+    await createBackup(databasePath(), backupsDir(), 'pre-restore')
+
+    await disconnectPrisma()
+    checkpoint()
+
+    copyFileSync(filePath, databasePath())
+    // Stale sidecars belong to the replaced database.
+    for (const suffix of ['-wal', '-shm']) {
+      rmSync(databasePath() + suffix, { force: true })
+    }
+
+    // The app must restart: every open handle and cached row now refers to a
+    // database that no longer exists.
+    setTimeout(() => {
+      app.relaunch()
+      app.exit(0)
+    }, 500)
+
+    return { ok: true as const }
+  })
+
+  registerHandler('system:clearData', async ({ confirmation }) => {
+    // The literal is enforced by the contract too; this is the second lock on
+    // an action with no undo.
+    if (confirmation !== 'DELETE') {
+      throw new AppError('VALIDATION_FAILED', {
+        userMessage: 'Type DELETE to confirm.',
+      })
+    }
+
+    // A backup first, so "clear everything" is still recoverable by someone
+    // who meant something narrower.
+    await createBackup(databasePath(), backupsDir(), 'pre-clear')
+
+    const prisma = getPrisma()
+    // Order matters: children before parents, since foreign keys are enforced.
+    await prisma.$transaction([
+      prisma.campaignRecipient.deleteMany(),
+      prisma.campaignDevice.deleteMany(),
+      prisma.campaignList.deleteMany(),
+      prisma.campaign.deleteMany(),
+      prisma.groupSendTarget.deleteMany(),
+      prisma.groupSendJob.deleteMany(),
+      prisma.groupCreateJob.deleteMany(),
+      prisma.group.deleteMany(),
+      prisma.message.deleteMany(),
+      prisma.chat.deleteMany(),
+      prisma.contact.deleteMany(),
+      prisma.contactList.deleteMany(),
+      prisma.template.deleteMany(),
+    ])
+
+    return { ok: true as const }
+  })
 
   registerHandler('system:dashboard', async () => {
     const prisma = getPrisma()

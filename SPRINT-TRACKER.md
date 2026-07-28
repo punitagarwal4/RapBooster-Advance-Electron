@@ -18,7 +18,7 @@ Last updated: **2026-07-28**
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
 | 3 | Campaign engine · Groups | 🟢 Complete | 2026-07-28 | 2026-07-28 | 9/9 | 16 passing | `922b14a` |
-| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 2/6 | 11 passing | `1871901` |
+| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 4/6 | 16 passing | `ea8e60f` |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
@@ -147,7 +147,7 @@ create and message in bulk.
 | T4.1 | Inbox (two-pane, live ingestion, composer) | 🟢 | Live ingestion with duplicate suppression, device filter, search, unread badges, all four message shapes, composer with emoji, delivery receipts |
 | T4.2 | AI Bot config + OpenAI auto-reply worker | 🟢 | Every prototype field wired into the prompt, keyword escalation, hard rules (no groups, no self, opt-out), distinct failure codes, throttled replies |
 | T4.3 | Settings: AI · sending defaults · data & backup · about | ⬜ | |
-| T4.4 | Dashboard real aggregates | ⬜ | |
+| T4.4 | Dashboard real aggregates | 🟢 | SQL aggregates per REQUIREMENTS §7.1 plus today counts; refreshes on campaign, device and message events |
 | T4.5 | Packaging, signing, notarization, auto-update | ⬜ | Needs REQUIREMENTS §3, §4 |
 | T4.6 | Hardening pass + full regression + README | ⬜ | |
 
@@ -191,6 +191,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D55 | 2026-07-28 | **A restore verifies the backup before touching the live database** | Restoring a corrupt file over a working database turns a recoverable situation into data loss. The current database is also snapshotted first, so a restore is itself undoable. E4.20b asserts a bogus file leaves the data intact |
+| D56 | 2026-07-28 | Clear-all-data **backs up first** and keeps devices and the license | Someone who meant something narrower can still get their data back, and clearing content is not the same as deactivating the product |
+| D57 | 2026-07-28 | Dashboard refetches on campaign, device and message events | It is the landing route, so it is usually already mounted when the numbers change. Found by E4.22, which caught it showing stale counts |
 | D52 | 2026-07-28 | **`settings:get` never returns a secret**, even encrypted | A key readable from the UI ends up in a screenshot, a support bundle or a bug report. Encrypted keys report a masked placeholder so the UI can show "set / not set" without ever holding the value |
 | D53 | 2026-07-28 | Auto-reply failures produce **distinct codes**, never a silent skip | AI_KEY_MISSING, AI_KEY_INVALID, AI_RATE_LIMITED and AI_TIMEOUT are separate and surfaced. A silent no-op would leave the user believing auto-reply works when it does not — the worst outcome for a feature they configured deliberately |
 | D54 | 2026-07-28 | Only the **keyword** escalation trigger is enforced, and the UI says so | OpenAI returns no confidence score, so the prototype's threshold cannot be honoured directly (REQUIREMENTS §5, A13). The screen states this rather than presenting a control that silently does nothing |

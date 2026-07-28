@@ -1,7 +1,7 @@
 'use client'
 
 import { PageHeader } from '@renderer/components/layout/page-header'
-import { useIpcQuery } from '@renderer/hooks/useIpc'
+import { useIpcEvent, useIpcQuery } from '@renderer/hooks/useIpc'
 
 function StatCard({ label, value, loading }: { label: string; value: number; loading: boolean }) {
   return (
@@ -21,6 +21,13 @@ function StatCard({ label, value, loading }: { label: string; value: number; loa
 export default function DashboardPage() {
   const stats = useIpcQuery('system:dashboard')
   const loading = stats.loading
+
+  // The dashboard is the landing route, so it is frequently already mounted
+  // when the numbers change. Without these it would sit showing stale counts
+  // for as long as the window stayed open.
+  useIpcEvent('campaign:progress', () => stats.refetch())
+  useIpcEvent('device:status', () => stats.refetch())
+  useIpcEvent('message:received', () => stats.refetch())
 
   const cards = [
     { label: 'Total Contacts', value: stats.data?.totalContacts ?? 0 },
