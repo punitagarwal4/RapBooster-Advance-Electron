@@ -26,9 +26,10 @@
     "test:e2e": "playwright test",
     "test:smoke": "npm run pack && node scripts/smoke.mjs",
     "postinstall": "prisma generate && electron-builder install-app-deps",
-    "verify": "npm run format:check && npm run lint && npm run lint:md && npm run typecheck && npm run check:deps",
+    "verify": "npm run format:check && npm run lint && npm run lint:md && npm run typecheck && npm run check:source && npm run check:deps",
     "lint:md": "markdownlint-cli2",
-    "check:deps": "node scripts/check-deps.mjs"
+    "check:deps": "node scripts/check-deps.mjs",
+    "check:source": "node scripts/check-source.mjs"
   },
   "dependencies": {
     "@hapi/boom": "10.0.1",

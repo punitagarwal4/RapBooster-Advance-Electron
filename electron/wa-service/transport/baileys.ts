@@ -17,6 +17,7 @@
 import makeWASocket, {
   Browsers,
   DisconnectReason,
+  jidNormalizedUser,
   useMultiFileAuthState,
   type WAMessage,
   type WASocket,
@@ -303,17 +304,28 @@ export class BaileysTransport extends TransportEmitter implements Transport {
     const session = this.sessions.get(deviceId)
     if (!session?.connected) throw new Error(`device ${deviceId} is not connected`)
 
-    const own = session.socket.user?.id?.split(':')[0]
+    // NOTE: compare normalized JIDs, not string prefixes. Baileys reports our
+    // own id with a device suffix (`<user>:<device>@s.whatsapp.net`) while group
+    // participants carry none, so the two are only comparable after
+    // normalization. A previous version used `p.id.startsWith(own)`, which also
+    // matched any participant whose number merely *begins* with ours — a member
+    // on +9198765432100 would have been read as us on +919876543210, silently
+    // reporting the wrong admin rights for that group.
+    const own = session.socket.user?.id ? jidNormalizedUser(session.socket.user.id) : null
     const all = await session.socket.groupFetchAllParticipating()
 
     return Object.values(all).map((group) => ({
       id: group.id,
       name: group.subject,
       memberCount: group.participants.length,
-      isAdmin: group.participants.some(
-        (p) =>
-          p.id.startsWith(own ?? ' ') && (p.admin === 'admin' || p.admin === 'superadmin'),
-      ),
+      // Unknown own id means we cannot claim admin — never assume we can.
+      isAdmin:
+        own !== null &&
+        group.participants.some(
+          (p) =>
+            jidNormalizedUser(p.id) === own &&
+            (p.admin === 'admin' || p.admin === 'superadmin'),
+        ),
     }))
   }
 
