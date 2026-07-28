@@ -18,16 +18,19 @@ import { bootDatabase } from './db/boot'
 import { checkpoint, disconnectPrisma } from './db/client'
 import { registerCampaignHandlers } from './ipc/campaign.ipc'
 import { persistIncoming, registerChatHandlers } from './ipc/chat.ipc'
+import { registerChatbotHandlers } from './ipc/chatbot.ipc'
 import { registerContactHandlers } from './ipc/contact.ipc'
 import { registerDeviceHandlers, recoverDeviceSessions } from './ipc/device.ipc'
 import { registerGroupHandlers } from './ipc/group.ipc'
 import { registerLicenseHandlers } from './ipc/license.ipc'
+import { registerSettingsHandlers } from './ipc/settings.ipc'
 import { registerSystemHandlers } from './ipc/system.ipc'
 import { registerTemplateHandlers } from './ipc/template.ipc'
 import { emitToAll } from './ipc/router'
 import { waBridge } from './wa-bridge'
 import { campaignEngine } from './services/campaign-engine'
 import { groupRunner } from './services/group-runner'
+import { maybeReply } from './services/ai/responder'
 import { getPrisma } from './db/client'
 import { setLicenseGate, unregisteredChannels } from './ipc/router'
 import {
@@ -234,7 +237,23 @@ function startWaService(): void {
       .then((saved) => {
         // Null means the id was already known — WhatsApp redelivers on
         // reconnect, and showing the same message twice looks like a bug.
-        if (saved) emitToAll(windows(), 'message:received', { chatId: saved.chatId, message: saved })
+        if (!saved) return
+        emitToAll(windows(), 'message:received', { chatId: saved.chatId, message: saved })
+
+        // Auto-reply runs after the message is stored and shown, so the user
+        // sees the inbound message immediately rather than after the model.
+        void maybeReply(deviceId, saved.chatId, { body: saved.body, isGroup: message.isGroup })
+          .then((outcome) => {
+            if (outcome.kind === 'failed') {
+              // Never a silent no-op: the user configured auto-reply, and if it
+              // is not happening they need to know exactly why.
+              console.error(`auto-reply failed [${outcome.code}] ${outcome.message}`)
+              emitToAll(windows(), 'toast', { level: 'error', message: outcome.message })
+            } else if (outcome.kind === 'escalated') {
+              emitToAll(windows(), 'toast', { level: 'warning', message: 'A conversation was escalated for a human reply.' })
+            }
+          })
+          .catch((err) => console.error('auto-reply threw', err))
       })
       .catch((err: unknown) => console.error('could not persist incoming message', err))
   })
@@ -332,6 +351,8 @@ async function bootUi(): Promise<void> {
   registerCampaignHandlers()
   registerGroupHandlers()
   registerChatHandlers()
+  registerChatbotHandlers()
+  registerSettingsHandlers()
 
   startWaService()
   const pending = unregisteredChannels()

@@ -18,7 +18,7 @@ Last updated: **2026-07-28**
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
 | 3 | Campaign engine · Groups | 🟢 Complete | 2026-07-28 | 2026-07-28 | 9/9 | 16 passing | `922b14a` |
-| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 1/6 | 5 passing | `120738a` |
+| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 2/6 | 11 passing | `1871901` |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
@@ -145,7 +145,7 @@ create and message in bulk.
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | T4.1 | Inbox (two-pane, live ingestion, composer) | 🟢 | Live ingestion with duplicate suppression, device filter, search, unread badges, all four message shapes, composer with emoji, delivery receipts |
-| T4.2 | AI Bot config + OpenAI auto-reply worker | ⬜ | |
+| T4.2 | AI Bot config + OpenAI auto-reply worker | 🟢 | Every prototype field wired into the prompt, keyword escalation, hard rules (no groups, no self, opt-out), distinct failure codes, throttled replies |
 | T4.3 | Settings: AI · sending defaults · data & backup · about | ⬜ | |
 | T4.4 | Dashboard real aggregates | ⬜ | |
 | T4.5 | Packaging, signing, notarization, auto-update | ⬜ | Needs REQUIREMENTS §3, §4 |
@@ -191,6 +191,9 @@ reasoning — future sessions read this instead of re-litigating.
 | D24 | 2026-07-28 | Rejected activations and conflicts are **not** persisted | Storing a rejection would leave the app in a state the user never agreed to, and a conflict is not an activation. Only a successful bind writes a record. E1.3 and E1.6 assert the table stays empty |
 | D25 | 2026-07-28 | **Tamper detection is an HMAC keyed to the machine fingerprint, and is honestly scoped** | It stops a user flipping `status` to `valid` with a database browser. Anyone able to run code as this user can defeat it; real enforcement is server-side. Documented as evidence, not DRM |
 | D26 | 2026-07-28 | The E2E fixture activates through the real UI rather than seeding the database | A seeded shortcut would let the gate rot undetected. Costs about a second per test and keeps every downstream spec honest about running in a licensed app |
+| D52 | 2026-07-28 | **`settings:get` never returns a secret**, even encrypted | A key readable from the UI ends up in a screenshot, a support bundle or a bug report. Encrypted keys report a masked placeholder so the UI can show "set / not set" without ever holding the value |
+| D53 | 2026-07-28 | Auto-reply failures produce **distinct codes**, never a silent skip | AI_KEY_MISSING, AI_KEY_INVALID, AI_RATE_LIMITED and AI_TIMEOUT are separate and surfaced. A silent no-op would leave the user believing auto-reply works when it does not — the worst outcome for a feature they configured deliberately |
+| D54 | 2026-07-28 | Only the **keyword** escalation trigger is enforced, and the UI says so | OpenAI returns no confidence score, so the prototype's threshold cannot be honoured directly (REQUIREMENTS §5, A13). The screen states this rather than presenting a control that silently does nothing |
 | D50 | 2026-07-28 | Inbound messages are **ignored if the id already exists** | WhatsApp redelivers on reconnect. Without the check the user would see the same message twice, which reads as a bug in the app rather than a protocol behaviour. E4.1b asserts a relaunch adds nothing |
 | D51 | 2026-07-28 | Inbound test traffic is driven by an env var on the **mock transport**, not a "simulate" IPC channel | Keeps the test hook inside code that is already test-only. Production never ships the mock, so there is no simulate surface to secure or accidentally expose |
 | D48 | 2026-07-28 | Per-recipient view is a **dialog**, not a `/campaigns/[id]` route | The renderer is a static export, so a dynamic segment needs its parameters known at build time — campaign ids are not. **Deviation from SPRINTS §11.1 T3.5**, and arguably better UX: the list stays visible behind it |
@@ -238,6 +241,7 @@ explicitly accepted with a reason.
 | --- | --- | --- | --- | --- |
 | K1 | 3 (by design) | A message in flight during a crash may send twice; bounded at one per device per crash | Accepted | Documented in SPRINTS §6.4 — WhatsApp offers no dedup primitive to eliminate it |
 | K2 | 1 | ~~The `init` migration creates a spike-only `SpikeProbe` table~~ | ✅ Resolved | Baseline regenerated in T1.4 with the real 17-table schema; E1.13 asserts `SpikeProbe` is absent |
+| K5 | 4 | `settings:get`/`settings:set` were declared in the contract but had **no handler**, so saving the AI key silently did nothing | ✅ Resolved | Found by E4.17. Implemented in T4.3. The preload already converted the missing-handler rejection into a typed error (D39), so it failed visibly rather than hanging — but nothing surfaced it until a test asserted the stored value |
 | K4 | 3 | **Intermittent E2E launch timeouts on this machine** — roughly 1 per 2 full runs | Environmental | Always a launch wait, never a behavioural assertion; the affected spec passes in isolation every time; no orphaned Electron processes after a run. Consistent with disk/CPU contention on a machine that has been building, packaging and launching ~35 Electron apps per suite for hours. **Deliberately not masked with Playwright retries** — that would hide real regressions too. Re-evaluate on a quieter machine or in CI |
 | K3 | 1 | Builds are unsigned; `electron-builder` reports "default Electron icon is used" | Expected | Resolved in T4.5 once REQUIREMENTS §2 (icon) and §4 (certificates) are supplied |
 

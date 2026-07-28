@@ -36,6 +36,7 @@
     "electron-log": "5.4.4",
     "electron-updater": "6.8.9",
     "libphonenumber-js": "1.13.9",
+    "openai": "7.0.0",
     "qrcode": "1.5.4",
     "zod": "4.4.3"
   },
