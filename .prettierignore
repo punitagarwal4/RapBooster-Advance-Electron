@@ -9,3 +9,4 @@ playwright-report
 package-lock.json
 design
 prisma/migrations
+renderer/next-env.d.ts

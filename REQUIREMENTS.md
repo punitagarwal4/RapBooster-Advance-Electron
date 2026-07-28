@@ -36,6 +36,7 @@ decision.** Correct any of them by filling the linked section; nothing here is b
 | A12 | Baileys pinned to the **7.x line**; exact version recorded in the tracker's decision log                                        | §7.6        | Medium — regression run required                                                      |
 | A13 | Escalation uses **keyword triggers**; the confidence-threshold control is stored but not enforced                               | §5          | Medium — prompt + logic change                                                        |
 | A14 | **Button and Interactive templates send as numbered text**, not real tappable buttons                                           | §7.9        | See §7.9 — this is a platform limitation, not a preference                            |
+| A15 | **Link previews are off.** Messages containing URLs send as plain text                                                          | §7.11       | Low — but see §7.11: enabling it naively means one HTTP request per recipient         |
 
 **A7 is the one worth checking early.** If your contact lists are not Indian numbers, tell me
 the right country code before a large CSV import happens, because normalization is applied at
@@ -414,6 +415,35 @@ translatable?
 **7.8 Telemetry / crash reporting.** Should the app phone home with anonymous crash reports?
 
 - ⬜ No, local logs only — _default_ ⬜ Yes, to: `___`
+
+**7.11 Link previews on campaign messages.** ⚠ **Needs your decision — currently off.**
+
+When a message contains a URL, WhatsApp can show a rich preview card (title, description,
+thumbnail) instead of a bare link. Marketing messages almost always contain a link, and the
+preview materially affects whether people tap it.
+
+**This does not work today, and never has.** Baileys generates previews through an optional
+library (`link-preview-js`) that has never been installed, and it swallows the failure — so
+links have always sent as plain text with no error anywhere.
+
+I have deliberately not just switched it on, because Baileys fetches the preview **once per
+message with no caching** (its own source carries a `//TODO: CACHE`). Enabled naively, a
+50,000-recipient campaign containing one link would make **50,000 requests to that website
+from your IP address** over the campaign. That is slow, wasteful, and could get your server or
+IP rate-limited or blocked by the target site — and if the link points at your own site, you
+would be attacking yourself.
+
+| Option                                                        | What it means                                                                                                                                                 |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜ **Leave off** — _current behaviour_                        | Links send as plain text. Nothing to build.                                                                                                                   |
+| ⬜ **On, cached per campaign** — _recommended if you want it_ | I fetch the preview **once per unique URL** and attach the same card to every message. One request instead of 50,000. Roughly half a day of work, plus tests. |
+| ⬜ **On, Baileys default**                                    | Simplest to add, but one request per recipient. I do not recommend this and would want it in writing.                                                         |
+
+Also relevant: fetching a preview means your machine makes an outbound request to whatever URL
+is in the template, at send time. That is normally fine for your own marketing links, but it is
+a real network egress from the user's machine, so it should be a conscious choice.
+
+- Your choice: `___`
 
 ---
 

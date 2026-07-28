@@ -9,7 +9,7 @@
     "dev": "concurrently -k -n renderer,electron -c cyan,magenta \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "next dev renderer -p 3000",
     "dev:electron": "wait-on tcp:127.0.0.1:3000 && electron-vite dev",
-    "build": "npm run typecheck && npm run check:media && npm run build:renderer && electron-vite build",
+    "build": "npm run typecheck && npm run check:deps && npm run build:renderer && electron-vite build",
     "build:renderer": "next build renderer && node scripts/copy-renderer.mjs",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
@@ -26,9 +26,9 @@
     "test:e2e": "playwright test",
     "test:smoke": "npm run pack && node scripts/smoke.mjs",
     "postinstall": "prisma generate && electron-builder install-app-deps",
-    "check:media": "node scripts/check-media-deps.mjs",
-    "verify": "npm run format:check && npm run lint && npm run lint:md && npm run typecheck && npm run check:media",
-    "lint:md": "markdownlint-cli2"
+    "verify": "npm run format:check && npm run lint && npm run lint:md && npm run typecheck && npm run check:deps",
+    "lint:md": "markdownlint-cli2",
+    "check:deps": "node scripts/check-deps.mjs"
   },
   "dependencies": {
     "@hapi/boom": "10.0.1",
