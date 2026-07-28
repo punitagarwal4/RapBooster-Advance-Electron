@@ -210,10 +210,18 @@ export default function AIBotPage() {
             />
           </Field>
           <div className="flex gap-2">
-            <Button onClick={() => void saveKey()} disabled={busy} data-testid="save-ai-key">
+            <Button
+              onClick={() => void saveKey()}
+              disabled={busy}
+              data-testid="save-ai-key"
+            >
               Save key
             </Button>
-            <Button onClick={() => void checkKey()} disabled={busy} data-testid="test-ai-key">
+            <Button
+              onClick={() => void checkKey()}
+              disabled={busy}
+              data-testid="test-ai-key"
+            >
               Test key
             </Button>
           </div>
@@ -288,7 +296,9 @@ export default function AIBotPage() {
                   </option>
                 ))}
                 {!DELAY_PRESETS.some((p) => p.value === config.responseDelay) && (
-                  <option value={config.responseDelay}>Custom ({config.responseDelay} sec)</option>
+                  <option value={config.responseDelay}>
+                    Custom ({config.responseDelay} sec)
+                  </option>
                 )}
               </select>
             </Field>
@@ -421,8 +431,8 @@ export default function AIBotPage() {
               className="rounded-card bg-status-warn-bg px-2 py-1.5 text-xs text-status-warn-fg"
               data-testid="trigger-unsupported"
             >
-              Only keyword triggers are active. OpenAI does not return a confidence score, so the
-              threshold below is stored but not enforced — see REQUIREMENTS §5.
+              Only keyword triggers are active. OpenAI does not return a confidence score,
+              so the threshold below is stored but not enforced — see REQUIREMENTS §5.
             </p>
           )}
 
@@ -477,8 +487,9 @@ export default function AIBotPage() {
         <div className="flex items-start gap-2 pb-4">
           <Bot className="mt-0.5 size-4 shrink-0 text-ink-subtle" aria-hidden />
           <p className="text-xs text-ink-muted">
-            The bot never replies in a group, never replies to itself, and skips any chat you opt
-            out of. Every reply is paced by the same anti-ban throttle campaigns use.
+            The bot never replies in a group, never replies to itself, and skips any chat
+            you opt out of. Every reply is paced by the same anti-ban throttle campaigns
+            use.
           </p>
         </div>
       </div>

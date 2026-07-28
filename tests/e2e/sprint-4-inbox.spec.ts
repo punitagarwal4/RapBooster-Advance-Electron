@@ -36,7 +36,9 @@ async function launchWithInbound(
   if (await win.getByTestId('license-key').isVisible()) {
     await activateWith(win, 'VALID-E2E-0001')
   }
-  await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: APP_READY_TIMEOUT_MS })
+  await win
+    .getByTestId('nav-dashboard')
+    .waitFor({ state: 'visible', timeout: APP_READY_TIMEOUT_MS })
   return { app, win }
 }
 
@@ -47,7 +49,8 @@ async function connectDevice(win: Page): Promise<string> {
     await window.api.invoke('device:connect', { id: d.data.id })
     for (let i = 0; i < 80; i += 1) {
       const list = await window.api.invoke('device:list')
-      if (list.ok && list.data.find((x) => x.id === d.data.id)?.status === 'connected') break
+      if (list.ok && list.data.find((x) => x.id === d.data.id)?.status === 'connected')
+        break
       await new Promise((r) => setTimeout(r, 250))
     }
     return d.data.id
@@ -58,7 +61,9 @@ function messageRows(dir: string) {
   const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
   try {
     return db
-      .prepare('SELECT id, chatId, direction, body, status FROM Message ORDER BY timestamp')
+      .prepare(
+        'SELECT id, chatId, direction, body, status FROM Message ORDER BY timestamp',
+      )
       .all() as Array<{
       id: string
       chatId: string
@@ -77,7 +82,9 @@ test('E4.1 — an incoming message creates a chat and appears in the list', asyn
   try {
     await connectDevice(win)
 
-    await expect.poll(() => messageRows(dir).length, { timeout: 60_000 }).toBeGreaterThanOrEqual(2)
+    await expect
+      .poll(() => messageRows(dir).length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(2)
 
     await win.getByTestId('nav-inbox').click()
     await expect(win.getByTestId('page-title')).toHaveText('Unified inbox')
@@ -100,7 +107,9 @@ test('E4.6 — opening a chat clears its unread badge', async () => {
   const { app, win } = await launchWithInbound(dir, 1)
   try {
     await connectDevice(win)
-    await expect.poll(() => messageRows(dir).length, { timeout: 60_000 }).toBeGreaterThanOrEqual(1)
+    await expect
+      .poll(() => messageRows(dir).length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(1)
 
     await win.getByTestId('nav-inbox').click()
     await expect(win.getByTestId('unread-badge').first()).toBeVisible()
@@ -118,7 +127,9 @@ test('E4.4 — sending from the composer stores an outgoing message', async () =
   const { app, win } = await launchWithInbound(dir, 1)
   try {
     await connectDevice(win)
-    await expect.poll(() => messageRows(dir).length, { timeout: 60_000 }).toBeGreaterThanOrEqual(1)
+    await expect
+      .poll(() => messageRows(dir).length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(1)
 
     await win.getByTestId('nav-inbox').click()
     await win.getByTestId('chat-item').first().click()
@@ -137,7 +148,9 @@ test('E4.4 — sending from the composer stores an outgoing message', async () =
 
     const sent = messageRows(dir).find((m) => m.direction === 'out')
     expect(sent?.body).toBe('Reply from the composer')
-    await expect(win.getByTestId('message-thread')).toContainText('Reply from the composer')
+    await expect(win.getByTestId('message-thread')).toContainText(
+      'Reply from the composer',
+    )
     // The input clears once the message is away.
     await expect(input).toHaveValue('')
   } finally {
@@ -152,7 +165,9 @@ test('E4.1b — messages survive a restart and duplicates are ignored', async ()
   let before: number
   try {
     await connectDevice(session.win)
-    await expect.poll(() => messageRows(dir).length, { timeout: 60_000 }).toBeGreaterThanOrEqual(2)
+    await expect
+      .poll(() => messageRows(dir).length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(2)
     before = messageRows(dir).length
   } finally {
     await session.app.close()
@@ -181,7 +196,9 @@ test('E4.2 + E4.3 — the device filter and chat search narrow the list', async 
   const { app, win } = await launchWithInbound(dir, 2)
   try {
     const deviceId = await connectDevice(win)
-    await expect.poll(() => messageRows(dir).length, { timeout: 60_000 }).toBeGreaterThanOrEqual(2)
+    await expect
+      .poll(() => messageRows(dir).length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(2)
 
     await win.getByTestId('nav-inbox').click()
     // Wait for the list to render before counting — `count()` does not wait,

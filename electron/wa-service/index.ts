@@ -48,7 +48,8 @@ async function main(): Promise<void> {
   const sessions = new SessionManager(transport, {
     onStatus: (deviceId, status, detail) =>
       emit('status', { deviceId, status, ...(detail ?? {}) }),
-    onGiveUp: (deviceId, attempts, detail) => emit('giveUp', { deviceId, attempts, detail }),
+    onGiveUp: (deviceId, attempts, detail) =>
+      emit('giveUp', { deviceId, attempts, detail }),
     onLog: (level, message) => emit('log', { level, message }),
   })
 
@@ -100,7 +101,11 @@ async function main(): Promise<void> {
       }
       case 'group:create': {
         const p = payload as WaRequestEnvelope<'group:create'>['payload']
-        return (await transport.createGroup(p.deviceId, p.subject, p.participants)) as WaResponses[K]
+        return (await transport.createGroup(
+          p.deviceId,
+          p.subject,
+          p.participants,
+        )) as WaResponses[K]
       }
       case 'message:send': {
         const p = payload as WaRequestEnvelope<'message:send'>['payload']
@@ -147,7 +152,10 @@ async function main(): Promise<void> {
       })
   })
 
-  emit('log', { level: 'info', message: `wa-service ready (${process.env.WA_TRANSPORT ?? 'baileys'})` })
+  emit('log', {
+    level: 'info',
+    message: `wa-service ready (${process.env.WA_TRANSPORT ?? 'baileys'})`,
+  })
 }
 
 process.on('uncaughtException', (err) => {

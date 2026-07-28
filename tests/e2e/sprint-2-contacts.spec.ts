@@ -145,7 +145,10 @@ test('E2.13 — duplicates are skipped, within the file and against existing row
     ])
 
     const listId = await win.evaluate(async () => {
-      const r = await window.api.invoke('contactList:create', { name: 'Dupes', customFields: [] })
+      const r = await window.api.invoke('contactList:create', {
+        name: 'Dupes',
+        customFields: [],
+      })
       return r.ok ? r.data.id : ''
     })
 
@@ -200,7 +203,10 @@ test('E2.14 — malformed numbers are rejected with a downloadable error report'
     ])
 
     const listId = await win.evaluate(async () => {
-      const r = await window.api.invoke('contactList:create', { name: 'Bad', customFields: [] })
+      const r = await window.api.invoke('contactList:create', {
+        name: 'Bad',
+        customFields: [],
+      })
       return r.ok ? r.data.id : ''
     })
 
@@ -378,7 +384,10 @@ test('E2.16 — search across a large list stays fast and paginates', async () =
     const csv = writeCsv(files, 'search.csv', lines)
 
     const listId = await win.evaluate(async () => {
-      const r = await window.api.invoke('contactList:create', { name: 'Search', customFields: [] })
+      const r = await window.api.invoke('contactList:create', {
+        name: 'Search',
+        customFields: [],
+      })
       return r.ok ? r.data.id : ''
     })
 
@@ -400,7 +409,11 @@ test('E2.16 — search across a large list stays fast and paginates', async () =
         search: 'Person 1234',
         limit: 100,
       })
-      return { ms: performance.now() - started, ok: r.ok, total: r.ok ? r.data.total : -1 }
+      return {
+        ms: performance.now() - started,
+        ok: r.ok,
+        total: r.ok ? r.data.total : -1,
+      }
     }, listId)
 
     expect(timing.ok).toBe(true)
@@ -420,7 +433,8 @@ test('E2.16 — search across a large list stays fast and paginates', async () =
     expect(first.data.nextCursor).not.toBeNull()
 
     const second = await win.evaluate(
-      ({ id, c }) => window.api.invoke('contacts:list', { listId: id, limit: 100, cursor: c }),
+      ({ id, c }) =>
+        window.api.invoke('contacts:list', { listId: id, limit: 100, cursor: c }),
       { id: listId, c: first.data.nextCursor! },
     )
     if (second.ok) {

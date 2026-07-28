@@ -217,13 +217,18 @@ export default function SettingsPage() {
           <div className="mt-3 flex gap-2">
             <Button
               onClick={() => {
-                if (paths.data) void window.api.invoke('system:openPath', { path: paths.data.logs })
+                if (paths.data)
+                  void window.api.invoke('system:openPath', { path: paths.data.logs })
               }}
               disabled={!paths.data}
             >
               Open logs folder
             </Button>
-            <Button onClick={exportDiagnostics} disabled={busy} data-testid="export-diagnostics">
+            <Button
+              onClick={exportDiagnostics}
+              disabled={busy}
+              data-testid="export-diagnostics"
+            >
               Export diagnostics
             </Button>
           </div>
@@ -234,9 +239,9 @@ export default function SettingsPage() {
 
         <Section title="Sending defaults">
           <p className="mb-2 text-xs text-ink-muted">
-            Applied to new campaigns. Existing campaigns keep the pacing they were created with —
-            changing a running campaign&rsquo;s rhythm mid-send is exactly what gets accounts
-            flagged.
+            Applied to new campaigns. Existing campaigns keep the pacing they were created
+            with — changing a running campaign&rsquo;s rhythm mid-send is exactly what
+            gets accounts flagged.
           </p>
 
           {sending && (
@@ -256,7 +261,10 @@ export default function SettingsPage() {
                   ] as const
                 ).map(([label, key, min, max]) => (
                   <div key={key} className="flex flex-col gap-1.5">
-                    <label htmlFor={`sd-${key}`} className="text-xs font-semibold text-ink">
+                    <label
+                      htmlFor={`sd-${key}`}
+                      className="text-xs font-semibold text-ink"
+                    >
                       {label}
                     </label>
                     <input
@@ -292,8 +300,9 @@ export default function SettingsPage() {
 
         <Section title="Backup &amp; restore">
           <p className="mb-2 text-xs text-ink-muted">
-            A backup is taken automatically before every migration, restore, and clear. These are
-            snapshots of the whole database — contacts, templates, campaigns and message history.
+            A backup is taken automatically before every migration, restore, and clear.
+            These are snapshots of the whole database — contacts, templates, campaigns and
+            message history.
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -318,9 +327,9 @@ export default function SettingsPage() {
           <div className="mt-4 rounded-card border border-danger/20 bg-danger/5 p-3">
             <p className="text-xs font-semibold text-danger">Clear all data</p>
             <p className="mt-1 text-xs text-ink-muted">
-              Removes every contact, template, campaign, group and message. Devices and your
-              license are kept. A backup is taken first, so this is recoverable — but only from
-              that backup.
+              Removes every contact, template, campaign, group and message. Devices and
+              your license are kept. A backup is taken first, so this is recoverable — but
+              only from that backup.
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input

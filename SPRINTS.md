@@ -3,13 +3,13 @@
 Complete production plan for the Electron + Next.js + Baileys WhatsApp marketing desktop
 application.
 
-| Document | Purpose |
-| --- | --- |
-| `SPRINTS.md` (this file) | Full technical specification and sprint breakdown |
-| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, deviations |
-| [CLAUDE.md](./CLAUDE.md) | Engineering rules for every coding session |
-| [REQUIREMENTS.md](./REQUIREMENTS.md) | Customer inputs — **blocks Sprint 1 until filled** |
-| `design/` | Original HTML prototypes (reference only, never imported) |
+| Document                                 | Purpose                                                   |
+| ---------------------------------------- | --------------------------------------------------------- |
+| `SPRINTS.md` (this file)                 | Full technical specification and sprint breakdown         |
+| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, deviations                     |
+| [CLAUDE.md](./CLAUDE.md)                 | Engineering rules for every coding session                |
+| [REQUIREMENTS.md](./REQUIREMENTS.md)     | Customer inputs — **blocks Sprint 1 until filled**        |
+| `design/`                                | Original HTML prototypes (reference only, never imported) |
 
 ## Table of contents
 
@@ -39,23 +39,23 @@ an OpenAI-powered auto-responder.
 
 ### 1.1 Locked decisions
 
-| Topic | Decision |
-| --- | --- |
-| Shell | Electron — main + preload + renderer + `wa-service` utility process |
-| UI | Next.js App Router, `output: 'export'`, client-only, Tailwind + shadcn/ui |
-| WhatsApp | Baileys, version per [REQUIREMENTS §7.6](./REQUIREMENTS.md) — pinned exactly, no `^` |
-| Concurrency | Up to **20 simultaneously connected devices** |
-| Database | SQLite via **Prisma + better-sqlite3**, one DB per OS user under `app.getPath('userData')` |
-| Licensing | Remote license server (customer-owned): activation gate, conflict transfer, revalidation |
-| AI | OpenAI; the end user supplies their own API key in Settings |
-| Personalization | `{{Field}}` merge tags resolved from contact-list columns |
-| Campaign durability | Per-recipient queue rows; crash-safe resume; bounded duplicate guarantee |
-| Pairing | QR code **and** 8-digit pairing code |
-| Platforms | Windows (NSIS) + macOS (DMG), signed and notarized |
-| Updates | `electron-updater` against a customer-hosted feed |
-| Scale target | 50,000 contacts · 20 devices · 100,000 queued recipients |
-| Testing | Playwright E2E through `_electron`, run at the end of every sprint |
-| Branching | Work directly on `main`; commit and push at each sprint completion |
+| Topic               | Decision                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Shell               | Electron — main + preload + renderer + `wa-service` utility process                        |
+| UI                  | Next.js App Router, `output: 'export'`, client-only, Tailwind + shadcn/ui                  |
+| WhatsApp            | Baileys, version per [REQUIREMENTS §7.6](./REQUIREMENTS.md) — pinned exactly, no `^`       |
+| Concurrency         | Up to **20 simultaneously connected devices**                                              |
+| Database            | SQLite via **Prisma + better-sqlite3**, one DB per OS user under `app.getPath('userData')` |
+| Licensing           | Remote license server (customer-owned): activation gate, conflict transfer, revalidation   |
+| AI                  | OpenAI; the end user supplies their own API key in Settings                                |
+| Personalization     | `{{Field}}` merge tags resolved from contact-list columns                                  |
+| Campaign durability | Per-recipient queue rows; crash-safe resume; bounded duplicate guarantee                   |
+| Pairing             | QR code **and** 8-digit pairing code                                                       |
+| Platforms           | Windows (NSIS) + macOS (DMG), signed and notarized                                         |
+| Updates             | `electron-updater` against a customer-hosted feed                                          |
+| Scale target        | 50,000 contacts · 20 devices · 100,000 queued recipients                                   |
+| Testing             | Playwright E2E through `_electron`, run at the end of every sprint                         |
+| Branching           | Work directly on `main`; commit and push at each sprint completion                         |
 
 ### 1.2 Explicitly out of scope
 
@@ -76,24 +76,24 @@ field listed here must exist in the shipped app.
 
 ### 2.0 License Activation — Sprint 1
 
-| Element | Detail |
-| --- | --- |
-| License Key | Text, required, placeholder "Enter your license key here", Enter submits |
-| Remarks | Textarea, optional, placeholder "Add any remarks or notes…" |
-| Activate | Primary button |
-| Error states | "License key is required." · "Invalid license key. Please check and try again." |
-| Success state | "✓ Valid license key" |
-| Conflict state | "⚠ License conflict detected (key in use elsewhere)" |
+| Element        | Detail                                                                          |
+| -------------- | ------------------------------------------------------------------------------- |
+| License Key    | Text, required, placeholder "Enter your license key here", Enter submits        |
+| Remarks        | Textarea, optional, placeholder "Add any remarks or notes…"                     |
+| Activate       | Primary button                                                                  |
+| Error states   | "License key is required." · "Invalid license key. Please check and try again." |
+| Success state  | "✓ Valid license key"                                                           |
+| Conflict state | "⚠ License conflict detected (key in use elsewhere)"                            |
 
 ### 2.0b License Conflict dialog — Sprint 1
 
-| Element | Detail |
-| --- | --- |
-| Title | "License Already Active" |
-| Body | "This license key is already activated on another system." |
-| Device line | "Device: `{name}` (Last used: `{relative time}`)" — both from the server response |
-| Question | "Would you like to deactivate the license on the other system and activate it here?" |
-| Actions | "Cancel" · "Deactivate & Activate Here" |
+| Element     | Detail                                                                               |
+| ----------- | ------------------------------------------------------------------------------------ |
+| Title       | "License Already Active"                                                             |
+| Body        | "This license key is already activated on another system."                           |
+| Device line | "Device: `{name}` (Last used: `{relative time}`)" — both from the server response    |
+| Question    | "Would you like to deactivate the license on the other system and activate it here?" |
+| Actions     | "Cancel" · "Deactivate & Activate Here"                                              |
 
 ### 2.1 Dashboard — Sprint 4
 
@@ -102,13 +102,13 @@ Definitions per [REQUIREMENTS §7.1](./REQUIREMENTS.md). No charts in the protot
 
 ### 2.2 Inbox — Sprint 4
 
-| Pane | Elements |
-| --- | --- |
-| Left (300px) | Header "Messages" · search "Search chats…" · device filter "-- All Devices --" · chat rows (name, phone, truncated last message, timestamp) |
-| Right | Chat header (name + status) · message thread · composer |
-| Message types | `text` · `media` (thumbnail tile) · `attachment` (file name + size, teal left border) · `buttons` (prompt + stacked pills) |
-| Composer | "📷 Media" · "😊 Emoji" · "🔘 Buttons" · "📎 Attach" · input "Type a message…" · "Send" (Enter sends) |
-| Emoji set | 😊 😂 ❤️ 👍 🎉 🔥 💯 ✨ 😍 🤔 😢 😡 |
+| Pane          | Elements                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Left (300px)  | Header "Messages" · search "Search chats…" · device filter "-- All Devices --" · chat rows (name, phone, truncated last message, timestamp) |
+| Right         | Chat header (name + status) · message thread · composer                                                                                     |
+| Message types | `text` · `media` (thumbnail tile) · `attachment` (file name + size, teal left border) · `buttons` (prompt + stacked pills)                  |
+| Composer      | "📷 Media" · "😊 Emoji" · "🔘 Buttons" · "📎 Attach" · input "Type a message…" · "Send" (Enter sends)                                       |
+| Emoji set     | 😊 😂 ❤️ 👍 🎉 🔥 💯 ✨ 😍 🤔 😢 😡                                                                                                         |
 
 ### 2.3 Campaigns — Sprint 3
 
@@ -120,40 +120,40 @@ Buttons by status: `running` → Pause, Stop · `paused` → Resume, Stop · alw
 
 Create-campaign modal:
 
-| Field | Control | Default |
-| --- | --- | --- |
-| Campaign Name | text | placeholder "e.g., Spring Sale 2024" |
-| Select Devices | checkbox list | — |
-| Select Contact Lists | checkbox list showing `Name (count)` | — |
-| Select Template | select | "-- Choose a template --" |
-| Template Preview | read-only | "(Select a template to preview)" |
-| Schedule Send (optional) | `datetime-local` | — |
-| Random Delay From (sec) | number 0–300 | 0 |
-| Random Delay To (sec) | number 0–300 | 5 |
-| Sleep Duration (sec) | number 0–600 | 10 |
-| Sleep After N Messages | number 1–100 | 10 |
+| Field                    | Control                              | Default                              |
+| ------------------------ | ------------------------------------ | ------------------------------------ |
+| Campaign Name            | text                                 | placeholder "e.g., Spring Sale 2024" |
+| Select Devices           | checkbox list                        | —                                    |
+| Select Contact Lists     | checkbox list showing `Name (count)` | —                                    |
+| Select Template          | select                               | "-- Choose a template --"            |
+| Template Preview         | read-only                            | "(Select a template to preview)"     |
+| Schedule Send (optional) | `datetime-local`                     | —                                    |
+| Random Delay From (sec)  | number 0–300                         | 0                                    |
+| Random Delay To (sec)    | number 0–300                         | 5                                    |
+| Sleep Duration (sec)     | number 0–600                         | 10                                   |
+| Sleep After N Messages   | number 1–100                         | 10                                   |
 
 Validation: "Fill all required fields" · "Select at least one device and contact list".
 
 ### 2.4 WA Groups — Sprint 3
 
-| Pane | Elements |
-| --- | --- |
-| Left | "WhatsApp Groups" · "+ Create Bulk" · "Filter by Device" · "Select All" · group rows with "👥 {n} members" |
+| Pane  | Elements                                                                                                                                                         |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Left  | "WhatsApp Groups" · "+ Create Bulk" · "Filter by Device" · "Select All" · group rows with "👥 {n} members"                                                       |
 | Right | "Send Messages to Groups" · "Selected Groups (N)" · template select · message preview · "Delay Between Messages (seconds)" default 2 · "Send to Selected Groups" |
 
 Create-groups-in-bulk modal:
 
-| Field | Control | Default |
-| --- | --- | --- |
-| Select Device | select | "-- Choose device --" |
-| Group Name Prefix | text | placeholder "e.g., Sales Team" |
-| Suffix Rule | select | Sequential Numbers (001…) · Alphabet (A, B, C…) · Timestamp · No Suffix |
-| Number of Groups to Create | number 1–100 | 5 |
-| Delay Between Groups (seconds) | number 0–60 | 2 |
-| Add Contacts from Lists | checkbox list | — |
-| Contacts per Group | number 0–500 | 10 |
-| Preview | live text | `Sales Team 001, Sales Team 002, …` |
+| Field                          | Control       | Default                                                                 |
+| ------------------------------ | ------------- | ----------------------------------------------------------------------- |
+| Select Device                  | select        | "-- Choose device --"                                                   |
+| Group Name Prefix              | text          | placeholder "e.g., Sales Team"                                          |
+| Suffix Rule                    | select        | Sequential Numbers (001…) · Alphabet (A, B, C…) · Timestamp · No Suffix |
+| Number of Groups to Create     | number 1–100  | 5                                                                       |
+| Delay Between Groups (seconds) | number 0–60   | 2                                                                       |
+| Add Contacts from Lists        | checkbox list | —                                                                       |
+| Contacts per Group             | number 0–500  | 10                                                                      |
+| Preview                        | live text     | `Sales Team 001, Sales Team 002, …`                                     |
 
 ### 2.5 Devices — Sprint 2
 
@@ -170,10 +170,10 @@ beyond the prototype per customer decision — a **Pairing code** tab.
 List tabs · search "Search contacts…" · "+ Add Contact" · "📥 Import" · "📤 Export" · dynamic
 table whose columns come from the list's `fields` array plus an Actions column.
 
-| Modal | Fields |
-| --- | --- |
+| Modal           | Fields                                      |
+| --------------- | ------------------------------------------- |
 | Create New List | List Name · Custom Fields (comma-separated) |
-| Add Contact | one input per field of the active list |
+| Add Contact     | one input per field of the active list      |
 
 Default list "All Contacts" has fields `['Name', 'Mobile']`; every new list starts with those
 two plus its custom fields.
@@ -184,27 +184,27 @@ Card: name · type chip · WhatsApp-style preview bubble · Delete.
 
 Create-template modal:
 
-| Field | Control |
-| --- | --- |
-| Template Name | text |
-| Template Type | Text Only · With Media (Image/Video) · Interactive Message · Button Message |
-| Message Content | textarea (monospace) |
-| Media Type *(type=media)* | Image · Video |
-| Options, one per line *(type=interactive)* | textarea |
-| Buttons, one per line, max 3 *(type=button)* | textarea, hard-capped at 3 |
+| Field                                        | Control                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------- |
+| Template Name                                | text                                                                        |
+| Template Type                                | Text Only · With Media (Image/Video) · Interactive Message · Button Message |
+| Message Content                              | textarea (monospace)                                                        |
+| Media Type _(type=media)_                    | Image · Video                                                               |
+| Options, one per line _(type=interactive)_   | textarea                                                                    |
+| Buttons, one per line, max 3 _(type=button)_ | textarea, hard-capped at 3                                                  |
 
 ### 2.8 AI Bot — Sprint 4
 
-| Panel | Fields |
-| --- | --- |
-| System Instructions | monospace textarea — "Define bot personality, behavior rules, communication goals, and response patterns…" |
-| Business Information | Business Name · Email · Phone |
-| Auto-Reply Settings | Enable Auto-Replies (checked) · Response Delay preset (Instant 0 · Very Quick 1 · Quick 2 ✓ · Normal 3 · Thoughtful 5) + custom number 0–30 · Tone (Professional · Friendly & Approachable · Formal & Official · Casual & Conversational) · Industry (E-Commerce · SaaS · Healthcare · Hospitality · Real Estate · Customer Support · Education · Finance + free text) |
-| Bot Personality & Goals | Primary Goal (Customer Support · Sales & Lead Generation · Inquiry Handling · Appointment Booking · Feedback Collection) · Response Style (Conversational · Bullet Points · Detailed/Long Form · Concise/Short) · Language (English · Spanish · French · German · Portuguese · Hindi) |
-| Escalation & Handling | Escalation Trigger (Keywords · Low Confidence Threshold · After N Messages · After Time Elapsed) · Escalation Message (3 presets + free text) · Confidence Threshold % default 75 |
-| Products & Services | bulk textarea, format `Name \| Description` |
-| Knowledge Base | bulk textarea, format `Q: Question \| A: Answer` |
-| Action | "Save Configuration" |
+| Panel                   | Fields                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System Instructions     | monospace textarea — "Define bot personality, behavior rules, communication goals, and response patterns…"                                                                                                                                                                                                                                                             |
+| Business Information    | Business Name · Email · Phone                                                                                                                                                                                                                                                                                                                                          |
+| Auto-Reply Settings     | Enable Auto-Replies (checked) · Response Delay preset (Instant 0 · Very Quick 1 · Quick 2 ✓ · Normal 3 · Thoughtful 5) + custom number 0–30 · Tone (Professional · Friendly & Approachable · Formal & Official · Casual & Conversational) · Industry (E-Commerce · SaaS · Healthcare · Hospitality · Real Estate · Customer Support · Education · Finance + free text) |
+| Bot Personality & Goals | Primary Goal (Customer Support · Sales & Lead Generation · Inquiry Handling · Appointment Booking · Feedback Collection) · Response Style (Conversational · Bullet Points · Detailed/Long Form · Concise/Short) · Language (English · Spanish · French · German · Portuguese · Hindi)                                                                                  |
+| Escalation & Handling   | Escalation Trigger (Keywords · Low Confidence Threshold · After N Messages · After Time Elapsed) · Escalation Message (3 presets + free text) · Confidence Threshold % default 75                                                                                                                                                                                      |
+| Products & Services     | bulk textarea, format `Name \| Description`                                                                                                                                                                                                                                                                                                                            |
+| Knowledge Base          | bulk textarea, format `Q: Question \| A: Answer`                                                                                                                                                                                                                                                                                                                       |
+| Action                  | "Save Configuration"                                                                                                                                                                                                                                                                                                                                                   |
 
 ### 2.9 Settings — Sprint 1 (license) → Sprint 4 (rest)
 
@@ -701,43 +701,43 @@ model Setting {
 SQLite has no native enums; these are string unions defined once in `shared/types.ts` and
 validated by zod at every boundary.
 
-| Enum | Values |
-| --- | --- |
-| `LicenseStatus` | `unlicensed` · `valid` · `invalid` · `expired` · `revoked` · `conflict` · `grace` |
-| `DeviceStatus` | `disconnected` · `connecting` · `qr_pending` · `pairing_pending` · `connected` · `logged_out` · `banned` |
-| `CampaignStatus` | `draft` · `scheduled` · `running` · `paused` · `completed` · `failed` |
-| `RecipientStatus` | `pending` · `sending` · `sent` · `failed` · `skipped` |
-| `TemplateType` | `text` · `media` · `interactive` · `button` |
-| `MessageDirection` | `in` · `out` |
-| `MessageType` | `text` · `media` · `attachment` · `buttons` · `interactive` |
-| `MessageStatus` | `pending` · `sent` · `delivered` · `read` · `failed` |
-| `JobStatus` | `pending` · `running` · `paused` · `completed` · `failed` |
-| `SuffixRule` | `number` · `alphabet` · `timestamp` · `none` |
+| Enum               | Values                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `LicenseStatus`    | `unlicensed` · `valid` · `invalid` · `expired` · `revoked` · `conflict` · `grace`                        |
+| `DeviceStatus`     | `disconnected` · `connecting` · `qr_pending` · `pairing_pending` · `connected` · `logged_out` · `banned` |
+| `CampaignStatus`   | `draft` · `scheduled` · `running` · `paused` · `completed` · `failed`                                    |
+| `RecipientStatus`  | `pending` · `sending` · `sent` · `failed` · `skipped`                                                    |
+| `TemplateType`     | `text` · `media` · `interactive` · `button`                                                              |
+| `MessageDirection` | `in` · `out`                                                                                             |
+| `MessageType`      | `text` · `media` · `attachment` · `buttons` · `interactive`                                              |
+| `MessageStatus`    | `pending` · `sent` · `delivered` · `read` · `failed`                                                     |
+| `JobStatus`        | `pending` · `running` · `paused` · `completed` · `failed`                                                |
+| `SuffixRule`       | `number` · `alphabet` · `timestamp` · `none`                                                             |
 
 ### 4.2 Settings keys
 
-| Key | Type | Default | Encrypted |
-| --- | --- | --- | --- |
-| `sending.delayFrom` | int | 0 | no |
-| `sending.delayTo` | int | 5 | no |
-| `sending.sleepDuration` | int | 10 | no |
-| `sending.sleepAfter` | int | 10 | no |
-| `sending.groupMessageDelay` | int | 2 | no |
-| `sending.groupCreateDelay` | int | 2 | no |
-| `sending.dailyCapPerDevice` | int | 0 (unlimited) | no |
-| `sending.retryAttempts` | int | 2 | no |
-| `sending.maxConcurrentDevices` | int | 20 | no |
-| `ai.apiKey` | string | — | **yes** |
-| `ai.model` | string | per REQUIREMENTS §5 | no |
-| `ai.maxTokens` | int | 500 | no |
-| `ai.temperature` | float | 0.7 | no |
-| `ai.historyDepth` | int | 10 | no |
-| `ai.dailyReplyCap` | int | 0 | no |
-| `contacts.defaultCountryCode` | string | per REQUIREMENTS §7.5 | no |
-| `contacts.duplicatePolicy` | string | `skip` | no |
-| `inbox.retentionDays` | int | per REQUIREMENTS §7.3 | no |
-| `updates.channel` | string | `stable` | no |
-| `app.lastMigration` | string | — | no |
+| Key                            | Type   | Default               | Encrypted |
+| ------------------------------ | ------ | --------------------- | --------- |
+| `sending.delayFrom`            | int    | 0                     | no        |
+| `sending.delayTo`              | int    | 5                     | no        |
+| `sending.sleepDuration`        | int    | 10                    | no        |
+| `sending.sleepAfter`           | int    | 10                    | no        |
+| `sending.groupMessageDelay`    | int    | 2                     | no        |
+| `sending.groupCreateDelay`     | int    | 2                     | no        |
+| `sending.dailyCapPerDevice`    | int    | 0 (unlimited)         | no        |
+| `sending.retryAttempts`        | int    | 2                     | no        |
+| `sending.maxConcurrentDevices` | int    | 20                    | no        |
+| `ai.apiKey`                    | string | —                     | **yes**   |
+| `ai.model`                     | string | per REQUIREMENTS §5   | no        |
+| `ai.maxTokens`                 | int    | 500                   | no        |
+| `ai.temperature`               | float  | 0.7                   | no        |
+| `ai.historyDepth`              | int    | 10                    | no        |
+| `ai.dailyReplyCap`             | int    | 0                     | no        |
+| `contacts.defaultCountryCode`  | string | per REQUIREMENTS §7.5 | no        |
+| `contacts.duplicatePolicy`     | string | `skip`                | no        |
+| `inbox.retentionDays`          | int    | per REQUIREMENTS §7.3 | no        |
+| `updates.channel`              | string | `stable`              | no        |
+| `app.lastMigration`            | string | —                     | no        |
 
 ### 4.3 Why `Contact.data` is a JSON blob
 
@@ -790,33 +790,33 @@ window.api = {
 
 ### 5.2 Invoke channels
 
-| Domain | Channels |
-| --- | --- |
-| License | `license:status` · `license:activate` · `license:transfer` · `license:deactivate` · `license:revalidate` |
-| Devices | `device:list` · `device:create` · `device:rename` · `device:connect` · `device:requestPairingCode` · `device:reconnect` · `device:logout` · `device:delete` |
-| Contacts | `contactList:list` · `contactList:create` · `contactList:update` · `contactList:delete` · `contacts:list` · `contacts:create` · `contacts:update` · `contacts:delete` · `contacts:bulkDelete` · `contacts:import` · `contacts:importPreview` · `contacts:export` |
-| Templates | `template:list` · `template:create` · `template:update` · `template:delete` · `template:usage` · `template:preview` |
-| Campaigns | `campaign:list` · `campaign:get` · `campaign:create` · `campaign:start` · `campaign:pause` · `campaign:resume` · `campaign:stop` · `campaign:delete` · `campaign:recipients` · `campaign:report` |
-| Groups | `group:list` · `group:sync` · `groupSend:create` · `groupSend:status` · `groupCreate:create` · `groupCreate:status` |
-| Inbox | `chat:list` · `chat:get` · `chat:messages` · `chat:send` · `chat:markRead` · `chat:setOptOut` |
-| Chatbot | `chatbot:get` · `chatbot:save` · `chatbot:testKey` |
-| Settings | `settings:get` · `settings:set` · `settings:getAll` |
-| System | `system:dashboard` · `system:openPath` · `system:exportDiagnostics` · `system:backup` · `system:restore` · `system:clearData` · `system:checkUpdate` · `system:version` |
+| Domain    | Channels                                                                                                                                                                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| License   | `license:status` · `license:activate` · `license:transfer` · `license:deactivate` · `license:revalidate`                                                                                                                                                         |
+| Devices   | `device:list` · `device:create` · `device:rename` · `device:connect` · `device:requestPairingCode` · `device:reconnect` · `device:logout` · `device:delete`                                                                                                      |
+| Contacts  | `contactList:list` · `contactList:create` · `contactList:update` · `contactList:delete` · `contacts:list` · `contacts:create` · `contacts:update` · `contacts:delete` · `contacts:bulkDelete` · `contacts:import` · `contacts:importPreview` · `contacts:export` |
+| Templates | `template:list` · `template:create` · `template:update` · `template:delete` · `template:usage` · `template:preview`                                                                                                                                              |
+| Campaigns | `campaign:list` · `campaign:get` · `campaign:create` · `campaign:start` · `campaign:pause` · `campaign:resume` · `campaign:stop` · `campaign:delete` · `campaign:recipients` · `campaign:report`                                                                 |
+| Groups    | `group:list` · `group:sync` · `groupSend:create` · `groupSend:status` · `groupCreate:create` · `groupCreate:status`                                                                                                                                              |
+| Inbox     | `chat:list` · `chat:get` · `chat:messages` · `chat:send` · `chat:markRead` · `chat:setOptOut`                                                                                                                                                                    |
+| Chatbot   | `chatbot:get` · `chatbot:save` · `chatbot:testKey`                                                                                                                                                                                                               |
+| Settings  | `settings:get` · `settings:set` · `settings:getAll`                                                                                                                                                                                                              |
+| System    | `system:dashboard` · `system:openPath` · `system:exportDiagnostics` · `system:backup` · `system:restore` · `system:clearData` · `system:checkUpdate` · `system:version`                                                                                          |
 
 ### 5.3 Event channels (main → renderer, push only)
 
-| Event | Payload | Emitted when |
-| --- | --- | --- |
-| `device:status` | `{ deviceId, status, phone?, error? }` | Any device state transition |
-| `device:qr` | `{ deviceId, qr }` | Baileys emits a new QR (rotates ~every 20s) |
-| `device:pairingCode` | `{ deviceId, code }` | Pairing code issued |
-| `campaign:progress` | `{ campaignId, sent, failed, total, status }` | Batched every 1s or 25 messages |
-| `groupJob:progress` | `{ jobId, kind, done, total, status }` | Batched, same policy |
-| `message:received` | `{ chatId, message }` | Incoming WhatsApp message persisted |
-| `message:status` | `{ messageId, status }` | Delivery/read receipt |
-| `license:changed` | `{ status, expiresAt? }` | Revalidation changes state |
-| `wa:serviceState` | `{ state, restartCount }` | wa-service up/down/restarting |
-| `toast` | `{ level, message }` | Background operation needs to tell the user something |
+| Event                | Payload                                       | Emitted when                                          |
+| -------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| `device:status`      | `{ deviceId, status, phone?, error? }`        | Any device state transition                           |
+| `device:qr`          | `{ deviceId, qr }`                            | Baileys emits a new QR (rotates ~every 20s)           |
+| `device:pairingCode` | `{ deviceId, code }`                          | Pairing code issued                                   |
+| `campaign:progress`  | `{ campaignId, sent, failed, total, status }` | Batched every 1s or 25 messages                       |
+| `groupJob:progress`  | `{ jobId, kind, done, total, status }`        | Batched, same policy                                  |
+| `message:received`   | `{ chatId, message }`                         | Incoming WhatsApp message persisted                   |
+| `message:status`     | `{ messageId, status }`                       | Delivery/read receipt                                 |
+| `license:changed`    | `{ status, expiresAt? }`                      | Revalidation changes state                            |
+| `wa:serviceState`    | `{ state, restartCount }`                     | wa-service up/down/restarting                         |
+| `toast`              | `{ level, message }`                          | Background operation needs to tell the user something |
 
 **Nothing polls.** Progress and status always arrive as events; the renderer keeps no timers.
 
@@ -825,19 +825,19 @@ window.api = {
 `shared/errors.ts` defines the codes every IPC handler must map failures onto. Each carries a
 `userMessage` (safe to display) and `detail` (logged, never shown raw).
 
-| Code | Meaning |
-| --- | --- |
-| `VALIDATION_FAILED` | zod rejected the request or response |
-| `NOT_FOUND` | Entity missing |
-| `CONFLICT` | Unique constraint / duplicate |
-| `LICENSE_REQUIRED` · `LICENSE_INVALID` · `LICENSE_CONFLICT` · `LICENSE_EXPIRED` | Licensing |
-| `DEVICE_NOT_CONNECTED` · `DEVICE_LOGGED_OUT` · `DEVICE_LIMIT_REACHED` | Devices |
-| `WA_SERVICE_DOWN` | wa-service unavailable |
-| `SEND_FAILED` · `RATE_LIMITED` · `DAILY_CAP_REACHED` | Sending |
-| `AI_KEY_MISSING` · `AI_KEY_INVALID` · `AI_RATE_LIMITED` · `AI_TIMEOUT` | OpenAI |
-| `IMPORT_FAILED` · `EXPORT_FAILED` | CSV |
-| `DB_ERROR` · `MIGRATION_FAILED` · `INTEGRITY_FAILED` | Database |
-| `NETWORK_ERROR` · `UNKNOWN` | Catch-alls |
+| Code                                                                            | Meaning                              |
+| ------------------------------------------------------------------------------- | ------------------------------------ |
+| `VALIDATION_FAILED`                                                             | zod rejected the request or response |
+| `NOT_FOUND`                                                                     | Entity missing                       |
+| `CONFLICT`                                                                      | Unique constraint / duplicate        |
+| `LICENSE_REQUIRED` · `LICENSE_INVALID` · `LICENSE_CONFLICT` · `LICENSE_EXPIRED` | Licensing                            |
+| `DEVICE_NOT_CONNECTED` · `DEVICE_LOGGED_OUT` · `DEVICE_LIMIT_REACHED`           | Devices                              |
+| `WA_SERVICE_DOWN`                                                               | wa-service unavailable               |
+| `SEND_FAILED` · `RATE_LIMITED` · `DAILY_CAP_REACHED`                            | Sending                              |
+| `AI_KEY_MISSING` · `AI_KEY_INVALID` · `AI_RATE_LIMITED` · `AI_TIMEOUT`          | OpenAI                               |
+| `IMPORT_FAILED` · `EXPORT_FAILED`                                               | CSV                                  |
+| `DB_ERROR` · `MIGRATION_FAILED` · `INTEGRITY_FAILED`                            | Database                             |
+| `NETWORK_ERROR` · `UNKNOWN`                                                     | Catch-alls                           |
 
 ---
 
@@ -987,23 +987,23 @@ signed; a tampered cache is treated as `unlicensed`.
 Tokens derived from the prototype, modernized (the prototype is a low-fidelity Windows
 wireframe; the customer confirmed it is a rough guide, not a pixel target).
 
-| Token | Value | Prototype origin |
-| --- | --- | --- |
-| `--primary` | `#0078d4` | buttons, active nav border, active list tab |
-| `--primary-hover` | `#106ebe` | button hover |
-| `--danger` | `#c50f1f` | destructive buttons, error text |
-| `--danger-hover` | `#a4081f` | |
-| `--success` | `#107c10` | license success text |
-| `--wa-bubble-out` | `#dcf8c6` | outgoing chat bubble |
-| `--wa-bubble-in` | `#f0f0f0` | incoming chat bubble |
-| `--wa-teal` | `#128c7e` | attachment left border |
-| `--status-ok-bg` / `-fg` | `#d4edda` / `#155724` | connected, running |
-| `--status-warn-bg` / `-fg` | `#fff3cd` / `#856404` | paused |
-| `--status-idle-bg` / `-fg` | `#e2e3e5` / `#383d41` | draft |
-| `--selected` | `#28a745` | selected group, active chat border |
-| `--bg` / `--surface` / `--sidebar` | `#f5f5f5` / `#ffffff` / `#f9f9f9` | |
-| `--border` | `#e5e7eb` | modernized from `#ddd`/`#eee` |
-| `--text` / `--muted` / `--subtle` | `#333` / `#666` / `#999` | |
+| Token                              | Value                             | Prototype origin                            |
+| ---------------------------------- | --------------------------------- | ------------------------------------------- |
+| `--primary`                        | `#0078d4`                         | buttons, active nav border, active list tab |
+| `--primary-hover`                  | `#106ebe`                         | button hover                                |
+| `--danger`                         | `#c50f1f`                         | destructive buttons, error text             |
+| `--danger-hover`                   | `#a4081f`                         |                                             |
+| `--success`                        | `#107c10`                         | license success text                        |
+| `--wa-bubble-out`                  | `#dcf8c6`                         | outgoing chat bubble                        |
+| `--wa-bubble-in`                   | `#f0f0f0`                         | incoming chat bubble                        |
+| `--wa-teal`                        | `#128c7e`                         | attachment left border                      |
+| `--status-ok-bg` / `-fg`           | `#d4edda` / `#155724`             | connected, running                          |
+| `--status-warn-bg` / `-fg`         | `#fff3cd` / `#856404`             | paused                                      |
+| `--status-idle-bg` / `-fg`         | `#e2e3e5` / `#383d41`             | draft                                       |
+| `--selected`                       | `#28a745`                         | selected group, active chat border          |
+| `--bg` / `--surface` / `--sidebar` | `#f5f5f5` / `#ffffff` / `#f9f9f9` |                                             |
+| `--border`                         | `#e5e7eb`                         | modernized from `#ddd`/`#eee`               |
+| `--text` / `--muted` / `--subtle`  | `#333` / `#666` / `#999`          |                                             |
 
 Typography: Inter with a system fallback (replacing Segoe UI), `ui-monospace` for template and
 bulk-config textareas. Radius: 6px controls, 8px cards, 12px chat bubbles — replacing the
@@ -1037,7 +1037,7 @@ system is in place, and packaging is proven. No WhatsApp yet.
 
 ### 9.1 Tasks
 
-#### T1.1 — Prisma/Electron packaging spike *(do this first, timebox 1 day)*
+#### T1.1 — Prisma/Electron packaging spike _(do this first, timebox 1 day)_
 
 Prove Prisma Client works inside a packaged, `asar`-packed Electron build on **both** Windows
 and macOS, using the `better-sqlite3` driver adapter so no Rust query-engine binary needs
@@ -1121,8 +1121,8 @@ Loading skeletons. A `wa:serviceState` banner for degraded states.
 
 #### T1.9 — Settings, license panel
 
-Masked key, bound device name, status pill, expiry, last validated, and *Deactivate this
-device* with confirmation. Remaining sections are Sprint 4.
+Masked key, bound device name, status pill, expiry, last validated, and _Deactivate this
+device_ with confirmation. Remaining sections are Sprint 4.
 
 #### T1.10 — Logging and diagnostics
 
@@ -1130,7 +1130,7 @@ device* with confirmation. Remaining sections are Sprint 4.
 structured entries with process tag and correlation id. **Automatic redaction** of license
 keys, API keys, and phone numbers (last 4 digits kept). Global `uncaughtException`,
 `unhandledRejection`, renderer `render-process-gone` and `unresponsive` handlers.
-*Export diagnostics* producing a zip of logs + app/OS versions + non-sensitive settings.
+_Export diagnostics_ producing a zip of logs + app/OS versions + non-sensitive settings.
 
 #### T1.11 — Playwright harness
 
@@ -1146,7 +1146,7 @@ launches.
 - A valid key activates, persists across restart, and does not re-prompt.
 - An invalid key shows the mapped error and stores nothing.
 - A conflicting key opens the conflict dialog showing the other device's name and last-used
-  time; *Deactivate & Activate Here* completes the transfer; *Cancel* returns to the form.
+  time; _Deactivate & Activate Here_ completes the transfer; _Cancel_ returns to the form.
 - With the network unplugged after activation, the app opens within the grace period and locks
   after it expires.
 - The DB is created at the per-OS-user path, migrates from empty, and survives restart.
@@ -1155,33 +1155,33 @@ launches.
 
 ### 9.3 E2E tests
 
-| ID | Test |
-| --- | --- |
-| E1.1 | Fresh launch shows activation; no main window |
-| E1.2 | Valid key → app opens; relaunch stays open without re-prompt |
-| E1.3 | Invalid key → mapped error, still gated |
-| E1.4 | Empty key → "License key is required." |
-| E1.5 | Conflict key → dialog shows other device + last used; transfer succeeds |
-| E1.6 | Conflict dialog → Cancel returns to form, nothing stored |
-| E1.7 | Remarks text is submitted with the activation request |
-| E1.8 | Offline after activation → opens in grace; past grace → locked |
-| E1.9 | Settings → Deactivate → returns to activation screen |
-| E1.10 | Navigate all nine screens with zero console errors |
-| E1.11 | Tampered license cache is rejected and re-gates the app |
-| E1.12 | DB file exists at the userData path after first launch |
-| E1.13 | Migration runs from empty and is idempotent on second launch |
-| E1.14 | IPC rejects a malformed payload with `VALIDATION_FAILED` |
-| E1.15 | Logs contain no raw license key or full phone number |
+| ID    | Test                                                                    |
+| ----- | ----------------------------------------------------------------------- |
+| E1.1  | Fresh launch shows activation; no main window                           |
+| E1.2  | Valid key → app opens; relaunch stays open without re-prompt            |
+| E1.3  | Invalid key → mapped error, still gated                                 |
+| E1.4  | Empty key → "License key is required."                                  |
+| E1.5  | Conflict key → dialog shows other device + last used; transfer succeeds |
+| E1.6  | Conflict dialog → Cancel returns to form, nothing stored                |
+| E1.7  | Remarks text is submitted with the activation request                   |
+| E1.8  | Offline after activation → opens in grace; past grace → locked          |
+| E1.9  | Settings → Deactivate → returns to activation screen                    |
+| E1.10 | Navigate all nine screens with zero console errors                      |
+| E1.11 | Tampered license cache is rejected and re-gates the app                 |
+| E1.12 | DB file exists at the userData path after first launch                  |
+| E1.13 | Migration runs from empty and is idempotent on second launch            |
+| E1.14 | IPC rejects a malformed payload with `VALIDATION_FAILED`                |
+| E1.15 | Logs contain no raw license key or full phone number                    |
 | E1.16 | Packaged build smoke test — launches, reaches activation, exits cleanly |
 
 ### 9.4 Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Prisma fails to package in Electron | T1.1 spike first; Drizzle fallback pre-agreed |
-| License API differs from what REQUIREMENTS captured | `LicenseService` interface isolates it; one file changes |
-| Fingerprint unstable across hardware changes | Composite hash with documented inputs; server-side transfer covers drift |
-| `safeStorage` unavailable (keychain locked) | Detect, fall back to an obfuscated store, log a warning, surface reduced security in Settings |
+| Risk                                                | Mitigation                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Prisma fails to package in Electron                 | T1.1 spike first; Drizzle fallback pre-agreed                                                 |
+| License API differs from what REQUIREMENTS captured | `LicenseService` interface isolates it; one file changes                                      |
+| Fingerprint unstable across hardware changes        | Composite hash with documented inputs; server-side transfer covers drift                      |
+| `safeStorage` unavailable (keychain locked)         | Detect, fall back to an obfuscated store, log a warning, surface reduced security in Settings |
 
 ---
 
@@ -1222,10 +1222,10 @@ Wrapped behind our own `transport` interface so a Baileys upgrade touches one fi
 
 #### T2.3 — Devices screen
 
-Card grid per §2.5. *Add Device* modal with the prototype's numbered instructions, a **Device
+Card grid per §2.5. _Add Device_ modal with the prototype's numbered instructions, a **Device
 Name** input, and two tabs: **QR** (live-refreshing canvas via `qrcode`, with an expiry
 countdown) and **Pairing code** (phone input with country code → 8-digit code with a copy
-button). Per-card *Reconnect* and *Logout* with confirmation. Rename. Live status via
+button). Per-card _Reconnect_ and _Logout_ with confirmation. Rename. Live status via
 `device:status`. Empty state guiding a first connection. A visible cap at 20 devices with a
 clear message.
 
@@ -1281,40 +1281,40 @@ without a real WhatsApp account or ban risk.**
 
 ### 10.3 E2E tests
 
-| ID | Test |
-| --- | --- |
-| E2.1 | Add device via QR (mock) → status reaches `connected`, phone persisted |
-| E2.2 | Add device via pairing code → 8-digit code shown → connects |
-| E2.3 | Sessions restore on relaunch without re-scanning |
-| E2.4 | Simulated disconnect → reconnects with backoff, not a tight loop |
-| E2.5 | `loggedOut` reason → terminal state, auth folder purged |
-| E2.6 | Circuit breaker opens after N failures; manual Reconnect recovers |
-| E2.7 | Logout → confirmation → device removed from the active list |
-| E2.8 | 20 mock devices connect concurrently; UI stays responsive |
-| E2.9 | 21st device blocked with a clear message |
-| E2.10 | wa-service killed → supervisor restarts it → devices reconnect |
-| E2.11 | Create list with custom fields; add/edit/delete a contact |
-| E2.12 | Import 50k-row CSV with column mapping; counts reconcile exactly |
-| E2.13 | Import with duplicates honors skip/overwrite/allow policy |
-| E2.14 | Import with malformed numbers produces a downloadable error report |
-| E2.15 | Export → re-import round-trips identically |
-| E2.16 | Search across 50k rows returns correct results under 500 ms |
-| E2.17 | Virtualized table scrolls 50k rows without frame drops |
-| E2.18 | Create each of the four template types; button cap enforced at 3 |
-| E2.19 | Oversized media rejected with a clear message |
-| E2.20 | Merge-tag preview substitutes real contact values |
-| E2.21 | Template referencing an unknown field is flagged at save |
-| E2.22 | Deleting a template used by a campaign warns first |
+| ID    | Test                                                                   |
+| ----- | ---------------------------------------------------------------------- |
+| E2.1  | Add device via QR (mock) → status reaches `connected`, phone persisted |
+| E2.2  | Add device via pairing code → 8-digit code shown → connects            |
+| E2.3  | Sessions restore on relaunch without re-scanning                       |
+| E2.4  | Simulated disconnect → reconnects with backoff, not a tight loop       |
+| E2.5  | `loggedOut` reason → terminal state, auth folder purged                |
+| E2.6  | Circuit breaker opens after N failures; manual Reconnect recovers      |
+| E2.7  | Logout → confirmation → device removed from the active list            |
+| E2.8  | 20 mock devices connect concurrently; UI stays responsive              |
+| E2.9  | 21st device blocked with a clear message                               |
+| E2.10 | wa-service killed → supervisor restarts it → devices reconnect         |
+| E2.11 | Create list with custom fields; add/edit/delete a contact              |
+| E2.12 | Import 50k-row CSV with column mapping; counts reconcile exactly       |
+| E2.13 | Import with duplicates honors skip/overwrite/allow policy              |
+| E2.14 | Import with malformed numbers produces a downloadable error report     |
+| E2.15 | Export → re-import round-trips identically                             |
+| E2.16 | Search across 50k rows returns correct results under 500 ms            |
+| E2.17 | Virtualized table scrolls 50k rows without frame drops                 |
+| E2.18 | Create each of the four template types; button cap enforced at 3       |
+| E2.19 | Oversized media rejected with a clear message                          |
+| E2.20 | Merge-tag preview substitutes real contact values                      |
+| E2.21 | Template referencing an unknown field is flagged at save               |
+| E2.22 | Deleting a template used by a campaign warns first                     |
 
 ### 10.4 Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Baileys 7 RC API drift | Version pinned exactly; transport interface confines the blast radius to one file |
-| WhatsApp bans test numbers | Every automated test uses the mock transport; real-device testing is manual and deliberate |
-| 20 sockets exhaust memory | Measure during T2.1; configurable concurrency cap; idle sessions disconnect |
-| Auth-folder corruption | Atomic writes, per-device folders, detect and force re-link rather than crash-loop |
-| 50k-row import blocks the UI | Worker-thread parse + batched transactions, verified by E2.12 |
+| Risk                         | Mitigation                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
+| Baileys 7 RC API drift       | Version pinned exactly; transport interface confines the blast radius to one file          |
+| WhatsApp bans test numbers   | Every automated test uses the mock transport; real-device testing is manual and deliberate |
+| 20 sockets exhaust memory    | Measure during T2.1; configurable concurrency cap; idle sessions disconnect                |
+| Auth-folder corruption       | Atomic writes, per-device folders, detect and force re-link rather than crash-loop         |
+| 50k-row import blocks the UI | Worker-thread parse + batched transactions, verified by E2.12                              |
 
 ---
 
@@ -1407,43 +1407,43 @@ bug.
 
 ### 11.3 E2E tests
 
-| ID | Test |
-| --- | --- |
-| E3.1 | Create campaign; every prototype field persists correctly |
-| E3.2 | Validation: no device or no list → blocked with the prototype's message |
-| E3.3 | Run a 1,000-recipient campaign on the mock transport → counters reconcile |
-| E3.4 | Delay range respected (send timestamps sampled and asserted) |
-| E3.5 | Sleep-after-N pause observed |
-| E3.6 | Pause → no further sends; Resume → continues from the same index |
-| E3.7 | Stop → status `completed`, workers idle |
-| E3.8 | **Kill mid-campaign → relaunch → resumes; duplicates ≤ bound** |
-| E3.9 | Stuck `sending` rows are reset to `pending` on boot |
-| E3.10 | Counters recomputed from rows after a crash, not carried in memory |
-| E3.11 | Scheduled campaign fires at its time |
-| E3.12 | Scheduled campaign whose time passed while closed fires on launch |
-| E3.13 | Device disconnect mid-run → slice reassigned, campaign continues |
-| E3.14 | All devices disconnect → campaign pauses with a reason |
-| E3.15 | Send failures retry then mark `failed`; failed count matches |
-| E3.16 | Contact in two selected lists is queued exactly once |
-| E3.17 | Merge tags resolve per recipient in the actual sent payload |
-| E3.18 | Report export contains every recipient with correct statuses |
-| E3.19 | Daily per-device cap parks a device once reached |
-| E3.20 | Group sync lists mock groups with member counts |
-| E3.21 | Select-all + bulk group send reaches every selected group |
-| E3.22 | Group send delay respected |
-| E3.23 | Bulk create 5 groups with each of the four suffix rules |
-| E3.24 | Bulk create partial failure → summary reports it, job completes |
-| E3.25 | Participant-add failures are reported per contact, not swallowed |
+| ID    | Test                                                                      |
+| ----- | ------------------------------------------------------------------------- |
+| E3.1  | Create campaign; every prototype field persists correctly                 |
+| E3.2  | Validation: no device or no list → blocked with the prototype's message   |
+| E3.3  | Run a 1,000-recipient campaign on the mock transport → counters reconcile |
+| E3.4  | Delay range respected (send timestamps sampled and asserted)              |
+| E3.5  | Sleep-after-N pause observed                                              |
+| E3.6  | Pause → no further sends; Resume → continues from the same index          |
+| E3.7  | Stop → status `completed`, workers idle                                   |
+| E3.8  | **Kill mid-campaign → relaunch → resumes; duplicates ≤ bound**            |
+| E3.9  | Stuck `sending` rows are reset to `pending` on boot                       |
+| E3.10 | Counters recomputed from rows after a crash, not carried in memory        |
+| E3.11 | Scheduled campaign fires at its time                                      |
+| E3.12 | Scheduled campaign whose time passed while closed fires on launch         |
+| E3.13 | Device disconnect mid-run → slice reassigned, campaign continues          |
+| E3.14 | All devices disconnect → campaign pauses with a reason                    |
+| E3.15 | Send failures retry then mark `failed`; failed count matches              |
+| E3.16 | Contact in two selected lists is queued exactly once                      |
+| E3.17 | Merge tags resolve per recipient in the actual sent payload               |
+| E3.18 | Report export contains every recipient with correct statuses              |
+| E3.19 | Daily per-device cap parks a device once reached                          |
+| E3.20 | Group sync lists mock groups with member counts                           |
+| E3.21 | Select-all + bulk group send reaches every selected group                 |
+| E3.22 | Group send delay respected                                                |
+| E3.23 | Bulk create 5 groups with each of the four suffix rules                   |
+| E3.24 | Bulk create partial failure → summary reports it, job completes           |
+| E3.25 | Participant-add failures are reported per contact, not swallowed          |
 
 ### 11.4 Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Double sends after a crash | Atomic claim, `messageId` recorded, unique constraint, bounded and documented worst case, asserted by E3.8 |
-| 100k queue rows slow the UI | Counters aggregated in SQL, progress events batched, recipient list paginated |
-| WhatsApp rate-limits or bans accounts | Conservative defaults, mandatory throttle path, daily caps, strictly one in-flight message per device |
-| Group participant-add silently fails | Per-participant results surfaced with the privacy-setting explanation |
-| Scheduler drift while the app sleeps | Compare against wall clock on wake, not a monotonic timer |
+| Risk                                  | Mitigation                                                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Double sends after a crash            | Atomic claim, `messageId` recorded, unique constraint, bounded and documented worst case, asserted by E3.8 |
+| 100k queue rows slow the UI           | Counters aggregated in SQL, progress events batched, recipient list paginated                              |
+| WhatsApp rate-limits or bans accounts | Conservative defaults, mandatory throttle path, daily caps, strictly one in-flight message per device      |
+| Group participant-add silently fails  | Per-participant results surfaced with the privacy-setting explanation                                      |
+| Scheduler drift while the app sleeps  | Compare against wall clock on wake, not a monotonic timer                                                  |
 
 ---
 
@@ -1484,13 +1484,13 @@ respects the optional daily reply cap.
 
 - **License** — from Sprint 1.
 - **AI** — OpenAI key via `safeStorage`, model dropdown, max tokens, temperature, history
-  depth, daily cap, and a *Test key* button making one cheap call and reporting the result.
+  depth, daily cap, and a _Test key_ button making one cheap call and reporting the result.
 - **Sending defaults** — delay range, sleep duration, sleep-after-N, group delays, daily cap per
   device, retry attempts, max concurrent devices; applied as defaults to new campaigns.
-- **Data & backup** — DB path with *Open folder*, database size, full backup export,
+- **Data & backup** — DB path with _Open folder_, database size, full backup export,
   restore-from-backup with confirmation, clear-all-data behind a typed confirmation, and
   retention controls.
-- **About & updates** — version, *Check for updates*, changelog, *Export diagnostics*.
+- **About & updates** — version, _Check for updates_, changelog, _Export diagnostics_.
 
 #### T4.4 — Dashboard
 
@@ -1532,43 +1532,43 @@ instructions. Final packaged smoke test on both platforms.
 
 ### 12.3 E2E tests
 
-| ID | Test |
-| --- | --- |
-| E4.1 | Incoming mock message appears in the chat list and thread |
-| E4.2 | Device filter narrows chats correctly |
-| E4.3 | Chat search matches name and phone |
-| E4.4 | Send text from composer → outgoing bubble, throttle respected |
-| E4.5 | All four message types render with correct styling |
-| E4.6 | Unread badge increments and clears on open |
-| E4.7 | Message history pages backwards on scroll |
-| E4.8 | Retention cleanup removes messages past the configured age |
-| E4.9 | Save full AI Bot config → persists across restart |
+| ID    | Test                                                                    |
+| ----- | ----------------------------------------------------------------------- |
+| E4.1  | Incoming mock message appears in the chat list and thread               |
+| E4.2  | Device filter narrows chats correctly                                   |
+| E4.3  | Chat search matches name and phone                                      |
+| E4.4  | Send text from composer → outgoing bubble, throttle respected           |
+| E4.5  | All four message types render with correct styling                      |
+| E4.6  | Unread badge increments and clears on open                              |
+| E4.7  | Message history pages backwards on scroll                               |
+| E4.8  | Retention cleanup removes messages past the configured age              |
+| E4.9  | Save full AI Bot config → persists across restart                       |
 | E4.10 | Auto-reply fires with a mocked OpenAI client after the configured delay |
-| E4.11 | Auto-reply disabled → no reply |
-| E4.12 | Missing key → `AI_KEY_MISSING` surfaced, no silent failure |
-| E4.13 | Invalid key → `AI_KEY_INVALID` surfaced distinctly |
-| E4.14 | Escalation trigger flags the chat instead of replying |
-| E4.15 | Bot never replies in groups or to itself |
-| E4.16 | Per-chat opt-out suppresses auto-reply |
-| E4.17 | AI key round-trips through `safeStorage` and never appears in logs |
-| E4.18 | *Test key* reports success and failure correctly |
-| E4.19 | Sending defaults are applied to a newly created campaign |
-| E4.20 | Backup → clear data → restore reproduces the original state |
-| E4.21 | Clear-all-data requires typed confirmation |
-| E4.22 | Dashboard aggregates match direct SQL |
-| E4.23 | Update check against a mock feed reports the available version |
-| E4.24 | Packaged build smoke test on Windows and macOS |
-| E4.25 | Full Sprint 1–3 regression suite green |
+| E4.11 | Auto-reply disabled → no reply                                          |
+| E4.12 | Missing key → `AI_KEY_MISSING` surfaced, no silent failure              |
+| E4.13 | Invalid key → `AI_KEY_INVALID` surfaced distinctly                      |
+| E4.14 | Escalation trigger flags the chat instead of replying                   |
+| E4.15 | Bot never replies in groups or to itself                                |
+| E4.16 | Per-chat opt-out suppresses auto-reply                                  |
+| E4.17 | AI key round-trips through `safeStorage` and never appears in logs      |
+| E4.18 | _Test key_ reports success and failure correctly                        |
+| E4.19 | Sending defaults are applied to a newly created campaign                |
+| E4.20 | Backup → clear data → restore reproduces the original state             |
+| E4.21 | Clear-all-data requires typed confirmation                              |
+| E4.22 | Dashboard aggregates match direct SQL                                   |
+| E4.23 | Update check against a mock feed reports the available version          |
+| E4.24 | Packaged build smoke test on Windows and macOS                          |
+| E4.25 | Full Sprint 1–3 regression suite green                                  |
 
 ### 12.4 Risks
 
-| Risk | Mitigation |
-| --- | --- |
+| Risk                                 | Mitigation                                                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | Apple notarization rejects the build | Attempt notarization in the first days of the sprint, not the last; hardened runtime and entitlements planned up front |
-| Certificates unavailable at release | REQUIREMENTS §4 asks early; unsigned interim builds possible with a documented warning |
-| OpenAI cost surprises for end users | Token caps, optional daily reply limits, visible usage in Settings |
-| Inbox history bloats the DB | Retention policy enforced by a scheduled cleanup job, asserted by E4.8 |
-| AI replies to the wrong chat | Hard rules (no groups, no self, opt-out) asserted by E4.15/E4.16 |
+| Certificates unavailable at release  | REQUIREMENTS §4 asks early; unsigned interim builds possible with a documented warning                                 |
+| OpenAI cost surprises for end users  | Token caps, optional daily reply limits, visible usage in Settings                                                     |
+| Inbox history bloats the DB          | Retention policy enforced by a scheduled cleanup job, asserted by E4.8                                                 |
+| AI replies to the wrong chat         | Hard rules (no groups, no self, opt-out) asserted by E4.15/E4.16                                                       |
 
 ---
 
@@ -1594,30 +1594,30 @@ A sprint is complete only when **all** of the following hold:
 Planned dependencies with the reason each exists. Versions are resolved and pinned at install
 time in Sprint 1; nothing floats on `^`.
 
-| Package | Role | Sprint |
-| --- | --- | --- |
-| `electron` | Desktop shell | 1 |
-| `electron-vite` | Main/preload/wa-service bundling with HMR | 1 |
-| `electron-builder` | NSIS + DMG packaging, signing, notarization | 1 (config) / 4 (release) |
-| `electron-updater` | Auto-update against the customer feed | 4 |
-| `electron-log` | Rotating structured logs in all processes | 1 |
-| `next` · `react` · `react-dom` | Renderer | 1 |
-| `tailwindcss` · `class-variance-authority` · `tailwind-merge` | Styling | 1 |
-| `shadcn/ui` primitives (`@radix-ui/*`) | Accessible components | 1 |
-| `lucide-react` | Icons, replacing the prototype's emoji | 1 |
-| `zod` | IPC validation, both directions | 1 |
-| `@prisma/client` · `prisma` · `@prisma/adapter-better-sqlite3` | ORM + driver adapter (v7 — WASM query compiler, no engine binary) | 1 |
-| `better-sqlite3` | Synchronous SQLite driver | 1 |
-| `baileys` | WhatsApp Web protocol — **pinned exactly**, version per REQUIREMENTS §7.6 | 2 |
-| `qrcode` | Render the QR the socket emits | 2 |
-| `libphonenumber-js` | E.164 normalization and validation | 2 |
-| `papaparse` | Streaming CSV parse in a worker | 2 |
-| `@tanstack/react-virtual` | Virtualized 50k-row tables and message threads | 2 |
-| `@tanstack/react-query` | Renderer cache over IPC invokes | 1 |
-| `date-fns` | Relative timestamps ("2 min ago") | 1 |
-| `openai` | AI Bot | 4 |
-| `@playwright/test` | E2E through `_electron` | 1 |
-| `typescript` · `eslint` · `prettier` | Toolchain | 1 |
+| Package                                                        | Role                                                                      | Sprint                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
+| `electron`                                                     | Desktop shell                                                             | 1                        |
+| `electron-vite`                                                | Main/preload/wa-service bundling with HMR                                 | 1                        |
+| `electron-builder`                                             | NSIS + DMG packaging, signing, notarization                               | 1 (config) / 4 (release) |
+| `electron-updater`                                             | Auto-update against the customer feed                                     | 4                        |
+| `electron-log`                                                 | Rotating structured logs in all processes                                 | 1                        |
+| `next` · `react` · `react-dom`                                 | Renderer                                                                  | 1                        |
+| `tailwindcss` · `class-variance-authority` · `tailwind-merge`  | Styling                                                                   | 1                        |
+| `shadcn/ui` primitives (`@radix-ui/*`)                         | Accessible components                                                     | 1                        |
+| `lucide-react`                                                 | Icons, replacing the prototype's emoji                                    | 1                        |
+| `zod`                                                          | IPC validation, both directions                                           | 1                        |
+| `@prisma/client` · `prisma` · `@prisma/adapter-better-sqlite3` | ORM + driver adapter (v7 — WASM query compiler, no engine binary)         | 1                        |
+| `better-sqlite3`                                               | Synchronous SQLite driver                                                 | 1                        |
+| `baileys`                                                      | WhatsApp Web protocol — **pinned exactly**, version per REQUIREMENTS §7.6 | 2                        |
+| `qrcode`                                                       | Render the QR the socket emits                                            | 2                        |
+| `libphonenumber-js`                                            | E.164 normalization and validation                                        | 2                        |
+| `papaparse`                                                    | Streaming CSV parse in a worker                                           | 2                        |
+| `@tanstack/react-virtual`                                      | Virtualized 50k-row tables and message threads                            | 2                        |
+| `@tanstack/react-query`                                        | Renderer cache over IPC invokes                                           | 1                        |
+| `date-fns`                                                     | Relative timestamps ("2 min ago")                                         | 1                        |
+| `openai`                                                       | AI Bot                                                                    | 4                        |
+| `@playwright/test`                                             | E2E through `_electron`                                                   | 1                        |
+| `typescript` · `eslint` · `prettier`                           | Toolchain                                                                 | 1                        |
 
 Deliberately **not** used: any Baileys fork or wrapper (`baileys-pro`, `baileys-antiban`,
 `mahiru-baileys`) — the anti-ban pacing in §6.1 is ours and auditable, and forks add supply-chain

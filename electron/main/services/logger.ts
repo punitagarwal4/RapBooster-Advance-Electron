@@ -16,29 +16,40 @@ import { logsDir } from '../db/paths'
  * Phone numbers keep their last 4 digits: enough to correlate a report with a
  * recipient during support, not enough to identify or contact them.
  */
-const REDACTIONS: Array<{ pattern: RegExp; replace: (match: string, ...args: string[]) => string }> =
-  [
-    // E.164 and loosely-formatted international numbers.
-    {
-      pattern: /\+?\d[\d\s\-().]{7,}\d/g,
-      replace: (match) => {
-        const digits = match.replace(/\D/g, '')
-        if (digits.length < 8) return match
-        return `+${'*'.repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}`
-      },
+const REDACTIONS: Array<{
+  pattern: RegExp
+  replace: (match: string, ...args: string[]) => string
+}> = [
+  // E.164 and loosely-formatted international numbers.
+  {
+    pattern: /\+?\d[\d\s\-().]{7,}\d/g,
+    replace: (match) => {
+      const digits = match.replace(/\D/g, '')
+      if (digits.length < 8) return match
+      return `+${'*'.repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}`
     },
-    // OpenAI-style keys.
-    { pattern: /\bsk-[A-Za-z0-9_-]{16,}\b/g, replace: () => 'sk-[REDACTED]' },
-    // Bearer tokens and api-key headers.
-    { pattern: /\b(Bearer|X-Api-Key:?)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replace: (_m, p1) => `${p1} [REDACTED]` },
-    // License keys: grouped alphanumerics separated by hyphens, e.g. VALID-2024-001.
-    { pattern: /\b[A-Z0-9]{4,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}\b/g, replace: () => '[REDACTED-KEY]' },
-  ]
+  },
+  // OpenAI-style keys.
+  { pattern: /\bsk-[A-Za-z0-9_-]{16,}\b/g, replace: () => 'sk-[REDACTED]' },
+  // Bearer tokens and api-key headers.
+  {
+    pattern: /\b(Bearer|X-Api-Key:?)\s+[A-Za-z0-9._~+/=-]{8,}/gi,
+    replace: (_m, p1) => `${p1} [REDACTED]`,
+  },
+  // License keys: grouped alphanumerics separated by hyphens, e.g. VALID-2024-001.
+  {
+    pattern: /\b[A-Z0-9]{4,}-[A-Z0-9]{2,}-[A-Z0-9]{2,}\b/g,
+    replace: () => '[REDACTED-KEY]',
+  },
+]
 
 export function redact(input: string): string {
   let output = input
   for (const { pattern, replace } of REDACTIONS) {
-    output = output.replace(pattern, replace as (substring: string, ...args: unknown[]) => string)
+    output = output.replace(
+      pattern,
+      replace as (substring: string, ...args: unknown[]) => string,
+    )
   }
   return output
 }

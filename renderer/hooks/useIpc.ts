@@ -67,9 +67,7 @@ export function useIpcQuery<C extends IpcChannel>(
 
     void window.api.invoke(channel, request).then((result) => {
       if (cancelled) return
-      setSettled(
-        result.ok ? { key, data: result.data } : { key, error: result.error },
-      )
+      setSettled(result.ok ? { key, data: result.data } : { key, error: result.error })
     })
 
     return () => {

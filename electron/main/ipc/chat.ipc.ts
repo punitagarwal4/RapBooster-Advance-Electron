@@ -16,7 +16,9 @@ function parseButtons(value: string | null): string[] | null {
   if (!value) return null
   try {
     const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : null
+    return Array.isArray(parsed)
+      ? parsed.filter((v): v is string => typeof v === 'string')
+      : null
   } catch {
     return null
   }
@@ -81,7 +83,12 @@ export function registerChatHandlers(): void {
     const where = {
       ...(deviceId ? { deviceId } : {}),
       ...(search && search.trim() !== ''
-        ? { OR: [{ name: { contains: search.trim() } }, { phone: { contains: search.trim() } }] }
+        ? {
+            OR: [
+              { name: { contains: search.trim() } },
+              { phone: { contains: search.trim() } },
+            ],
+          }
         : {}),
     }
 
@@ -108,7 +115,8 @@ export function registerChatHandlers(): void {
 
   registerHandler('chat:get', async ({ id }) => {
     const chat = await getPrisma().chat.findUnique({ where: { id } })
-    if (!chat) throw new AppError('NOT_FOUND', { userMessage: 'That chat no longer exists.' })
+    if (!chat)
+      throw new AppError('NOT_FOUND', { userMessage: 'That chat no longer exists.' })
     return serializeChat(chat)
   })
 
@@ -121,7 +129,11 @@ export function registerChatHandlers(): void {
     const [rows, total] = await Promise.all([
       // Newest first so paging backwards is a simple `before` cursor; the UI
       // reverses for display.
-      getPrisma().message.findMany({ where, orderBy: { timestamp: 'desc' }, take: limit + 1 }),
+      getPrisma().message.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: limit + 1,
+      }),
       getPrisma().message.count({ where: { chatId } }),
     ])
 
@@ -130,14 +142,17 @@ export function registerChatHandlers(): void {
 
     return {
       items: page.map(serializeMessage),
-      nextCursor: hasMore ? (page[page.length - 1]?.timestamp.toISOString() ?? null) : null,
+      nextCursor: hasMore
+        ? (page[page.length - 1]?.timestamp.toISOString() ?? null)
+        : null,
       total,
     }
   })
 
   registerHandler('chat:send', async ({ chatId, body, mediaSourcePath, buttons }) => {
     const chat = await getPrisma().chat.findUnique({ where: { id: chatId } })
-    if (!chat) throw new AppError('NOT_FOUND', { userMessage: 'That chat no longer exists.' })
+    if (!chat)
+      throw new AppError('NOT_FOUND', { userMessage: 'That chat no longer exists.' })
 
     if (!body && !mediaSourcePath) {
       throw new AppError('VALIDATION_FAILED', { userMessage: 'Type a message first.' })
@@ -193,7 +208,10 @@ export function registerChatHandlers(): void {
   })
 
   registerHandler('chat:setOptOut', async ({ chatId, optOut }) => {
-    await getPrisma().chat.update({ where: { id: chatId }, data: { autoReplyOptOut: optOut } })
+    await getPrisma().chat.update({
+      where: { id: chatId },
+      data: { autoReplyOptOut: optOut },
+    })
     return { ok: true as const }
   })
 }

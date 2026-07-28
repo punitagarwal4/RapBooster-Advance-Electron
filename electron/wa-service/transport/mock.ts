@@ -14,12 +14,7 @@
  */
 import { mkdirSync } from 'node:fs'
 import { TransportEmitter } from './emitter'
-import type {
-  OutgoingMessage,
-  RemoteGroup,
-  SendResult,
-  Transport,
-} from './types'
+import type { OutgoingMessage, RemoteGroup, SendResult, Transport } from './types'
 
 const num = (name: string, fallback: number): number => {
   const raw = process.env[name]
@@ -68,23 +63,31 @@ export class MockTransport extends TransportEmitter implements Transport {
     this.emit('qr', deviceId, `mock-qr:${deviceId}:${Date.now()}`)
     this.emit('status', deviceId, 'qr_pending')
 
-    setTimeout(() => {
-      const current = this.sessions.get(deviceId)
-      if (!current) return
-      current.connected = true
-      this.emit('status', deviceId, 'connected', { phone: current.phone })
+    setTimeout(
+      () => {
+        const current = this.sessions.get(deviceId)
+        if (!current) return
+        current.connected = true
+        this.emit('status', deviceId, 'connected', { phone: current.phone })
 
-      // Inbox specs need inbound traffic. Driving it from here rather than
-      // exposing a "simulate" IPC channel keeps the test hook inside code that
-      // is already test-only — production never ships this transport.
-      const inbound = num('WA_MOCK_INCOMING', 0)
-      for (let i = 0; i < inbound; i += 1) {
-        setTimeout(
-          () => this.simulateIncoming(deviceId, `Mock inbound ${i + 1}`, `+91999900${i}011`),
-          100 * (i + 1),
-        )
-      }
-    }, num('WA_MOCK_CONNECT_MS', 50))
+        // Inbox specs need inbound traffic. Driving it from here rather than
+        // exposing a "simulate" IPC channel keeps the test hook inside code that
+        // is already test-only — production never ships this transport.
+        const inbound = num('WA_MOCK_INCOMING', 0)
+        for (let i = 0; i < inbound; i += 1) {
+          setTimeout(
+            () =>
+              this.simulateIncoming(
+                deviceId,
+                `Mock inbound ${i + 1}`,
+                `+91999900${i}011`,
+              ),
+            100 * (i + 1),
+          )
+        }
+      },
+      num('WA_MOCK_CONNECT_MS', 50),
+    )
   }
 
   async requestPairingCode(deviceId: string, _phone: string): Promise<string> {
@@ -92,12 +95,15 @@ export class MockTransport extends TransportEmitter implements Transport {
     this.emit('status', deviceId, 'pairing_pending')
     this.emit('pairingCode', deviceId, code)
 
-    setTimeout(() => {
-      const current = this.sessions.get(deviceId)
-      if (!current) return
-      current.connected = true
-      this.emit('status', deviceId, 'connected', { phone: current.phone })
-    }, num('WA_MOCK_CONNECT_MS', 50))
+    setTimeout(
+      () => {
+        const current = this.sessions.get(deviceId)
+        if (!current) return
+        current.connected = true
+        this.emit('status', deviceId, 'connected', { phone: current.phone })
+      },
+      num('WA_MOCK_CONNECT_MS', 50),
+    )
 
     return code
   }
@@ -120,7 +126,11 @@ export class MockTransport extends TransportEmitter implements Transport {
     return this.sessions.get(deviceId)?.connected ?? false
   }
 
-  async send(deviceId: string, to: string, _message: OutgoingMessage): Promise<SendResult> {
+  async send(
+    deviceId: string,
+    to: string,
+    _message: OutgoingMessage,
+  ): Promise<SendResult> {
     const session = this.sessions.get(deviceId)
     if (!session?.connected) {
       throw new Error(`mock: device ${deviceId} is not connected`)
@@ -150,9 +160,24 @@ export class MockTransport extends TransportEmitter implements Transport {
       throw new Error(`mock: device ${deviceId} is not connected`)
     }
     return [
-      { id: `${deviceId}-group-1@g.us`, name: 'Sales Team 001', memberCount: 15, isAdmin: true },
-      { id: `${deviceId}-group-2@g.us`, name: 'Support Group A', memberCount: 8, isAdmin: true },
-      { id: `${deviceId}-group-3@g.us`, name: 'Marketing Team 001', memberCount: 12, isAdmin: false },
+      {
+        id: `${deviceId}-group-1@g.us`,
+        name: 'Sales Team 001',
+        memberCount: 15,
+        isAdmin: true,
+      },
+      {
+        id: `${deviceId}-group-2@g.us`,
+        name: 'Support Group A',
+        memberCount: 8,
+        isAdmin: true,
+      },
+      {
+        id: `${deviceId}-group-3@g.us`,
+        name: 'Marketing Team 001',
+        memberCount: 12,
+        isAdmin: false,
+      },
     ]
   }
 

@@ -26,7 +26,8 @@
     "test:e2e": "playwright test",
     "test:smoke": "npm run pack && node scripts/smoke.mjs",
     "postinstall": "prisma generate && electron-builder install-app-deps",
-    "check:media": "node scripts/check-media-deps.mjs"
+    "check:media": "node scripts/check-media-deps.mjs",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:media"
   },
   "dependencies": {
     "@hapi/boom": "10.0.1",

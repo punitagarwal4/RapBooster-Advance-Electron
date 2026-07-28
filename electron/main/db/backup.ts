@@ -56,7 +56,9 @@ export function pruneBackups(destDir: string, retain = RETAIN_BACKUPS): string[]
   return removed
 }
 
-export function listBackups(destDir: string): Array<{ file: string; size: number; mtime: number }> {
+export function listBackups(
+  destDir: string,
+): Array<{ file: string; size: number; mtime: number }> {
   if (!existsSync(destDir)) return []
   return readdirSync(destDir)
     .filter((f) => f.endsWith('.db'))

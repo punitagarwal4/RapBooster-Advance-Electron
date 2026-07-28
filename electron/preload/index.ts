@@ -55,7 +55,10 @@ const api = {
   },
 
   /** Subscribe to a push event. Returns an unsubscribe function. */
-  on<E extends IpcEvent>(event: E, callback: (payload: IpcEventPayload<E>) => void): () => void {
+  on<E extends IpcEvent>(
+    event: E,
+    callback: (payload: IpcEventPayload<E>) => void,
+  ): () => void {
     if (!events.has(event)) {
       console.error(`Unknown IPC event: ${event}`)
       return () => {}

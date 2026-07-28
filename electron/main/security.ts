@@ -24,7 +24,9 @@ const EXTERNAL_ALLOWLIST = [
 ]
 
 function isAllowedExternal(url: string): boolean {
-  return EXTERNAL_ALLOWLIST.some((prefix) => url.startsWith(`${prefix}/`) || url === prefix)
+  return EXTERNAL_ALLOWLIST.some(
+    (prefix) => url.startsWith(`${prefix}/`) || url === prefix,
+  )
 }
 
 /**
@@ -42,7 +44,9 @@ function inlineScriptHashes(rendererRoot: string): string[] {
   if (!existsSync(file)) return []
   try {
     const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
-    return Array.isArray(parsed) ? parsed.filter((h): h is string => typeof h === 'string') : []
+    return Array.isArray(parsed)
+      ? parsed.filter((h): h is string => typeof h === 'string')
+      : []
   } catch (err) {
     console.error('security: could not read CSP script hashes', err)
     return []
@@ -102,7 +106,10 @@ export function applySessionSecurity(rendererRoot: string): void {
 }
 
 /** Navigation and window-open policy for a specific window. */
-export function applyWindowSecurity(win: BrowserWindow, rendererUrl: string | undefined): void {
+export function applyWindowSecurity(
+  win: BrowserWindow,
+  rendererUrl: string | undefined,
+): void {
   const origin = rendererUrl ?? APP_ORIGIN
 
   win.webContents.setWindowOpenHandler(({ url }) => {

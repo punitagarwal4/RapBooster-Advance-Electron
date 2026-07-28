@@ -106,7 +106,8 @@ export class BaileysTransport extends TransportEmitter implements Transport {
 
       if (update.connection === 'close') {
         session.connected = false
-        const statusCode = (update.lastDisconnect?.error as Boom | undefined)?.output?.statusCode
+        const statusCode = (update.lastDisconnect?.error as Boom | undefined)?.output
+          ?.statusCode
         const loggedOut = statusCode === DisconnectReason.loggedOut
 
         // Only loggedOut is terminal. Everything else — restart required,
@@ -114,11 +115,21 @@ export class BaileysTransport extends TransportEmitter implements Transport {
         // when to retry (CLAUDE.md §5.4).
         if (loggedOut) {
           this.emit('status', deviceId, 'logged_out')
-          this.emit('disconnected', deviceId, 'logged_out', `statusCode=${String(statusCode)}`)
+          this.emit(
+            'disconnected',
+            deviceId,
+            'logged_out',
+            `statusCode=${String(statusCode)}`,
+          )
           this.sessions.delete(deviceId)
         } else if (!session.closing) {
           this.emit('status', deviceId, 'disconnected')
-          this.emit('disconnected', deviceId, 'retryable', `statusCode=${String(statusCode)}`)
+          this.emit(
+            'disconnected',
+            deviceId,
+            'retryable',
+            `statusCode=${String(statusCode)}`,
+          )
         }
       }
     })
@@ -137,7 +148,8 @@ export class BaileysTransport extends TransportEmitter implements Transport {
         const status = update.update.status
         if (!update.key.id || status === undefined || status === null) continue
         // 3 = delivered, 4 = read in WhatsApp's status enum.
-        if (Number(status) === 3) this.emit('receipt', deviceId, update.key.id, 'delivered')
+        if (Number(status) === 3)
+          this.emit('receipt', deviceId, update.key.id, 'delivered')
         if (Number(status) === 4) this.emit('receipt', deviceId, update.key.id, 'read')
       }
     })
@@ -151,13 +163,13 @@ export class BaileysTransport extends TransportEmitter implements Transport {
     const content = (raw.message ?? {}) as Record<string, unknown>
     const text =
       (content.conversation as string | undefined) ??
-      ((content.extendedTextMessage as { text?: string } | undefined)?.text ?? null)
+      (content.extendedTextMessage as { text?: string } | undefined)?.text ??
+      null
 
     const image = content.imageMessage as { caption?: string } | undefined
     const video = content.videoMessage as { caption?: string } | undefined
     const document = content.documentMessage as
-      | { fileName?: string; fileLength?: number | Long; caption?: string }
-      | undefined
+      { fileName?: string; fileLength?: number | Long; caption?: string } | undefined
 
     let type: IncomingMessage['type'] = 'text'
     let body = text
@@ -178,7 +190,9 @@ export class BaileysTransport extends TransportEmitter implements Transport {
       type = 'interactive'
     }
 
-    const seconds = raw.messageTimestamp ? Number(raw.messageTimestamp) : Date.now() / 1000
+    const seconds = raw.messageTimestamp
+      ? Number(raw.messageTimestamp)
+      : Date.now() / 1000
 
     return {
       id,
@@ -235,7 +249,11 @@ export class BaileysTransport extends TransportEmitter implements Transport {
     return this.sessions.get(deviceId)?.connected ?? false
   }
 
-  async send(deviceId: string, to: string, message: OutgoingMessage): Promise<SendResult> {
+  async send(
+    deviceId: string,
+    to: string,
+    message: OutgoingMessage,
+  ): Promise<SendResult> {
     const session = this.sessions.get(deviceId)
     if (!session?.connected) {
       throw new Error(`device ${deviceId} is not connected`)
@@ -293,7 +311,8 @@ export class BaileysTransport extends TransportEmitter implements Transport {
       name: group.subject,
       memberCount: group.participants.length,
       isAdmin: group.participants.some(
-        (p) => p.id.startsWith(own ?? ' ') && (p.admin === 'admin' || p.admin === 'superadmin'),
+        (p) =>
+          p.id.startsWith(own ?? ' ') && (p.admin === 'admin' || p.admin === 'superadmin'),
       ),
     }))
   }

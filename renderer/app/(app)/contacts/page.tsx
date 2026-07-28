@@ -97,7 +97,11 @@ export default function ContactsPage() {
         title="Contact Lists"
         description="Import, organise and export your recipients."
         actions={
-          <Button variant="primary" onClick={() => setCreatingList(true)} data-testid="new-list">
+          <Button
+            variant="primary"
+            onClick={() => setCreatingList(true)}
+            data-testid="new-list"
+          >
             + New List
           </Button>
         }
@@ -151,13 +155,25 @@ export default function ContactsPage() {
                   data-testid="contact-search"
                   className="w-56 rounded-control border border-line px-2.5 py-1.5 text-sm outline-none focus:border-primary"
                 />
-                <Button size="sm" onClick={() => setAddingContact(true)} data-testid="add-contact">
+                <Button
+                  size="sm"
+                  onClick={() => setAddingContact(true)}
+                  data-testid="add-contact"
+                >
                   + Add Contact
                 </Button>
-                <Button size="sm" onClick={() => setImporting(true)} data-testid="import-contacts">
+                <Button
+                  size="sm"
+                  onClick={() => setImporting(true)}
+                  data-testid="import-contacts"
+                >
                   Import CSV
                 </Button>
-                <Button size="sm" onClick={() => void exportList()} data-testid="export-contacts">
+                <Button
+                  size="sm"
+                  onClick={() => void exportList()}
+                  data-testid="export-contacts"
+                >
                   Export CSV
                 </Button>
               </div>
@@ -183,7 +199,11 @@ export default function ContactsPage() {
           footer={
             <>
               <Button onClick={() => setCreatingList(false)}>Cancel</Button>
-              <Button variant="primary" onClick={() => void createList()} data-testid="submit-list">
+              <Button
+                variant="primary"
+                onClick={() => void createList()}
+                data-testid="submit-list"
+              >
                 Create List
               </Button>
             </>
@@ -250,7 +270,10 @@ export default function ContactsPage() {
           <div className="flex flex-col gap-3">
             {active.fields.map((field) => (
               <div key={field} className="flex flex-col gap-1.5">
-                <label htmlFor={`field-${field}`} className="text-xs font-semibold text-ink">
+                <label
+                  htmlFor={`field-${field}`}
+                  className="text-xs font-semibold text-ink"
+                >
                   {field}
                 </label>
                 <input

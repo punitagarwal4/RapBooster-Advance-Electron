@@ -18,7 +18,9 @@ import { mkdirSync } from 'node:fs'
 function parseFields(json: string): string[] {
   try {
     const parsed: unknown = JSON.parse(json)
-    return Array.isArray(parsed) ? parsed.filter((f): f is string => typeof f === 'string') : []
+    return Array.isArray(parsed)
+      ? parsed.filter((f): f is string => typeof f === 'string')
+      : []
   } catch {
     return [...REQUIRED_CONTACT_FIELDS]
   }
@@ -29,7 +31,10 @@ function parseData(json: string): Record<string, string> {
     const parsed: unknown = JSON.parse(json)
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return Object.fromEntries(
-        Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]),
+        Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [
+          k,
+          String(v ?? ''),
+        ]),
       )
     }
   } catch {
@@ -74,7 +79,10 @@ function serializeContact(row: {
 
 async function requireList(id: string) {
   const list = await getPrisma().contactList.findUnique({ where: { id } })
-  if (!list) throw new AppError('NOT_FOUND', { userMessage: 'That contact list no longer exists.' })
+  if (!list)
+    throw new AppError('NOT_FOUND', {
+      userMessage: 'That contact list no longer exists.',
+    })
   return list
 }
 
@@ -114,9 +122,13 @@ export function registerContactHandlers(): void {
       throw new AppError('VALIDATION_FAILED', { userMessage: 'A list name is required.' })
     }
 
-    const existing = await getPrisma().contactList.findUnique({ where: { name: trimmed } })
+    const existing = await getPrisma().contactList.findUnique({
+      where: { name: trimmed },
+    })
     if (existing) {
-      throw new AppError('CONFLICT', { userMessage: 'A list with that name already exists.' })
+      throw new AppError('CONFLICT', {
+        userMessage: 'A list with that name already exists.',
+      })
     }
 
     // Name and Mobile are mandatory and always first; custom fields are
@@ -125,7 +137,9 @@ export function registerContactHandlers(): void {
     const extras = customFields
       .map((f) => f.trim())
       .filter((f) => f !== '')
-      .filter((f) => !REQUIRED_CONTACT_FIELDS.some((r) => r.toLowerCase() === f.toLowerCase()))
+      .filter(
+        (f) => !REQUIRED_CONTACT_FIELDS.some((r) => r.toLowerCase() === f.toLowerCase()),
+      )
 
     const fields = [...REQUIRED_CONTACT_FIELDS, ...Array.from(new Set(extras))]
 
@@ -216,7 +230,8 @@ export function registerContactHandlers(): void {
 
   registerHandler('contacts:update', async ({ id, data }) => {
     const existing = await getPrisma().contact.findUnique({ where: { id } })
-    if (!existing) throw new AppError('NOT_FOUND', { userMessage: 'That contact no longer exists.' })
+    if (!existing)
+      throw new AppError('NOT_FOUND', { userMessage: 'That contact no longer exists.' })
 
     const country = await countryCode()
     const normalized = normalizePhone(data.Mobile ?? existing.phone, country)
@@ -241,7 +256,8 @@ export function registerContactHandlers(): void {
 
   registerHandler('contacts:delete', async ({ id }) => {
     const existing = await getPrisma().contact.findUnique({ where: { id } })
-    if (!existing) throw new AppError('NOT_FOUND', { userMessage: 'That contact no longer exists.' })
+    if (!existing)
+      throw new AppError('NOT_FOUND', { userMessage: 'That contact no longer exists.' })
     await getPrisma().contact.delete({ where: { id } })
     await refreshCount(existing.listId)
     return { ok: true as const }
@@ -267,21 +283,20 @@ export function registerContactHandlers(): void {
     }
   })
 
-  registerHandler('contacts:import', async ({ listId, filePath, mapping, duplicatePolicy: policyArg }) => {
-    const list = await requireList(listId)
-    const country = await countryCode()
-    const policy = policyArg ?? (await duplicatePolicy())
+  registerHandler(
+    'contacts:import',
+    async ({ listId, filePath, mapping, duplicatePolicy: policyArg }) => {
+      const list = await requireList(listId)
+      const country = await countryCode()
+      const policy = policyArg ?? (await duplicatePolicy())
 
-    const exportsDir = join(userDataDir(), 'exports')
-    mkdirSync(exportsDir, { recursive: true })
+      const exportsDir = join(userDataDir(), 'exports')
+      mkdirSync(exportsDir, { recursive: true })
 
-    const prisma = getPrisma()
+      const prisma = getPrisma()
 
-    try {
-      const outcome = await importCsv(
-        filePath,
-        mapping,
-        {
+      try {
+        const outcome = await importCsv(filePath, mapping, {
           country,
           exportsDir,
           writeBatch: async (rows: ImportRow[]) => {
@@ -340,18 +355,18 @@ export function registerContactHandlers(): void {
             })
             return { written: result.count, skipped }
           },
-        },
-      )
+        })
 
-      await refreshCount(listId)
-      return outcome
-    } catch (err) {
-      throw new AppError('IMPORT_FAILED', {
-        userMessage: err instanceof Error ? err.message : 'The import failed.',
-        detail: `list=${list.name}: ${String(err)}`,
-      })
-    }
-  })
+        await refreshCount(listId)
+        return outcome
+      } catch (err) {
+        throw new AppError('IMPORT_FAILED', {
+          userMessage: err instanceof Error ? err.message : 'The import failed.',
+          detail: `list=${list.name}: ${String(err)}`,
+        })
+      }
+    },
+  )
 
   registerHandler('contacts:export', async ({ listId, search }) => {
     const list = await requireList(listId)
@@ -367,7 +382,12 @@ export function registerContactHandlers(): void {
     const where = {
       listId,
       ...(search && search.trim() !== ''
-        ? { OR: [{ name: { contains: search.trim() } }, { phone: { contains: search.trim() } }] }
+        ? {
+            OR: [
+              { name: { contains: search.trim() } },
+              { phone: { contains: search.trim() } },
+            ],
+          }
         : {}),
     }
 

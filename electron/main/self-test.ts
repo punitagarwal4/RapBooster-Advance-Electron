@@ -63,7 +63,10 @@ async function main(): Promise<void> {
 
     // Relations exercise foreign keys and the JSON-blob contact model.
     const list = await prisma.contactList.create({
-      data: { name: `selftest-${Date.now()}`, fields: JSON.stringify(['Name', 'Mobile']) },
+      data: {
+        name: `selftest-${Date.now()}`,
+        fields: JSON.stringify(['Name', 'Mobile']),
+      },
     })
     await prisma.contact.create({
       data: {
@@ -154,7 +157,8 @@ async function main(): Promise<void> {
   app.exit(0)
 }
 
-app.whenReady()
+app
+  .whenReady()
   .then(main)
   .catch((err) => {
     console.error('SELF-TEST CRASHED', err)

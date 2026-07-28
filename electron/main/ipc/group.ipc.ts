@@ -44,7 +44,8 @@ export function registerGroupHandlers(): void {
 
   registerHandler('groupSend:status', async ({ jobId }) => {
     const job = await getPrisma().groupSendJob.findUnique({ where: { id: jobId } })
-    if (!job) throw new AppError('NOT_FOUND', { userMessage: 'That job no longer exists.' })
+    if (!job)
+      throw new AppError('NOT_FOUND', { userMessage: 'That job no longer exists.' })
     return {
       status: job.status as 'pending' | 'running' | 'paused' | 'completed' | 'failed',
       total: job.totalCount,
@@ -55,7 +56,8 @@ export function registerGroupHandlers(): void {
 
   registerHandler('groupCreate:create', async (input) => {
     const device = await getPrisma().device.findUnique({ where: { id: input.deviceId } })
-    if (!device) throw new AppError('NOT_FOUND', { userMessage: 'That device no longer exists.' })
+    if (!device)
+      throw new AppError('NOT_FOUND', { userMessage: 'That device no longer exists.' })
     if (device.status !== 'connected') {
       throw new AppError('DEVICE_NOT_CONNECTED', {
         userMessage: 'Connect that device before creating groups.',
@@ -67,7 +69,8 @@ export function registerGroupHandlers(): void {
 
   registerHandler('groupCreate:status', async ({ jobId }) => {
     const job = await getPrisma().groupCreateJob.findUnique({ where: { id: jobId } })
-    if (!job) throw new AppError('NOT_FOUND', { userMessage: 'That job no longer exists.' })
+    if (!job)
+      throw new AppError('NOT_FOUND', { userMessage: 'That job no longer exists.' })
     return {
       status: job.status as 'pending' | 'running' | 'paused' | 'completed' | 'failed',
       created: job.createdCount,

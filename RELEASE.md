@@ -12,12 +12,12 @@ How to produce, sign and publish a RapBooster Advance build.
 
 ## What is missing, and what happens without it
 
-| Needed | REQUIREMENTS | Consequence if absent |
-| --- | --- | --- |
-| App icon, publisher name | §2 | A placeholder icon ships (`assets/branding/icon.png`), and the installer shows no verified publisher |
-| Update feed URL | §3 | `system:checkUpdate` reports "no update server is configured" rather than falsely claiming the app is current |
-| Windows code-signing certificate | §4 | Unsigned `.exe`; Windows SmartScreen warns users the app is unrecognised |
-| Apple Developer identity + notarization credentials | §4 | Unsigned `.dmg`; **macOS refuses to open the app at all** |
+| Needed                                              | REQUIREMENTS | Consequence if absent                                                                                         |
+| --------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| App icon, publisher name                            | §2           | A placeholder icon ships (`assets/branding/icon.png`), and the installer shows no verified publisher          |
+| Update feed URL                                     | §3           | `system:checkUpdate` reports "no update server is configured" rather than falsely claiming the app is current |
+| Windows code-signing certificate                    | §4           | Unsigned `.exe`; Windows SmartScreen warns users the app is unrecognised                                      |
+| Apple Developer identity + notarization credentials | §4           | Unsigned `.dmg`; **macOS refuses to open the app at all**                                                     |
 
 None of these block development. All of them block shipping to real users.
 

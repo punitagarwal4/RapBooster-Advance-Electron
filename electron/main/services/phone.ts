@@ -19,14 +19,20 @@ export interface NormalizedPhone {
   reason?: string
 }
 
-export function normalizePhone(input: string, country: CountryCode = DEFAULT_COUNTRY): NormalizedPhone {
+export function normalizePhone(
+  input: string,
+  country: CountryCode = DEFAULT_COUNTRY,
+): NormalizedPhone {
   const raw = input.trim()
   if (raw === '') return { e164: null, valid: false, reason: 'empty' }
 
   try {
     // An explicit +country in the input always wins over the default: a list
     // with mixed countries must not be silently rewritten to one of them.
-    const parsed = parsePhoneNumberFromString(raw, raw.startsWith('+') ? undefined : country)
+    const parsed = parsePhoneNumberFromString(
+      raw,
+      raw.startsWith('+') ? undefined : country,
+    )
 
     if (!parsed) return { e164: null, valid: false, reason: 'unparseable' }
     if (!parsed.isValid()) {
@@ -36,7 +42,11 @@ export function normalizePhone(input: string, country: CountryCode = DEFAULT_COU
     }
     return { e164: parsed.number, valid: true }
   } catch (err) {
-    return { e164: null, valid: false, reason: err instanceof Error ? err.message : 'error' }
+    return {
+      e164: null,
+      valid: false,
+      reason: err instanceof Error ? err.message : 'error',
+    }
   }
 }
 

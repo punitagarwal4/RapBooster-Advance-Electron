@@ -22,5 +22,10 @@
       "@generated/*": ["generated/*"]
     }
   },
-  "include": ["electron/**/*.ts", "shared/**/*.ts", "prisma.config.ts", "electron.vite.config.ts"]
+  "include": [
+    "electron/**/*.ts",
+    "shared/**/*.ts",
+    "prisma.config.ts",
+    "electron.vite.config.ts"
+  ]
 }

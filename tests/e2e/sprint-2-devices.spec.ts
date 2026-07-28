@@ -11,8 +11,9 @@ import {
 function deviceRows(dir: string) {
   const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
   try {
-    return db.prepare('SELECT id, name, status, phone FROM Device ORDER BY createdAt').all() as
-      Array<{ id: string; name: string; status: string; phone: string | null }>
+    return db
+      .prepare('SELECT id, name, status, phone FROM Device ORDER BY createdAt')
+      .all() as Array<{ id: string; name: string; status: string; phone: string | null }>
   } finally {
     db.close()
   }
@@ -89,10 +90,14 @@ test('E2.2 — pairing code path returns an 8-digit code and connects', async ()
     )
     if (!created.ok) throw new Error('device:create failed')
 
-    await win.evaluate((id) => window.api.invoke('device:connect', { id }), created.data.id)
+    await win.evaluate(
+      (id) => window.api.invoke('device:connect', { id }),
+      created.data.id,
+    )
 
     const code = await win.evaluate(
-      (id) => window.api.invoke('device:requestPairingCode', { id, phone: '+919876543210' }),
+      (id) =>
+        window.api.invoke('device:requestPairingCode', { id, phone: '+919876543210' }),
       created.data.id,
     )
     expect(code.ok).toBe(true)
@@ -148,9 +153,14 @@ test('E2.3 — device rows and credentials survive a restart', async () => {
     if (!created.ok) throw new Error('device:create failed')
     deviceId = created.data.id
 
-    await session.win.evaluate((id) => window.api.invoke('device:connect', { id }), deviceId)
+    await session.win.evaluate(
+      (id) => window.api.invoke('device:connect', { id }),
+      deviceId,
+    )
     await expect
-      .poll(() => deviceRows(dir).find((d) => d.id === deviceId)?.status, { timeout: 15_000 })
+      .poll(() => deviceRows(dir).find((d) => d.id === deviceId)?.status, {
+        timeout: 15_000,
+      })
       .toBe('connected')
   } finally {
     await session.app.close()
@@ -164,7 +174,9 @@ test('E2.3 — device rows and credentials survive a restart', async () => {
 
     // The recovery hook re-opens sessions that were connected before shutdown.
     await expect
-      .poll(() => deviceRows(dir).find((d) => d.id === deviceId)?.status, { timeout: 20_000 })
+      .poll(() => deviceRows(dir).find((d) => d.id === deviceId)?.status, {
+        timeout: 20_000,
+      })
       .toBe('connected')
   } finally {
     await session.app.close()
@@ -187,7 +199,10 @@ test('E2.6 — logout clears credentials and marks the device logged out', async
       .poll(() => deviceRows(dir).find((d) => d.id === id)?.status, { timeout: 15_000 })
       .toBe('connected')
 
-    const out = await win.evaluate((d) => window.api.invoke('device:logout', { id: d }), id)
+    const out = await win.evaluate(
+      (d) => window.api.invoke('device:logout', { id: d }),
+      id,
+    )
     expect(out.ok).toBe(true)
 
     await expect
@@ -253,7 +268,9 @@ test('E2.6b — logout from the Devices screen requires confirmation', async () 
     await win.getByTestId('confirm-logout').click()
 
     await expect
-      .poll(() => deviceRows(dir).find((d) => d.id === created)?.status, { timeout: 15_000 })
+      .poll(() => deviceRows(dir).find((d) => d.id === created)?.status, {
+        timeout: 15_000,
+      })
       .toBe('logged_out')
   } finally {
     await app.close()

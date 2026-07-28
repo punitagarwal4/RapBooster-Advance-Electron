@@ -7,7 +7,14 @@
  * treatment.
  */
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { join } from 'node:path'
 import { getPrisma } from '../db/client'
 import { databasePath, logsDir, userDataDir } from '../db/paths'
@@ -68,7 +75,9 @@ export async function buildDiagnostics(): Promise<string> {
 
   // Settings keys and whether they are set — never their values.
   try {
-    const settings = await getPrisma().setting.findMany({ select: { key: true, value: true } })
+    const settings = await getPrisma().setting.findMany({
+      select: { key: true, value: true },
+    })
     const lines = settings.map((s) =>
       SENSITIVE_SETTING.test(s.key)
         ? `${s.key} = [set: ${s.value.length > 0}]`
@@ -83,7 +92,9 @@ export async function buildDiagnostics(): Promise<string> {
   // out because defence in depth costs nothing here.
   try {
     const dir = logsDir()
-    const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.log')) : []
+    const files = existsSync(dir)
+      ? readdirSync(dir).filter((f) => f.endsWith('.log'))
+      : []
     for (const file of files) {
       const content = readFileSync(join(dir, file), 'utf8')
       const tail = content.split('\n').slice(-400).join('\n')

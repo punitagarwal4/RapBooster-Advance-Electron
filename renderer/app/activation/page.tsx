@@ -76,7 +76,10 @@ export default function ActivationPage() {
       return
     }
 
-    setError(REJECTION_COPY[result.data.status] ?? 'Invalid license key. Please check and try again.')
+    setError(
+      REJECTION_COPY[result.data.status] ??
+        'Invalid license key. Please check and try again.',
+    )
   }
 
   async function doTransfer() {
@@ -149,7 +152,12 @@ export default function ActivationPage() {
             </p>
           )}
 
-          <Button type="submit" variant="primary" disabled={busy} data-testid="license-activate">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={busy}
+            data-testid="license-activate"
+          >
             {busy ? 'Activating…' : 'Activate'}
           </Button>
         </form>
@@ -172,12 +180,16 @@ export default function ActivationPage() {
             </div>
             <div className="flex flex-col gap-3 p-5 text-sm text-ink">
               <p>This license key is already activated on another system.</p>
-              <p className="rounded-card bg-app-bg px-3 py-2 text-xs" data-testid="conflict-device">
+              <p
+                className="rounded-card bg-app-bg px-3 py-2 text-xs"
+                data-testid="conflict-device"
+              >
                 <strong>Device:</strong> {conflict.deviceName} (Last used:{' '}
                 {relativeTime(conflict.lastUsedAt)})
               </p>
               <p>
-                Would you like to deactivate the license on the other system and activate it here?
+                Would you like to deactivate the license on the other system and activate
+                it here?
               </p>
               <div className="flex justify-end gap-2 pt-1">
                 <Button

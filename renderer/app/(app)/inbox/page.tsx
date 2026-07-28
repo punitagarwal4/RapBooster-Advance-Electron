@@ -60,16 +60,20 @@ export default function InboxPage() {
     if (!activeId) return
     let cancelled = false
 
-    void window.api.invoke('chat:messages', { chatId: activeId, limit: 100 }).then((result) => {
-      if (cancelled) return
-      // The channel returns newest-first for cursor paging; display is oldest-first.
-      setThread({
-        chatId: activeId,
-        messages: result.ok ? [...result.data.items].reverse() : [],
+    void window.api
+      .invoke('chat:messages', { chatId: activeId, limit: 100 })
+      .then((result) => {
+        if (cancelled) return
+        // The channel returns newest-first for cursor paging; display is oldest-first.
+        setThread({
+          chatId: activeId,
+          messages: result.ok ? [...result.data.items].reverse() : [],
+        })
       })
-    })
 
-    void window.api.invoke('chat:markRead', { chatId: activeId }).then(() => chats.refetch())
+    void window.api
+      .invoke('chat:markRead', { chatId: activeId })
+      .then(() => chats.refetch())
 
     return () => {
       cancelled = true
@@ -183,7 +187,9 @@ export default function InboxPage() {
                   )}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-ink">{chat.name}</span>
+                    <span className="truncate text-sm font-medium text-ink">
+                      {chat.name}
+                    </span>
                     {chat.unreadCount > 0 && (
                       <span
                         className="shrink-0 rounded-full bg-primary px-1.5 text-xs text-white"
@@ -194,7 +200,9 @@ export default function InboxPage() {
                     )}
                   </span>
                   <span className="truncate text-xs text-ink-muted">{chat.phone}</span>
-                  <span className="truncate text-xs text-ink-subtle">{chat.lastMessage ?? ''}</span>
+                  <span className="truncate text-xs text-ink-subtle">
+                    {chat.lastMessage ?? ''}
+                  </span>
                   {chat.lastMessageAt && (
                     <span className="text-[10px] text-ink-subtle">
                       {formatDistanceToNow(new Date(chat.lastMessageAt))} ago
@@ -217,7 +225,10 @@ export default function InboxPage() {
             <>
               <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-ink" data-testid="chat-name">
+                  <p
+                    className="truncate text-sm font-semibold text-ink"
+                    data-testid="chat-name"
+                  >
                     {active.name}
                   </p>
                   <p className="text-xs text-ink-muted">{active.phone}</p>
@@ -229,7 +240,10 @@ export default function InboxPage() {
                 )}
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto p-4" data-testid="message-thread">
+              <div
+                className="min-h-0 flex-1 overflow-y-auto p-4"
+                data-testid="message-thread"
+              >
                 {loaded && thread.messages.length === 0 && (
                   <p className="text-center text-xs text-ink-muted">No messages yet.</p>
                 )}
@@ -245,7 +259,9 @@ export default function InboxPage() {
                     <div
                       className={cn(
                         'max-w-[70%] rounded-bubble px-3 py-2 text-sm',
-                        m.direction === 'out' ? 'bg-wa-out text-ink' : 'bg-wa-in text-ink',
+                        m.direction === 'out'
+                          ? 'bg-wa-out text-ink'
+                          : 'bg-wa-in text-ink',
                         m.type === 'attachment' && 'border-l-4 border-wa-teal',
                       )}
                     >
@@ -323,7 +339,11 @@ export default function InboxPage() {
                     data-testid="message-input"
                     className="flex-1 rounded-control border border-line px-2.5 py-2 text-sm outline-none focus:border-primary"
                   />
-                  <Button variant="primary" onClick={() => void send()} data-testid="send-message">
+                  <Button
+                    variant="primary"
+                    onClick={() => void send()}
+                    data-testid="send-message"
+                  >
                     Send
                   </Button>
                 </div>

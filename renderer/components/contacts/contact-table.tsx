@@ -132,7 +132,11 @@ export function ContactTable({
         <span className="w-16 shrink-0 text-right">Actions</span>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto" data-testid="contacts-scroll">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto"
+        data-testid="contacts-scroll"
+      >
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {items.map((item) => {
             const contact = rows[item.index]

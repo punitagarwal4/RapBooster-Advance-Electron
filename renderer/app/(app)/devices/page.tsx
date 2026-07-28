@@ -81,7 +81,9 @@ export default function DevicesPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink">{device.name}</p>
-                  <p className="truncate text-xs text-ink-muted">{device.phone ?? 'Not linked'}</p>
+                  <p className="truncate text-xs text-ink-muted">
+                    {device.phone ?? 'Not linked'}
+                  </p>
                 </div>
                 <DeviceStatusPill status={device.status} />
               </div>
@@ -98,7 +100,10 @@ export default function DevicesPage() {
               </dl>
 
               {device.lastError && (
-                <p className="rounded bg-danger/10 px-2 py-1 text-xs text-danger" role="alert">
+                <p
+                  className="rounded bg-danger/10 px-2 py-1 text-xs text-danger"
+                  role="alert"
+                >
                   {device.lastError}
                 </p>
               )}

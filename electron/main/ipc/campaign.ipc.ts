@@ -18,7 +18,8 @@ async function serialize(id: string) {
     where: { id },
     include: { devices: true, lists: true, template: true },
   })
-  if (!campaign) throw new AppError('NOT_FOUND', { userMessage: 'That campaign no longer exists.' })
+  if (!campaign)
+    throw new AppError('NOT_FOUND', { userMessage: 'That campaign no longer exists.' })
 
   const c = await counters(id)
 
@@ -26,12 +27,7 @@ async function serialize(id: string) {
     id: campaign.id,
     name: campaign.name,
     status: campaign.status as
-      | 'draft'
-      | 'scheduled'
-      | 'running'
-      | 'paused'
-      | 'completed'
-      | 'failed',
+      'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'failed',
     templateId: campaign.templateId,
     templateName: campaign.template.name,
     deviceIds: campaign.devices.map((d) => d.deviceId),
@@ -69,7 +65,9 @@ export function registerCampaignHandlers(): void {
       })
     }
 
-    const template = await getPrisma().template.findUnique({ where: { id: input.templateId } })
+    const template = await getPrisma().template.findUnique({
+      where: { id: input.templateId },
+    })
     if (!template) {
       throw new AppError('NOT_FOUND', { userMessage: 'That template no longer exists.' })
     }
@@ -162,7 +160,10 @@ export function registerCampaignHandlers(): void {
           orderBy: { id: 'asc' },
           take: 1_001,
           ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-          include: { contact: { select: { name: true } }, device: { select: { name: true } } },
+          include: {
+            contact: { select: { name: true } },
+            device: { select: { name: true } },
+          },
         })
         if (page.length === 0) break
 

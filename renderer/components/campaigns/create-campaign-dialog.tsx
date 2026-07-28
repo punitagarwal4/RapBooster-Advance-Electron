@@ -99,7 +99,11 @@ export function CreateCampaignDialog({
           <Button onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void submit(false)} disabled={busy} data-testid="save-draft">
+          <Button
+            onClick={() => void submit(false)}
+            disabled={busy}
+            data-testid="save-draft"
+          >
             Save as draft
           </Button>
           <Button
@@ -168,7 +172,8 @@ export function CreateCampaignDialog({
                   onChange={() => toggle(setListIds, list.id)}
                 />
                 <span className="truncate">
-                  {list.name} <span className="text-ink-subtle">({list.contactCount})</span>
+                  {list.name}{' '}
+                  <span className="text-ink-subtle">({list.contactCount})</span>
                 </span>
               </label>
             ))}
@@ -203,8 +208,9 @@ export function CreateCampaignDialog({
           </div>
           {unresolvable.length > 0 && (
             <p className="text-xs text-status-warn-fg" data-testid="cmp-unresolvable">
-              The selected lists do not provide {unresolvable.map((t) => `{{${t}}}`).join(', ')} —
-              these will send as blanks.
+              The selected lists do not provide{' '}
+              {unresolvable.map((t) => `{{${t}}}`).join(', ')} — these will send as
+              blanks.
             </p>
           )}
         </div>
@@ -226,10 +232,31 @@ export function CreateCampaignDialog({
         <div className="grid grid-cols-2 gap-3">
           {(
             [
-              ['Random Delay From (sec)', delayFrom, setDelayFrom, 0, 300, 'cmp-delay-from'],
+              [
+                'Random Delay From (sec)',
+                delayFrom,
+                setDelayFrom,
+                0,
+                300,
+                'cmp-delay-from',
+              ],
               ['Random Delay To (sec)', delayTo, setDelayTo, 0, 300, 'cmp-delay-to'],
-              ['Sleep Duration (sec)', sleepDuration, setSleepDuration, 0, 600, 'cmp-sleep'],
-              ['Sleep After N Messages', sleepAfter, setSleepAfter, 1, 100, 'cmp-sleep-after'],
+              [
+                'Sleep Duration (sec)',
+                sleepDuration,
+                setSleepDuration,
+                0,
+                600,
+                'cmp-sleep',
+              ],
+              [
+                'Sleep After N Messages',
+                sleepAfter,
+                setSleepAfter,
+                1,
+                100,
+                'cmp-sleep-after',
+              ],
             ] as const
           ).map(([label, value, setter, min, max, testId]) => (
             <div key={testId} className="flex flex-col gap-1.5">
@@ -251,7 +278,8 @@ export function CreateCampaignDialog({
         </div>
 
         <p className="text-xs text-ink-muted">
-          {selectedContacts.toLocaleString()} contacts selected across {listIds.length} list
+          {selectedContacts.toLocaleString()} contacts selected across {listIds.length}{' '}
+          list
           {listIds.length === 1 ? '' : 's'}.
         </p>
 

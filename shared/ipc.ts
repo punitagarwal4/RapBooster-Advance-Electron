@@ -256,7 +256,10 @@ export const ipcContract = {
   // ── Contact lists ──
   'contactList:list': { request: z.void(), response: z.array(contactList) },
   'contactList:create': {
-    request: z.object({ name: z.string().min(1), customFields: z.array(z.string()).default([]) }),
+    request: z.object({
+      name: z.string().min(1),
+      customFields: z.array(z.string()).default([]),
+    }),
     response: contactList,
   },
   'contactList:update': {
@@ -267,7 +270,12 @@ export const ipcContract = {
 
   // ── Contacts ──
   'contacts:list': {
-    request: z.object({ listId: id, search: z.string().optional(), cursor, limit: pageLimit }),
+    request: z.object({
+      listId: id,
+      search: z.string().optional(),
+      cursor,
+      limit: pageLimit,
+    }),
     response: page(contact),
   },
   'contacts:create': {
@@ -376,7 +384,12 @@ export const ipcContract = {
   'campaign:stop': { request: z.object({ id }), response: ok },
   'campaign:delete': { request: z.object({ id }), response: ok },
   'campaign:recipients': {
-    request: z.object({ id, status: recipientStatus.optional(), cursor, limit: pageLimit }),
+    request: z.object({
+      id,
+      status: recipientStatus.optional(),
+      cursor,
+      limit: pageLimit,
+    }),
     response: page(campaignRecipient),
   },
   'campaign:report': {
@@ -389,7 +402,10 @@ export const ipcContract = {
     request: z.object({ deviceId: id.optional() }),
     response: z.array(group),
   },
-  'group:sync': { request: z.object({ deviceId: id.optional() }), response: z.object({ synced: z.number().int().min(0) }) },
+  'group:sync': {
+    request: z.object({ deviceId: id.optional() }),
+    response: z.object({ synced: z.number().int().min(0) }),
+  },
   'groupSend:create': {
     request: z.object({
       // Neither is constrained here: the handler rejects an empty selection or
@@ -435,7 +451,12 @@ export const ipcContract = {
 
   // ── Inbox ──
   'chat:list': {
-    request: z.object({ deviceId: id.optional(), search: z.string().optional(), cursor, limit: pageLimit }),
+    request: z.object({
+      deviceId: id.optional(),
+      search: z.string().optional(),
+      cursor,
+      limit: pageLimit,
+    }),
     response: page(chat),
   },
   'chat:get': { request: z.object({ id }), response: chat },
@@ -467,9 +488,16 @@ export const ipcContract = {
   },
 
   // ── Settings ──
-  'settings:get': { request: z.object({ key: z.string().min(1) }), response: z.object({ value: z.string().nullable() }) },
+  'settings:get': {
+    request: z.object({ key: z.string().min(1) }),
+    response: z.object({ value: z.string().nullable() }),
+  },
   'settings:set': {
-    request: z.object({ key: z.string().min(1), value: z.string(), encrypt: z.boolean().default(false) }),
+    request: z.object({
+      key: z.string().min(1),
+      value: z.string(),
+      encrypt: z.boolean().default(false),
+    }),
     response: ok,
   },
   'settings:getSendingDefaults': { request: z.void(), response: sendingDefaults },
@@ -492,10 +520,16 @@ export const ipcContract = {
     response: z.object({ userData: z.string(), database: z.string(), logs: z.string() }),
   },
   'system:openPath': { request: z.object({ path: z.string().min(1) }), response: ok },
-  'system:exportDiagnostics': { request: z.void(), response: z.object({ filePath: z.string() }) },
+  'system:exportDiagnostics': {
+    request: z.void(),
+    response: z.object({ filePath: z.string() }),
+  },
   'system:backup': { request: z.void(), response: z.object({ filePath: z.string() }) },
   'system:restore': { request: z.object({ filePath: z.string().min(1) }), response: ok },
-  'system:clearData': { request: z.object({ confirmation: z.literal('DELETE') }), response: ok },
+  'system:clearData': {
+    request: z.object({ confirmation: z.literal('DELETE') }),
+    response: ok,
+  },
   'system:checkUpdate': {
     request: z.void(),
     response: z.object({ available: z.boolean(), version: z.string().nullable() }),
@@ -563,8 +597,11 @@ export const ipcEvents = {
   'message:received': z.object({ chatId: id, message }),
   'message:status': z.object({ messageId: id, status: messageStatus }),
   'license:changed': z.object({ status: licenseStatus, expiresAt: nullableIso }),
-  'wa:serviceState': z.object({ state: waServiceState, restartCount: z.number().int().min(0) }),
-  'toast': z.object({
+  'wa:serviceState': z.object({
+    state: waServiceState,
+    restartCount: z.number().int().min(0),
+  }),
+  toast: z.object({
     level: z.enum(['info', 'success', 'warning', 'error']),
     message: z.string(),
   }),

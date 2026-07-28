@@ -183,7 +183,9 @@ export function BulkCreateGroupsDialog({
         </div>
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-xs font-semibold text-ink">Add Contacts from Lists</legend>
+          <legend className="text-xs font-semibold text-ink">
+            Add Contacts from Lists
+          </legend>
           <div className="max-h-24 overflow-y-auto rounded-control border border-line p-2">
             {(lists.data ?? []).length === 0 && (
               <p className="text-xs text-ink-subtle">No contact lists yet.</p>
@@ -196,12 +198,15 @@ export function BulkCreateGroupsDialog({
                   checked={listIds.includes(list.id)}
                   onChange={() =>
                     setListIds((c) =>
-                      c.includes(list.id) ? c.filter((x) => x !== list.id) : [...c, list.id],
+                      c.includes(list.id)
+                        ? c.filter((x) => x !== list.id)
+                        : [...c, list.id],
                     )
                   }
                 />
                 <span className="truncate">
-                  {list.name} <span className="text-ink-subtle">({list.contactCount})</span>
+                  {list.name}{' '}
+                  <span className="text-ink-subtle">({list.contactCount})</span>
                 </span>
               </label>
             ))}
@@ -223,8 +228,8 @@ export function BulkCreateGroupsDialog({
             className="w-32 rounded-control border border-line px-2.5 py-2 text-sm outline-none focus:border-primary"
           />
           <p className="text-xs text-ink-subtle">
-            WhatsApp privacy settings can stop a contact being added. Groups with fewer members
-            than requested are normal, and the result log records which.
+            WhatsApp privacy settings can stop a contact being added. Groups with fewer
+            members than requested are normal, and the result log records which.
           </p>
         </div>
 

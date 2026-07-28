@@ -144,14 +144,19 @@ export function RecipientsDialog({
       </div>
 
       {rows.length === 0 && !loading ? (
-        <p className="py-6 text-center text-sm text-ink-muted">No recipients match that filter.</p>
+        <p className="py-6 text-center text-sm text-ink-muted">
+          No recipients match that filter.
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-card border border-line">
           <table className="w-full text-xs">
             <thead className="bg-app-bg">
               <tr>
                 {['Phone', 'Name', 'Status', 'Tries', 'Sent', 'Error'].map((h) => (
-                  <th key={h} className="px-2 py-1.5 text-left font-medium text-ink-muted">
+                  <th
+                    key={h}
+                    className="px-2 py-1.5 text-left font-medium text-ink-muted"
+                  >
                     {h}
                   </th>
                 ))}
@@ -159,15 +164,26 @@ export function RecipientsDialog({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-line" data-testid="recipient-row">
+                <tr
+                  key={r.id}
+                  className="border-t border-line"
+                  data-testid="recipient-row"
+                >
                   <td className="px-2 py-1.5 font-mono text-ink">{r.phone}</td>
-                  <td className="max-w-32 truncate px-2 py-1.5 text-ink">{r.contactName}</td>
-                  <td className={cn('px-2 py-1.5 font-medium', TONE[r.status])}>{r.status}</td>
+                  <td className="max-w-32 truncate px-2 py-1.5 text-ink">
+                    {r.contactName}
+                  </td>
+                  <td className={cn('px-2 py-1.5 font-medium', TONE[r.status])}>
+                    {r.status}
+                  </td>
                   <td className="px-2 py-1.5 text-ink">{r.attempts}</td>
                   <td className="px-2 py-1.5 text-ink-muted">
                     {r.sentAt ? new Date(r.sentAt).toLocaleTimeString() : '—'}
                   </td>
-                  <td className="max-w-48 truncate px-2 py-1.5 text-danger" title={r.error ?? ''}>
+                  <td
+                    className="max-w-48 truncate px-2 py-1.5 text-danger"
+                    title={r.error ?? ''}
+                  >
                     {r.error ?? ''}
                   </td>
                 </tr>
@@ -179,7 +195,7 @@ export function RecipientsDialog({
 
       {cursor && (
         <Button className="mt-3" onClick={() => void loadMore()} disabled={loading}>
-          {loadingMore ? "Loading…" : "Load more"}
+          {loadingMore ? 'Loading…' : 'Load more'}
         </Button>
       )}
     </Dialog>

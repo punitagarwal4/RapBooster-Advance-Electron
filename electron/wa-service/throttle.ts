@@ -125,7 +125,8 @@ export class ThrottleScheduler {
     try {
       this.rollDay(state)
 
-      const { dailyCap, sleepAfter, sleepDurationMs, delayFromMs, delayToMs } = state.config
+      const { dailyCap, sleepAfter, sleepDurationMs, delayFromMs, delayToMs } =
+        state.config
 
       if (dailyCap > 0 && state.sentToday >= dailyCap) {
         throw new DailyCapReachedError(deviceId, dailyCap)

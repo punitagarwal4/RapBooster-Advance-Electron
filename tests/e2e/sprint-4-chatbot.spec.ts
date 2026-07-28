@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
+import {
+  cleanupUserDataDir,
+  launchLicensed,
+  newUserDataDir,
+} from './fixtures/licensed-app'
 
 /**
  * Sprint 4 — AI Bot (SPRINTS.md §12.3, E4.9–E4.18).
@@ -15,8 +19,7 @@ function settingRow(dir: string, key: string) {
   const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
   try {
     return db.prepare('SELECT value, isEncrypted FROM Setting WHERE key = ?').get(key) as
-      | { value: string; isEncrypted: number }
-      | undefined
+      { value: string; isEncrypted: number } | undefined
   } finally {
     db.close()
   }
@@ -105,7 +108,8 @@ test('E4.17 — the API key is stored encrypted and never appears in plaintext',
     const secret = 'sk-test-DO-NOT-LEAK-abcdef1234567890'
 
     const stored = await win.evaluate(
-      (value) => window.api.invoke('settings:set', { key: 'ai.apiKey', value, encrypt: true }),
+      (value) =>
+        window.api.invoke('settings:set', { key: 'ai.apiKey', value, encrypt: true }),
       secret,
     )
     expect(stored.ok).toBe(true)
@@ -118,7 +122,9 @@ test('E4.17 — the API key is stored encrypted and never appears in plaintext',
 
     // And it must not come back over IPC either — settings:get returns the
     // stored form, which is ciphertext.
-    const readBack = await win.evaluate(() => window.api.invoke('settings:get', { key: 'ai.apiKey' }))
+    const readBack = await win.evaluate(() =>
+      window.api.invoke('settings:get', { key: 'ai.apiKey' }),
+    )
     if (readBack.ok) expect(readBack.data.value).not.toBe(secret)
   } finally {
     await app.close()
@@ -135,8 +141,14 @@ test('E4.10 + E4.11 — auto-reply is skipped when disabled, and per-chat opt-ou
       if (!current.ok) return null
 
       // Disabled by default is not assumed — set it explicitly.
-      const off = await window.api.invoke('chatbot:save', { ...current.data, enabled: false })
-      const on = await window.api.invoke('chatbot:save', { ...current.data, enabled: true })
+      const off = await window.api.invoke('chatbot:save', {
+        ...current.data,
+        enabled: false,
+      })
+      const on = await window.api.invoke('chatbot:save', {
+        ...current.data,
+        enabled: true,
+      })
       return { off: off.ok && !off.data.enabled, on: on.ok && on.data.enabled }
     })
 

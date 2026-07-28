@@ -2,7 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import { existsSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
+import {
+  cleanupUserDataDir,
+  launchLicensed,
+  newUserDataDir,
+} from './fixtures/licensed-app'
 
 /**
  * Sprint 4 — settings, backup and dashboard (SPRINTS.md §12.3, E4.15–E4.22).
@@ -76,7 +80,9 @@ test('E4.19 — sending defaults save, validate, and apply to new campaigns', as
     )
     expect(good.ok).toBe(true)
 
-    const read = await win.evaluate(() => window.api.invoke('settings:getSendingDefaults'))
+    const read = await win.evaluate(() =>
+      window.api.invoke('settings:getSendingDefaults'),
+    )
     expect(read.ok).toBe(true)
     if (read.ok) {
       expect(read.data.delayFrom).toBe(3)
@@ -198,7 +204,9 @@ test('E4.21 — the Settings screen exposes sending defaults and a guarded clear
     await win.getByTestId('save-sending-defaults').click()
     await expect(win.getByTestId('toast')).toBeVisible()
 
-    const saved = await win.evaluate(() => window.api.invoke('settings:getSendingDefaults'))
+    const saved = await win.evaluate(() =>
+      window.api.invoke('settings:getSendingDefaults'),
+    )
     if (saved.ok) expect(saved.data.delayFrom).toBe(4)
 
     // Clear stays disabled until the exact word is typed — a destructive action

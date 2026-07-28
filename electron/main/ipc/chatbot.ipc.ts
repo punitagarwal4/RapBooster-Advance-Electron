@@ -5,7 +5,9 @@ import { registerHandler } from './router'
 function parseKeywords(value: string): string[] {
   try {
     const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : []
+    return Array.isArray(parsed)
+      ? parsed.filter((k): k is string => typeof k === 'string')
+      : []
   } catch {
     return []
   }
@@ -13,7 +15,9 @@ function parseKeywords(value: string): string[] {
 
 /** Created on first read so the screen always has something to render. */
 async function loadOrCreate() {
-  const existing = await getPrisma().chatbotConfig.findUnique({ where: { id: 'singleton' } })
+  const existing = await getPrisma().chatbotConfig.findUnique({
+    where: { id: 'singleton' },
+  })
   if (existing) return existing
   return getPrisma().chatbotConfig.create({ data: { id: 'singleton' } })
 }

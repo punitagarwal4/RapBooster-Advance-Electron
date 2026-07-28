@@ -2,13 +2,13 @@
 
 Rules for every coding session in this repository. Read this **before** touching code.
 
-| Document | Purpose |
-| --- | --- |
-| `CLAUDE.md` (this file) | How to work — architecture rules, standards, workflow |
-| [SPRINTS.md](./SPRINTS.md) | What to build — full spec, schema, IPC contract, algorithms |
-| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Where we are — status, decisions, deviations |
-| [REQUIREMENTS.md](./REQUIREMENTS.md) | Customer inputs — **blocks Sprint 1 until filled** |
-| `design/` | Original HTML prototypes — reference only, **never import from here** |
+| Document                                 | Purpose                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| `CLAUDE.md` (this file)                  | How to work — architecture rules, standards, workflow                 |
+| [SPRINTS.md](./SPRINTS.md)               | What to build — full spec, schema, IPC contract, algorithms           |
+| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Where we are — status, decisions, deviations                          |
+| [REQUIREMENTS.md](./REQUIREMENTS.md)     | Customer inputs — **blocks Sprint 1 until filled**                    |
+| `design/`                                | Original HTML prototypes — reference only, **never import from here** |
 
 ---
 
@@ -24,17 +24,17 @@ ending with Playwright E2E tests, a commit, and a push to `main`.
 
 Do not revisit these without an explicit customer instruction recorded in the tracker.
 
-| Topic | Decision |
-| --- | --- |
-| Scope | The prototype's 9 screens. Number Filter, Group Grabber, Warmup, Spintax are **out** |
-| Processes | main + preload + renderer + `wa-service` utility process |
-| Renderer | Next.js `output: 'export'`, client-only, no SSR, no API routes |
-| Database | SQLite at `app.getPath('userData')`, Prisma + better-sqlite3, **main is the sole writer** |
-| WhatsApp | Baileys, pinned exactly, wrapped behind our own transport interface |
-| Concurrency | 20 devices max, **one in-flight message per device** |
-| Licensing | Remote server, hard gate before the main window exists |
-| AI | OpenAI, end-user key, stored via `safeStorage` |
-| Branch | Work on `main`, commit and push at each sprint completion |
+| Topic       | Decision                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| Scope       | The prototype's 9 screens. Number Filter, Group Grabber, Warmup, Spintax are **out**      |
+| Processes   | main + preload + renderer + `wa-service` utility process                                  |
+| Renderer    | Next.js `output: 'export'`, client-only, no SSR, no API routes                            |
+| Database    | SQLite at `app.getPath('userData')`, Prisma + better-sqlite3, **main is the sole writer** |
+| WhatsApp    | Baileys, pinned exactly, wrapped behind our own transport interface                       |
+| Concurrency | 20 devices max, **one in-flight message per device**                                      |
+| Licensing   | Remote server, hard gate before the main window exists                                    |
+| AI          | OpenAI, end-user key, stored via `safeStorage`                                            |
+| Branch      | Work on `main`, commit and push at each sprint completion                                 |
 
 ---
 
@@ -68,18 +68,18 @@ These are invariants. Breaking one is a bug even if tests pass.
 ## 3. Multi-agent working mode
 
 Use subagents by default wherever the work genuinely fans out. This is the customer's explicit
-instruction — but fan out on *independent* work, not on everything, because parallel agents
+instruction — but fan out on _independent_ work, not on everything, because parallel agents
 editing the same file produce conflicts that cost more than they save.
 
 ### 3.1 When to fan out
 
-| Situation | Agents | Example |
-| --- | --- | --- |
-| Exploring unfamiliar code | 1–3 **Explore** agents in parallel, each with a distinct search focus | "find every IPC handler" + "find every place devices are queried" |
-| Independent feature modules in one sprint | One implementation agent per module | Sprint 2: contacts · templates · devices screen — three separate file trees |
-| Writing the E2E suite | A dedicated test-authoring agent, given the acceptance criteria | Sprint 3's 25 specs |
-| Pre-commit review | A review agent over the diff | Every sprint, before pushing |
-| Investigating a failure with several hypotheses | One agent per hypothesis | "is it the migrator, the adapter, or asar?" |
+| Situation                                       | Agents                                                                | Example                                                                     |
+| ----------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Exploring unfamiliar code                       | 1–3 **Explore** agents in parallel, each with a distinct search focus | "find every IPC handler" + "find every place devices are queried"           |
+| Independent feature modules in one sprint       | One implementation agent per module                                   | Sprint 2: contacts · templates · devices screen — three separate file trees |
+| Writing the E2E suite                           | A dedicated test-authoring agent, given the acceptance criteria       | Sprint 3's 25 specs                                                         |
+| Pre-commit review                               | A review agent over the diff                                          | Every sprint, before pushing                                                |
+| Investigating a failure with several hypotheses | One agent per hypothesis                                              | "is it the migrator, the adapter, or asar?"                                 |
 
 Launch parallel agents **in a single message with multiple tool calls** — sequential launches
 waste the benefit entirely.
@@ -169,7 +169,7 @@ banned. "Works on my machine" is not the bar.
   file will eventually be emailed to support.
 - Log every IPC call with channel and duration at `debug`; every send outcome at `info`; every
   reconnect at `warn`.
-- Never log message *content* — it is customer data.
+- Never log message _content_ — it is customer data.
 
 ### 5.3 Database
 
@@ -227,14 +227,14 @@ This is where careless code costs the user their accounts.
 
 Testable numbers, not aspirations:
 
-| Budget | Target |
-| --- | --- |
-| Cold start to activation screen | < 3 s |
-| Contacts table, 50,000 rows | Smooth scroll, no dropped frames |
-| Contact search across 50,000 rows | < 500 ms |
-| CSV import, 50,000 rows | Completes with progress, UI stays interactive |
-| 20 connected devices + active campaign | < 800 MB RSS |
-| Campaign progress events | Batched — max 1/second per campaign |
+| Budget                                 | Target                                        |
+| -------------------------------------- | --------------------------------------------- |
+| Cold start to activation screen        | < 3 s                                         |
+| Contacts table, 50,000 rows            | Smooth scroll, no dropped frames              |
+| Contact search across 50,000 rows      | < 500 ms                                      |
+| CSV import, 50,000 rows                | Completes with progress, UI stays interactive |
+| 20 connected devices + active campaign | < 800 MB RSS                                  |
+| Campaign progress events               | Batched — max 1/second per campaign           |
 
 Techniques: virtualized tables and message threads, cursor pagination, batched transactional
 writes, SQL aggregation for counters, worker threads for CSV parsing.
@@ -245,7 +245,7 @@ writes, SQL aggregation for counters, worker threads for CSV parsing.
 - No `TODO`, `FIXME`, or commented-out code in a commit. Unfinished work goes in the tracker's
   §9, not in the source.
 - Match the surrounding style — naming, comment density, file organization.
-- Comments explain *why*, not *what*. Graphify extracts `NOTE`/`WHY` comments as first-class
+- Comments explain _why_, not _what_. Graphify extracts `NOTE`/`WHY` comments as first-class
   graph nodes, so use those prefixes for decisions worth surfacing.
 - One responsibility per file. If an IPC handler module exceeds ~300 lines, split it by domain.
 - Shared types live in `shared/`, never duplicated across processes.
@@ -320,7 +320,7 @@ deviations, known issues — and commit everything in one commit.
   `asarUnpack` — a `.node` binary cannot be `dlopen`'d from inside an asar. Verify in the
   packaged smoke test, not just in dev.
 - **A peer dependency of a dependency does not get packaged.** npm hoists peers to the root, so
-  development always finds them, but electron-builder packages by walking *our* production
+  development always finds them, but electron-builder packages by walking _our_ production
   dependency graph — where they are unreachable. If a dependency needs an optional peer at
   runtime, declare it in our own `dependencies` or it will exist in every dev run and no
   shipped build. This cost us a real bug (tracker D55): Baileys resolves `sharp` this way for
@@ -337,20 +337,20 @@ deviations, known issues — and commit everything in one commit.
 
 Things that will bite, listed so nobody rediscovers them the expensive way.
 
-| Pitfall | Correct approach |
-| --- | --- |
-| Calling `sendMessage` outside the scheduler | Always go through `throttle.acquire()` first |
-| Incrementing campaign counters in memory | Recompute from `CampaignRecipient` with `GROUP BY status` |
-| Polling for campaign progress from the renderer | Subscribe to the `campaign:progress` event |
-| Writing to SQLite from `wa-service` | Send a message to main and let it persist |
-| Reconnecting in a tight loop | Exponential backoff + jitter + circuit breaker |
-| Treating every disconnect as fatal | Only `DisconnectReason.loggedOut` is terminal |
-| Loading all contacts to render a table | Cursor pagination + virtualization |
-| Parsing a 50k CSV on the main thread | Stream it in a worker, insert in batches of 1,000 |
-| Logging a phone number or license key | The logger redacts automatically — never bypass it |
-| Assuming `safeStorage` is available | Check `isEncryptionAvailable()` and degrade explicitly |
-| Testing against a real WhatsApp account | Use the mock transport — a ban is unrecoverable |
-| Copying markup out of `design/` | It is a wireframe reference; build clean components |
+| Pitfall                                         | Correct approach                                          |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| Calling `sendMessage` outside the scheduler     | Always go through `throttle.acquire()` first              |
+| Incrementing campaign counters in memory        | Recompute from `CampaignRecipient` with `GROUP BY status` |
+| Polling for campaign progress from the renderer | Subscribe to the `campaign:progress` event                |
+| Writing to SQLite from `wa-service`             | Send a message to main and let it persist                 |
+| Reconnecting in a tight loop                    | Exponential backoff + jitter + circuit breaker            |
+| Treating every disconnect as fatal              | Only `DisconnectReason.loggedOut` is terminal             |
+| Loading all contacts to render a table          | Cursor pagination + virtualization                        |
+| Parsing a 50k CSV on the main thread            | Stream it in a worker, insert in batches of 1,000         |
+| Logging a phone number or license key           | The logger redacts automatically — never bypass it        |
+| Assuming `safeStorage` is available             | Check `isEncryptionAvailable()` and degrade explicitly    |
+| Testing against a real WhatsApp account         | Use the mock transport — a ban is unrecoverable           |
+| Copying markup out of `design/`                 | It is a wireframe reference; build clean components       |
 
 ---
 

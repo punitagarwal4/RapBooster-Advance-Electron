@@ -129,7 +129,11 @@ export default function TemplatesPage() {
         title="WhatsApp Templates"
         description="Reusable messages with media, buttons and merge tags."
         actions={
-          <Button variant="primary" onClick={() => setCreating(true)} data-testid="new-template">
+          <Button
+            variant="primary"
+            onClick={() => setCreating(true)}
+            data-testid="new-template"
+          >
             + New Template
           </Button>
         }
@@ -174,7 +178,10 @@ export default function TemplatesPage() {
                 {template.buttons && template.buttons.length > 0 && (
                   <div className="mt-2 flex flex-col gap-1">
                     {template.buttons.map((b, i) => (
-                      <span key={b} className="rounded border border-black/10 px-2 py-1 text-xs">
+                      <span
+                        key={b}
+                        className="rounded border border-black/10 px-2 py-1 text-xs"
+                      >
                         {i + 1}. {b}
                       </span>
                     ))}
@@ -184,8 +191,8 @@ export default function TemplatesPage() {
 
               {DEGRADES_TO_TEXT.includes(template.type) && (
                 <p className="text-xs text-status-warn-fg">
-                  Sends as numbered text — WhatsApp does not accept tappable buttons from linked
-                  devices.
+                  Sends as numbered text — WhatsApp does not accept tappable buttons from
+                  linked devices.
                 </p>
               )}
 
@@ -213,7 +220,11 @@ export default function TemplatesPage() {
           footer={
             <>
               <Button onClick={close}>Cancel</Button>
-              <Button variant="primary" onClick={() => void create()} data-testid="submit-template">
+              <Button
+                variant="primary"
+                onClick={() => void create()}
+                data-testid="submit-template"
+              >
                 Create Template
               </Button>
             </>
@@ -256,8 +267,8 @@ export default function TemplatesPage() {
                   className="rounded-card bg-status-warn-bg px-2 py-1.5 text-xs text-status-warn-fg"
                   data-testid="degrade-notice"
                 >
-                  WhatsApp no longer accepts tappable buttons from linked devices, so this sends as
-                  numbered text. Recipients reply with a number.
+                  WhatsApp no longer accepts tappable buttons from linked devices, so this
+                  sends as numbered text. Recipients reply with a number.
                 </p>
               )}
             </div>
@@ -295,7 +306,10 @@ export default function TemplatesPage() {
             {type === 'media' && (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="tpl-media-type" className="text-xs font-semibold text-ink">
+                  <label
+                    htmlFor="tpl-media-type"
+                    className="text-xs font-semibold text-ink"
+                  >
                     Media Type
                   </label>
                   <select
@@ -310,7 +324,10 @@ export default function TemplatesPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="tpl-media-path" className="text-xs font-semibold text-ink">
+                  <label
+                    htmlFor="tpl-media-path"
+                    className="text-xs font-semibold text-ink"
+                  >
                     File path
                   </label>
                   <input
@@ -322,7 +339,8 @@ export default function TemplatesPage() {
                     className="rounded-control border border-line px-2.5 py-2 font-mono text-xs outline-none focus:border-primary"
                   />
                   <p className="text-xs text-ink-subtle">
-                    The file is copied into the app so it keeps working if you move the original.
+                    The file is copied into the app so it keeps working if you move the
+                    original.
                   </p>
                 </div>
               </>
@@ -370,14 +388,18 @@ export default function TemplatesPage() {
               </div>
               {unknownTags.length > 0 && (
                 <p className="text-xs text-status-warn-fg" data-testid="unknown-tags">
-                  No list provides: {unknownTags.map((t) => `{{${t}}}`).join(', ')}. These will send
-                  as blanks.
+                  No list provides: {unknownTags.map((t) => `{{${t}}}`).join(', ')}. These
+                  will send as blanks.
                 </p>
               )}
             </div>
 
             {error && (
-              <p className="text-xs text-danger" role="alert" data-testid="template-error">
+              <p
+                className="text-xs text-danger"
+                role="alert"
+                data-testid="template-error"
+              >
                 {error}
               </p>
             )}

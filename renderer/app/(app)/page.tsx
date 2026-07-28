@@ -3,7 +3,15 @@
 import { PageHeader } from '@renderer/components/layout/page-header'
 import { useIpcEvent, useIpcQuery } from '@renderer/hooks/useIpc'
 
-function StatCard({ label, value, loading }: { label: string; value: number; loading: boolean }) {
+function StatCard({
+  label,
+  value,
+  loading,
+}: {
+  label: string
+  value: number
+  loading: boolean
+}) {
   return (
     <div className="rounded-card border border-line bg-surface px-4 py-3">
       <dt className="text-xs text-ink-muted">{label}</dt>
@@ -46,13 +54,20 @@ export default function DashboardPage() {
           </p>
         ) : (
           <>
-            <dl className="grid grid-cols-2 gap-4 xl:grid-cols-4" data-testid="dashboard-stats">
+            <dl
+              className="grid grid-cols-2 gap-4 xl:grid-cols-4"
+              data-testid="dashboard-stats"
+            >
               {cards.map((card) => (
                 <StatCard key={card.label} {...card} loading={loading} />
               ))}
             </dl>
             <div className="mt-4 grid grid-cols-2 gap-4">
-              <StatCard label="Sent today" value={stats.data?.sentToday ?? 0} loading={loading} />
+              <StatCard
+                label="Sent today"
+                value={stats.data?.sentToday ?? 0}
+                loading={loading}
+              />
               <StatCard
                 label="Failed today"
                 value={stats.data?.failedToday ?? 0}

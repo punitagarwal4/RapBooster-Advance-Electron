@@ -76,14 +76,18 @@ export function registerSystemHandlers(): void {
     checkpoint()
     const filePath = await createBackup(databasePath(), backupsDir(), 'manual')
     if (!filePath) {
-      throw new AppError('DB_ERROR', { userMessage: 'There is no database to back up yet.' })
+      throw new AppError('DB_ERROR', {
+        userMessage: 'There is no database to back up yet.',
+      })
     }
     return { filePath }
   })
 
   registerHandler('system:restore', async ({ filePath }) => {
     if (!existsSync(filePath)) {
-      throw new AppError('NOT_FOUND', { userMessage: 'That backup file no longer exists.' })
+      throw new AppError('NOT_FOUND', {
+        userMessage: 'That backup file no longer exists.',
+      })
     }
 
     // Verify before destroying anything: restoring a corrupt file over a
@@ -159,20 +163,33 @@ export function registerSystemHandlers(): void {
 
     // Aggregated in SQL rather than by loading rows — this screen must stay
     // fast at 50k contacts (CLAUDE.md §5.7).
-    const [totalContacts, activeDevices, runningCampaigns, templates, sentToday, failedToday] =
-      await Promise.all([
-        prisma.contact.count(),
-        prisma.device.count({ where: { status: 'connected' } }),
-        prisma.campaign.count({ where: { status: { in: ['running', 'paused'] } } }),
-        prisma.template.count(),
-        prisma.campaignRecipient.count({
-          where: { status: 'sent', sentAt: { gte: startOfDay } },
-        }),
-        prisma.campaignRecipient.count({
-          where: { status: 'failed', sentAt: { gte: startOfDay } },
-        }),
-      ])
+    const [
+      totalContacts,
+      activeDevices,
+      runningCampaigns,
+      templates,
+      sentToday,
+      failedToday,
+    ] = await Promise.all([
+      prisma.contact.count(),
+      prisma.device.count({ where: { status: 'connected' } }),
+      prisma.campaign.count({ where: { status: { in: ['running', 'paused'] } } }),
+      prisma.template.count(),
+      prisma.campaignRecipient.count({
+        where: { status: 'sent', sentAt: { gte: startOfDay } },
+      }),
+      prisma.campaignRecipient.count({
+        where: { status: 'failed', sentAt: { gte: startOfDay } },
+      }),
+    ])
 
-    return { totalContacts, activeDevices, runningCampaigns, templates, sentToday, failedToday }
+    return {
+      totalContacts,
+      activeDevices,
+      runningCampaigns,
+      templates,
+      sentToday,
+      failedToday,
+    }
   })
 }

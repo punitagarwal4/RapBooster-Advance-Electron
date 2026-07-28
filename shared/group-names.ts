@@ -37,7 +37,11 @@ export function groupName(prefix: string, rule: SuffixRule, index: number): stri
 }
 
 /** First few names plus an ellipsis, matching the prototype's preview line. */
-export function groupNamePreview(prefix: string, rule: SuffixRule, count: number): string {
+export function groupNamePreview(
+  prefix: string,
+  rule: SuffixRule,
+  count: number,
+): string {
   const shown = Math.min(3, Math.max(0, count))
   const names = Array.from({ length: shown }, (_, i) => groupName(prefix, rule, i))
   return count > shown ? `${names.join(', ')}...` : names.join(', ')

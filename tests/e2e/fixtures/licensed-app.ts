@@ -1,7 +1,12 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test'
+import {
+  _electron as electron,
+  expect,
+  type ElectronApplication,
+  type Page,
+} from '@playwright/test'
 import { APP_READY_TIMEOUT_MS as READY_TIMEOUT_MS } from './constants'
 
 /**
@@ -75,7 +80,9 @@ export async function launchLicensed(
     await activateWith(win, key)
   }
 
-  await win.getByTestId('nav-dashboard').waitFor({ state: 'visible', timeout: READY_TIMEOUT_MS })
+  await win
+    .getByTestId('nav-dashboard')
+    .waitFor({ state: 'visible', timeout: READY_TIMEOUT_MS })
   return { app, win }
 }
 

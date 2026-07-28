@@ -81,7 +81,12 @@ test('E1.2 + E1.7 — a valid key activates, stores remarks, and persists across
     try {
       const row = db
         .prepare('SELECT status, remarks, keyMasked, keyEncrypted FROM License')
-        .get() as { status: string; remarks: string; keyMasked: string; keyEncrypted: string }
+        .get() as {
+        status: string
+        remarks: string
+        keyMasked: string
+        keyEncrypted: string
+      }
       expect(row.status).toBe('valid')
       expect(row.remarks).toBe('Primary workstation')
       // The raw key must never be readable in the database.
@@ -280,7 +285,9 @@ test('E1.15 — logs and diagnostics redact keys and phone numbers', async () =>
 
     // Push values that must never survive into a log line.
     await app.evaluate(() => {
-      console.error('probe key=VALID-2024-001 phone=+919876543210 apiKey=sk-abcdefghijklmnop12345')
+      console.error(
+        'probe key=VALID-2024-001 phone=+919876543210 apiKey=sk-abcdefghijklmnop12345',
+      )
     })
 
     const diagnostics = await win.evaluate(() =>

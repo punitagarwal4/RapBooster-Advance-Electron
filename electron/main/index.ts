@@ -157,7 +157,7 @@ function startWaService(): void {
   })
 
   groupRunner.onProgress((p) => {
-    emitToAll(windows(), "groupJob:progress", p)
+    emitToAll(windows(), 'groupJob:progress', p)
   })
 
   campaignEngine.onProgress((campaignId, c) => {
@@ -178,10 +178,14 @@ function startWaService(): void {
           status,
           ...(phone ? { phone } : {}),
           ...(error !== undefined ? { lastError: error } : {}),
-          ...(status === 'connected' ? { lastActiveAt: new Date(), consecutiveFailures: 0 } : {}),
+          ...(status === 'connected'
+            ? { lastActiveAt: new Date(), consecutiveFailures: 0 }
+            : {}),
         },
       })
-      .catch((err: unknown) => console.error(`could not persist status for ${deviceId}`, err))
+      .catch((err: unknown) =>
+        console.error(`could not persist status for ${deviceId}`, err),
+      )
 
     emitToAll(windows(), 'device:status', {
       deviceId,
@@ -243,7 +247,10 @@ function startWaService(): void {
 
         // Auto-reply runs after the message is stored and shown, so the user
         // sees the inbound message immediately rather than after the model.
-        void maybeReply(deviceId, saved.chatId, { body: saved.body, isGroup: message.isGroup })
+        void maybeReply(deviceId, saved.chatId, {
+          body: saved.body,
+          isGroup: message.isGroup,
+        })
           .then((outcome) => {
             if (outcome.kind === 'failed') {
               // Never a silent no-op: the user configured auto-reply, and if it
@@ -251,7 +258,10 @@ function startWaService(): void {
               console.error(`auto-reply failed [${outcome.code}] ${outcome.message}`)
               emitToAll(windows(), 'toast', { level: 'error', message: outcome.message })
             } else if (outcome.kind === 'escalated') {
-              emitToAll(windows(), 'toast', { level: 'warning', message: 'A conversation was escalated for a human reply.' })
+              emitToAll(windows(), 'toast', {
+                level: 'warning',
+                message: 'A conversation was escalated for a human reply.',
+              })
             }
           })
           .catch((err) => console.error('auto-reply threw', err))
@@ -288,7 +298,7 @@ function startWaService(): void {
           console.log(`scheduler: started ${started.length} campaign(s)`)
         }
       })
-      .catch((err: unknown) => console.error("scheduler tick failed", err))
+      .catch((err: unknown) => console.error('scheduler tick failed', err))
   }, 60_000)
 }
 

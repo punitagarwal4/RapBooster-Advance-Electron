@@ -48,7 +48,10 @@ function isRetryable(message: string): boolean {
  * it atomic. Prisma would issue a SELECT then an UPDATE, leaving a window in
  * which two workers could claim the same row and send twice.
  */
-export function claimNext(campaignId: string, deviceId: string): {
+export function claimNext(
+  campaignId: string,
+  deviceId: string,
+): {
   id: string
   contactId: string
   phone: string
@@ -70,8 +73,7 @@ export function claimNext(campaignId: string, deviceId: string): {
         RETURNING id, contactId, phone, attempts`,
       )
       .get(campaignId, deviceId) as
-      | { id: string; contactId: string; phone: string; attempts: number }
-      | undefined
+      { id: string; contactId: string; phone: string; attempts: number } | undefined
     return row ?? null
   } finally {
     db.close()
@@ -204,7 +206,10 @@ export class CampaignEngine {
       cursor = contacts[contacts.length - 1]?.id
     }
 
-    await prisma.campaign.update({ where: { id: campaignId }, data: { totalCount: created } })
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: { totalCount: created },
+    })
     return created
   }
 
@@ -273,7 +278,10 @@ export class CampaignEngine {
 
       const [contact, campaign] = await Promise.all([
         prisma.contact.findUnique({ where: { id: claimed.contactId } }),
-        prisma.campaign.findUnique({ where: { id: campaignId }, include: { template: true } }),
+        prisma.campaign.findUnique({
+          where: { id: campaignId },
+          include: { template: true },
+        }),
       ])
       if (!campaign) return
 
@@ -358,7 +366,8 @@ export class CampaignEngine {
     const current = await getPrisma().campaign.findUnique({ where: { id: campaignId } })
     // Pause and stop set their own status; only a genuinely drained queue
     // completes.
-    const status = current?.status === 'running' && c.pending === 0 ? 'completed' : current?.status
+    const status =
+      current?.status === 'running' && c.pending === 0 ? 'completed' : current?.status
 
     await getPrisma().campaign.update({
       where: { id: campaignId },
@@ -376,7 +385,10 @@ export class CampaignEngine {
   async pause(campaignId: string): Promise<void> {
     this.running.get(campaignId)?.abort()
     this.running.delete(campaignId)
-    await getPrisma().campaign.update({ where: { id: campaignId }, data: { status: 'paused' } })
+    await getPrisma().campaign.update({
+      where: { id: campaignId },
+      data: { status: 'paused' },
+    })
     // A message already claimed but not yet answered would otherwise stay
     // 'sending' forever.
     await this.releaseClaimed(campaignId)

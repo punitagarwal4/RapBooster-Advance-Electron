@@ -71,7 +71,9 @@ function mapError(err: unknown): AppError {
   })
 }
 
-export async function testKey(candidate?: string): Promise<{ valid: boolean; detail: string | null }> {
+export async function testKey(
+  candidate?: string,
+): Promise<{ valid: boolean; detail: string | null }> {
   const key = candidate?.trim() || (await apiKey())
   if (!key) return { valid: false, detail: 'No API key is configured.' }
 
@@ -85,14 +87,19 @@ export async function testKey(candidate?: string): Promise<{ valid: boolean; det
   }
 }
 
-async function loadSettings(): Promise<(ChatbotSettings & { enabled: boolean; responseDelay: number }) | null> {
-  const config = await getPrisma().chatbotConfig.findUnique({ where: { id: 'singleton' } })
+async function loadSettings(): Promise<
+  (ChatbotSettings & { enabled: boolean; responseDelay: number }) | null
+> {
+  const config = await getPrisma().chatbotConfig.findUnique({
+    where: { id: 'singleton' },
+  })
   if (!config) return null
 
   let keywords: string[] = []
   try {
     const parsed: unknown = JSON.parse(config.escalationKeywords)
-    if (Array.isArray(parsed)) keywords = parsed.filter((k): k is string => typeof k === 'string')
+    if (Array.isArray(parsed))
+      keywords = parsed.filter((k): k is string => typeof k === 'string')
   } catch {
     keywords = []
   }
@@ -163,7 +170,8 @@ export async function maybeReply(
     return {
       kind: 'failed',
       code: 'AI_KEY_MISSING',
-      message: 'No OpenAI API key is configured. Add one in Settings to enable auto-replies.',
+      message:
+        'No OpenAI API key is configured. Add one in Settings to enable auto-replies.',
     }
   }
 

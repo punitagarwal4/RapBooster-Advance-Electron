@@ -20,10 +20,14 @@ function inspectSchema(userData: string) {
   const db = new DatabaseSync(join(userData, 'rapbooster.db'), { readOnly: true })
   try {
     const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+      )
       .all()
       .map((r) => String((r as { name: string }).name))
-    const applied = db.prepare('SELECT COUNT(*) AS n FROM _migrations').get() as { n: number }
+    const applied = db.prepare('SELECT COUNT(*) AS n FROM _migrations').get() as {
+      n: number
+    }
     const journal = db.prepare('PRAGMA journal_mode').get() as { journal_mode: string }
     const quick = db.prepare('PRAGMA quick_check').get() as { quick_check: string }
     return {
@@ -98,7 +102,9 @@ test('E1.13 — migrations run from empty and create the full schema', async ({ 
   expect(appliedCount).toBeGreaterThan(0)
 })
 
-test('E1.13b — database is in WAL mode and passes its integrity check', async ({ app }) => {
+test('E1.13b — database is in WAL mode and passes its integrity check', async ({
+  app,
+}) => {
   const userData = await app.evaluate(({ app: a }) => a.getPath('userData'))
   const { journalMode, quickCheck } = inspectSchema(userData)
   expect(journalMode).toBe('wal')
@@ -183,7 +189,9 @@ test('E1.14c — malformed request is rejected with VALIDATION_FAILED', async ({
   if (!result.ok) expect(result.error.code).toBe('VALIDATION_FAILED')
 })
 
-test('E1.14d — unknown channels are refused by the preload allowlist', async ({ app }) => {
+test('E1.14d — unknown channels are refused by the preload allowlist', async ({
+  app,
+}) => {
   const win = await app.firstWindow()
   await expect(win.getByTestId('renderer-ready')).toBeVisible()
 
@@ -265,7 +273,10 @@ test('E1.10d — the active sidebar item reflects the current route', async ({ a
   await win.getByTestId('nav-devices').click()
   await expect(win.getByTestId('page-title')).toHaveText('WhatsApp Devices')
   await expect(win.getByTestId('nav-devices')).toHaveAttribute('aria-current', 'page')
-  await expect(win.getByTestId('nav-dashboard')).not.toHaveAttribute('aria-current', 'page')
+  await expect(win.getByTestId('nav-dashboard')).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  )
 })
 
 test('E1.16 — build artifacts the smoke test depends on are present', async () => {

@@ -2,7 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
+import {
+  cleanupUserDataDir,
+  launchLicensed,
+  newUserDataDir,
+} from './fixtures/licensed-app'
 
 /**
  * Sprint 3 — campaign engine (SPRINTS.md §11.3, E3.1–E3.12).
@@ -18,11 +22,7 @@ interface Fixture {
 }
 
 /** Build a campaign's prerequisites: a list of contacts, devices, a template. */
-async function seed(
-  win: Page,
-  contacts: number,
-  devices = 1,
-): Promise<Fixture> {
+async function seed(win: Page, contacts: number, devices = 1): Promise<Fixture> {
   return win.evaluate(
     async ({ n, deviceCount }) => {
       const list = await window.api.invoke('contactList:create', {
@@ -156,9 +156,12 @@ test('E3.3 — a campaign sends to every recipient and counters reconcile', asyn
     }, f)
 
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 120_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 120_000,
+        },
+      )
       .toBe(CONTACTS)
 
     const rows = recipientRows(dir, campaignId)
@@ -187,8 +190,14 @@ test('E3.16 — a contact in two selected lists is queued exactly once', async (
   const { app, win } = await launchLicensed(dir)
   try {
     const ids = await win.evaluate(async () => {
-      const a = await window.api.invoke('contactList:create', { name: 'A', customFields: [] })
-      const b = await window.api.invoke('contactList:create', { name: 'B', customFields: [] })
+      const a = await window.api.invoke('contactList:create', {
+        name: 'A',
+        customFields: [],
+      })
+      const b = await window.api.invoke('contactList:create', {
+        name: 'B',
+        customFields: [],
+      })
       if (!a.ok || !b.ok) throw new Error('lists')
 
       // The same number in both lists is two Contact rows but one person.
@@ -267,13 +276,18 @@ test('E3.6 — pause stops sending and resume continues from the same position',
     }, f)
 
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 60_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 60_000,
+        },
+      )
       .toBeGreaterThan(0)
 
     await win.evaluate((id) => window.api.invoke('campaign:pause', { id }), campaignId)
-    const atPause = recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length
+    const atPause = recipientRows(dir, campaignId).filter(
+      (r) => r.status === 'sent',
+    ).length
 
     // Nothing may remain claimed after a pause, or those rows would be stranded.
     expect(recipientRows(dir, campaignId).some((r) => r.status === 'sending')).toBe(false)
@@ -283,14 +297,19 @@ test('E3.6 — pause stops sending and resume continues from the same position',
     // the message already in flight before stopping, so one more per device may
     // land — but no more than that.
     await new Promise((r) => setTimeout(r, 4_000))
-    const afterWait = recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length
+    const afterWait = recipientRows(dir, campaignId).filter(
+      (r) => r.status === 'sent',
+    ).length
     expect(afterWait).toBeLessThanOrEqual(atPause + 1)
 
     await win.evaluate((id) => window.api.invoke('campaign:resume', { id }), campaignId)
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 120_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 120_000,
+        },
+      )
       .toBeGreaterThan(atPause)
   } finally {
     await app.close()
@@ -325,12 +344,17 @@ test('E3.8 + E3.9 — killing the app mid-campaign resumes without double sends'
 
     // Let it get properly under way before pulling the plug.
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 60_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 60_000,
+        },
+      )
       .toBeGreaterThan(3)
 
-    sentBeforeKill = recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length
+    sentBeforeKill = recipientRows(dir, campaignId).filter(
+      (r) => r.status === 'sent',
+    ).length
   } finally {
     // Hard kill — no graceful shutdown, no chance to tidy up.
     await session.app.close()
@@ -345,9 +369,12 @@ test('E3.8 + E3.9 — killing the app mid-campaign resumes without double sends'
   try {
     // Nothing may be left stranded in 'sending' once recovery has run.
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sending').length, {
-        timeout: 60_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sending').length,
+        {
+          timeout: 60_000,
+        },
+      )
       .toBe(0)
 
     // The campaign resumes on its own and drains the queue.
@@ -478,9 +505,12 @@ test('E3.11 — a scheduled campaign whose time has passed starts on launch', as
     expect(started.ok).toBe(true)
 
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 60_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 60_000,
+        },
+      )
       .toBe(6)
   } finally {
     await app.close()
@@ -554,9 +584,12 @@ test('E3.13 — a disconnected device hands its pending queue to the others', as
     }, f)
 
     await expect
-      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
-        timeout: 60_000,
-      })
+      .poll(
+        () => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length,
+        {
+          timeout: 60_000,
+        },
+      )
       .toBeGreaterThan(0)
 
     const victim = f.deviceIds[0]!
@@ -686,7 +719,9 @@ test('E3.12 — send failures retry then settle as failed', async () => {
     // Nothing may be left mid-flight once the queue has drained.
     expect(rows.some((r) => r.status === 'pending' || r.status === 'sending')).toBe(false)
     // A row that failed must show it was actually attempted.
-    expect(rows.filter((r) => r.status === 'failed').every((r) => r.attempts > 0)).toBe(true)
+    expect(rows.filter((r) => r.status === 'failed').every((r) => r.attempts > 0)).toBe(
+      true,
+    )
   } finally {
     await app.close()
     cleanupUserDataDir(dir)

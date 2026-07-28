@@ -36,7 +36,8 @@ const STYLE_HINT: Record<string, string> = {
 
 const GOAL_HINT: Record<string, string> = {
   support: 'Your job is to resolve the customer’s problem.',
-  sales: 'Your job is to understand their need and move towards a sale, without pressuring.',
+  sales:
+    'Your job is to understand their need and move towards a sale, without pressuring.',
   inquiry: 'Your job is to answer questions accurately.',
   booking: 'Your job is to help them book an appointment.',
   feedback: 'Your job is to collect useful feedback.',
@@ -68,7 +69,10 @@ function parseKnowledge(raw: string): string {
   const items = lines.map((line) => {
     const [q, ...rest] = line.split('|')
     return rest.length > 0
-      ? `- ${q?.replace(/^Q:\s*/i, '').trim()} → ${rest.join('|').replace(/^\s*A:\s*/i, '').trim()}`
+      ? `- ${q?.replace(/^Q:\s*/i, '').trim()} → ${rest
+          .join('|')
+          .replace(/^\s*A:\s*/i, '')
+          .trim()}`
       : `- ${line}`
   })
   return `\n\nKnown answers:\n${items.join('\n')}`
@@ -108,7 +112,11 @@ export function buildSystemPrompt(settings: ChatbotSettings): string {
       'and offer to connect a human.',
   )
 
-  return parts.join(' ') + parseProducts(settings.products) + parseKnowledge(settings.knowledgeBase)
+  return (
+    parts.join(' ') +
+    parseProducts(settings.products) +
+    parseKnowledge(settings.knowledgeBase)
+  )
 }
 
 /**

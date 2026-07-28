@@ -76,8 +76,7 @@ export interface WaRequestEnvelope<K extends WaRequestKind = WaRequestKind> {
 }
 
 export type WaResult<K extends WaRequestKind> =
-  | { ok: true; data: WaResponses[K] }
-  | { ok: false; error: string }
+  { ok: true; data: WaResponses[K] } | { ok: false; error: string }
 
 export interface WaResponseEnvelope<K extends WaRequestKind = WaRequestKind> {
   id: number

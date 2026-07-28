@@ -34,7 +34,10 @@ export class MockLicenseService implements LicenseService {
       }
     }
     if (upper.startsWith('EXPIRED-')) {
-      return { kind: 'expired', expiresAt: new Date(Date.now() - 86_400_000).toISOString() }
+      return {
+        kind: 'expired',
+        expiresAt: new Date(Date.now() - 86_400_000).toISOString(),
+      }
     }
     if (upper.startsWith('REVOKED-')) {
       return { kind: 'revoked', reason: 'This license has been revoked.' }

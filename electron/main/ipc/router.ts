@@ -53,51 +53,60 @@ export function setLicenseGate(isUnlocked: () => boolean): void {
   gate = isUnlocked
 }
 
-export function registerHandler<C extends IpcChannel>(channel: C, handler: Handler<C>): void {
+export function registerHandler<C extends IpcChannel>(
+  channel: C,
+  handler: Handler<C>,
+): void {
   if (registered.has(channel)) {
     throw new Error(`IPC channel registered twice: ${channel}`)
   }
   registered.add(channel)
 
-  ipcMain.handle(channel, async (event, rawRequest): Promise<IpcResult<IpcResponse<C>>> => {
-    const started = Date.now()
-    try {
-      if (gate && !UNGATED.has(channel) && !gate()) {
-        throw new AppError('LICENSE_REQUIRED', {
-          detail: `${channel} refused: application is not licensed`,
-        })
+  ipcMain.handle(
+    channel,
+    async (event, rawRequest): Promise<IpcResult<IpcResponse<C>>> => {
+      const started = Date.now()
+      try {
+        if (gate && !UNGATED.has(channel) && !gate()) {
+          throw new AppError('LICENSE_REQUIRED', {
+            detail: `${channel} refused: application is not licensed`,
+          })
+        }
+
+        const spec = ipcContract[channel]
+
+        const parsedRequest = spec.request.safeParse(rawRequest)
+        if (!parsedRequest.success) {
+          throw new AppError('VALIDATION_FAILED', {
+            detail: `${channel} request: ${parsedRequest.error.message}`,
+          })
+        }
+
+        const result = await handler(parsedRequest.data as IpcRequest<C>, event)
+
+        const parsedResponse = spec.response.safeParse(result)
+        if (!parsedResponse.success) {
+          // Deliberately loud: this is our own bug, and silently passing a
+          // malformed payload to the UI makes it far harder to find later.
+          throw new AppError('UNKNOWN', {
+            detail: `${channel} response failed validation: ${parsedResponse.error.message}`,
+          })
+        }
+
+        return { ok: true, data: parsedResponse.data as IpcResponse<C> }
+      } catch (err) {
+        const error = serializeError(err)
+        console.error(
+          `ipc ${channel} failed [${error.code}]`,
+          error.detail ?? error.userMessage,
+        )
+        return { ok: false, error }
+      } finally {
+        const ms = Date.now() - started
+        if (ms > 250) console.warn(`ipc ${channel} took ${ms}ms`)
       }
-
-      const spec = ipcContract[channel]
-
-      const parsedRequest = spec.request.safeParse(rawRequest)
-      if (!parsedRequest.success) {
-        throw new AppError('VALIDATION_FAILED', {
-          detail: `${channel} request: ${parsedRequest.error.message}`,
-        })
-      }
-
-      const result = await handler(parsedRequest.data as IpcRequest<C>, event)
-
-      const parsedResponse = spec.response.safeParse(result)
-      if (!parsedResponse.success) {
-        // Deliberately loud: this is our own bug, and silently passing a
-        // malformed payload to the UI makes it far harder to find later.
-        throw new AppError('UNKNOWN', {
-          detail: `${channel} response failed validation: ${parsedResponse.error.message}`,
-        })
-      }
-
-      return { ok: true, data: parsedResponse.data as IpcResponse<C> }
-    } catch (err) {
-      const error = serializeError(err)
-      console.error(`ipc ${channel} failed [${error.code}]`, error.detail ?? error.userMessage)
-      return { ok: false, error }
-    } finally {
-      const ms = Date.now() - started
-      if (ms > 250) console.warn(`ipc ${channel} took ${ms}ms`)
-    }
-  })
+    },
+  )
 }
 
 /** Channels declared in the contract but not yet implemented. */

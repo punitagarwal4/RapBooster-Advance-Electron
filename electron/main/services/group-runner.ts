@@ -78,7 +78,11 @@ export class GroupRunner {
   }
 
   /** Queue a bulk send and start it. */
-  async startSend(templateId: string, groupIds: string[], delaySeconds: number): Promise<string> {
+  async startSend(
+    templateId: string,
+    groupIds: string[],
+    delaySeconds: number,
+  ): Promise<string> {
     const prisma = getPrisma()
 
     const job = await prisma.groupSendJob.create({
@@ -134,7 +138,10 @@ export class GroupRunner {
         } catch (err) {
           await prisma.groupSendTarget.update({
             where: { id: target.id },
-            data: { status: 'failed', error: err instanceof Error ? err.message : String(err) },
+            data: {
+              status: 'failed',
+              error: err instanceof Error ? err.message : String(err),
+            },
           })
           await prisma.groupSendJob.update({
             where: { id: jobId },
@@ -225,7 +232,8 @@ export class GroupRunner {
         pool = contacts.map((c) => c.phone)
       }
 
-      const results: Array<{ name: string; ok: boolean; id?: string; error?: string }> = []
+      const results: Array<{ name: string; ok: boolean; id?: string; error?: string }> =
+        []
 
       for (let i = 0; i < job.count; i += 1) {
         const name = groupName(job.prefix, job.suffixRule as SuffixRule, i)

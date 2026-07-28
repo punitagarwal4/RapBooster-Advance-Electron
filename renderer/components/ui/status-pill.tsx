@@ -45,7 +45,13 @@ const CAMPAIGN_TONES: Record<CampaignStatus, Tone> = {
   failed: 'danger',
 }
 
-export function StatusPill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
+export function StatusPill({
+  tone,
+  children,
+}: {
+  tone: Tone
+  children: React.ReactNode
+}) {
   return (
     <span
       className={cn(

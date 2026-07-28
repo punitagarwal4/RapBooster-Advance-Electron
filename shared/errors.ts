@@ -70,7 +70,8 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   RATE_LIMITED: 'WhatsApp is rate limiting this account. Sending will resume shortly.',
   DAILY_CAP_REACHED: 'This device has reached its daily sending limit.',
 
-  AI_KEY_MISSING: 'No OpenAI API key is configured. Add one in Settings to enable auto-replies.',
+  AI_KEY_MISSING:
+    'No OpenAI API key is configured. Add one in Settings to enable auto-replies.',
   AI_KEY_INVALID: 'The OpenAI API key was rejected. Check it in Settings.',
   AI_RATE_LIMITED: 'OpenAI is rate limiting requests. Auto-replies will resume shortly.',
   AI_TIMEOUT: 'The AI request timed out.',
@@ -95,7 +96,12 @@ export class AppError extends Error {
 
   constructor(
     code: ErrorCode,
-    options: { userMessage?: string; detail?: string; data?: Record<string, unknown>; cause?: unknown } = {},
+    options: {
+      userMessage?: string
+      detail?: string
+      data?: Record<string, unknown>
+      cause?: unknown
+    } = {},
   ) {
     super(options.detail ?? DEFAULT_MESSAGES[code], { cause: options.cause })
     this.name = 'AppError'

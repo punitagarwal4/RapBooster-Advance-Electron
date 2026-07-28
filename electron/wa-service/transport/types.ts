@@ -42,10 +42,7 @@ export interface OutgoingButtons {
 }
 
 export type OutgoingMessage =
-  | OutgoingText
-  | OutgoingMedia
-  | OutgoingDocument
-  | OutgoingButtons
+  OutgoingText | OutgoingMedia | OutgoingDocument | OutgoingButtons
 
 export interface SendResult {
   messageId: string
@@ -75,7 +72,11 @@ export interface RemoteGroup {
 export type DisconnectKind = 'retryable' | 'logged_out'
 
 export interface TransportEvents {
-  status: (deviceId: string, status: DeviceStatus, detail?: { phone?: string; error?: string }) => void
+  status: (
+    deviceId: string,
+    status: DeviceStatus,
+    detail?: { phone?: string; error?: string },
+  ) => void
   qr: (deviceId: string, qr: string) => void
   pairingCode: (deviceId: string, code: string) => void
   message: (deviceId: string, message: IncomingMessage) => void
@@ -99,7 +100,11 @@ export interface Transport {
   isConnected(deviceId: string): boolean
   send(deviceId: string, to: string, message: OutgoingMessage): Promise<SendResult>
   fetchGroups(deviceId: string): Promise<RemoteGroup[]>
-  createGroup(deviceId: string, subject: string, participants: string[]): Promise<RemoteGroup>
+  createGroup(
+    deviceId: string,
+    subject: string,
+    participants: string[],
+  ): Promise<RemoteGroup>
   /** Close every socket; called on app quit. */
   shutdown(): Promise<void>
   on<E extends keyof TransportEvents>(event: E, handler: TransportEvents[E]): void

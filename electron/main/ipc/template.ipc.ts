@@ -25,7 +25,9 @@ function parseJsonArray(value: string | null): string[] | null {
   if (!value) return null
   try {
     const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : null
+    return Array.isArray(parsed)
+      ? parsed.filter((v): v is string => typeof v === 'string')
+      : null
   } catch {
     return null
   }
@@ -59,12 +61,18 @@ function serialize(row: {
  * Copy a chosen file into the app's media store and return the stored path.
  * Validation happens before the copy so an oversized file never lands on disk.
  */
-function storeMedia(templateId: string, sourcePath: string, mediaType: 'image' | 'video'): string {
+function storeMedia(
+  templateId: string,
+  sourcePath: string,
+  mediaType: 'image' | 'video',
+): string {
   let size: number
   try {
     size = statSync(sourcePath).size
   } catch {
-    throw new AppError('VALIDATION_FAILED', { userMessage: 'That media file could not be read.' })
+    throw new AppError('VALIDATION_FAILED', {
+      userMessage: 'That media file could not be read.',
+    })
   }
 
   const ext = extname(sourcePath).toLowerCase()
@@ -119,7 +127,9 @@ export function registerTemplateHandlers(): void {
   registerHandler('template:create', async (input) => {
     const name = input.name.trim()
     if (name === '') {
-      throw new AppError('VALIDATION_FAILED', { userMessage: 'A template name is required.' })
+      throw new AppError('VALIDATION_FAILED', {
+        userMessage: 'A template name is required.',
+      })
     }
 
     const buttons = validateButtons(input.buttons)
@@ -192,7 +202,10 @@ export function registerTemplateHandlers(): void {
   registerHandler('template:usage', async ({ id }) => {
     await requireTemplate(id)
     const [campaigns, groupJobs] = await Promise.all([
-      getPrisma().campaign.findMany({ where: { templateId: id }, select: { id: true, name: true } }),
+      getPrisma().campaign.findMany({
+        where: { templateId: id },
+        select: { id: true, name: true },
+      }),
       getPrisma().groupSendJob.count({ where: { templateId: id } }),
     ])
     return { campaigns, groupJobs }
@@ -230,7 +243,10 @@ export function registerTemplateHandlers(): void {
           const parsed: unknown = JSON.parse(contact.data)
           if (parsed && typeof parsed === 'object') {
             values = Object.fromEntries(
-              Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]),
+              Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [
+                k,
+                String(v ?? ''),
+              ]),
             )
           }
         } catch {

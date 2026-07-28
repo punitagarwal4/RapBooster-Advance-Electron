@@ -106,7 +106,10 @@ export class WaBridge {
       }
 
       this.restarts += 1
-      const delay = Math.min(RESTART_MAX_MS, RESTART_BASE_MS * 2 ** Math.min(this.restarts, 6))
+      const delay = Math.min(
+        RESTART_MAX_MS,
+        RESTART_BASE_MS * 2 ** Math.min(this.restarts, 6),
+      )
       console.warn(`wa-service exited (code ${code}); restarting in ${delay}ms`)
       this.setState('restarting')
       setTimeout(() => {

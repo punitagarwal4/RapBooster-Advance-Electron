@@ -32,7 +32,10 @@ interface ServerResponse {
 export class HttpLicenseService implements LicenseService {
   constructor(private readonly config: HttpLicenseConfig) {}
 
-  private async post(path: string, body: Record<string, unknown>): Promise<LicenseOutcome> {
+  private async post(
+    path: string,
+    body: Record<string, unknown>,
+  ): Promise<LicenseOutcome> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 15_000)
 
@@ -88,7 +91,10 @@ export class HttpLicenseService implements LicenseService {
         return { kind: 'expired', expiresAt: payload.expires_at ?? null }
       case 'revoked':
       case 'blocked':
-        return { kind: 'revoked', reason: payload.message ?? 'This license has been revoked.' }
+        return {
+          kind: 'revoked',
+          reason: payload.message ?? 'This license has been revoked.',
+        }
       case 'invalid':
         return { kind: 'invalid', reason: payload.message ?? 'Unknown key' }
       default:

@@ -2,7 +2,11 @@ import { expect, test } from '@playwright/test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
+import {
+  cleanupUserDataDir,
+  launchLicensed,
+  newUserDataDir,
+} from './fixtures/licensed-app'
 
 /**
  * Sprint 2 — templates and merge tags (SPRINTS.md §10.3, E2.18–E2.22).
@@ -196,7 +200,9 @@ test('E2.21 — a template used by a campaign cannot be deleted', async () => {
         sleepAfter: 10,
       })
 
-      const deletion = await window.api.invoke('template:delete', { id: template.data.id })
+      const deletion = await window.api.invoke('template:delete', {
+        id: template.data.id,
+      })
       return {
         campaignCreated: campaign.ok,
         deleted: deletion.ok,
@@ -223,7 +229,10 @@ test('E2.22 — the Templates screen previews merge tags and warns about buttons
   const { app, win } = await launchLicensed(dir)
   try {
     await win.evaluate(() =>
-      window.api.invoke('contactList:create', { name: 'Fields', customFields: ['Company'] }),
+      window.api.invoke('contactList:create', {
+        name: 'Fields',
+        customFields: ['Company'],
+      }),
     )
 
     await win.getByTestId('nav-templates').click()

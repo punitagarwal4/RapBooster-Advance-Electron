@@ -180,7 +180,11 @@ export async function loadLicense(): Promise<LicenseInfo> {
 
   // A grace window that has run out demotes to invalid on read, so a user
   // cannot stay in grace indefinitely by never reconnecting.
-  if (info.status === 'grace' && info.graceUntil && new Date(info.graceUntil) < new Date()) {
+  if (
+    info.status === 'grace' &&
+    info.graceUntil &&
+    new Date(info.graceUntil) < new Date()
+  ) {
     cached = { ...info, status: 'invalid' }
     return cached
   }
@@ -304,7 +308,8 @@ export async function revalidate(): Promise<LicenseInfo> {
     const current = await loadLicense()
     // Keep the deadline from the first failure — successive failures must not
     // extend the window indefinitely.
-    const graceUntil = current.graceUntil ?? new Date(Date.now() + GRACE_PERIOD_MS).toISOString()
+    const graceUntil =
+      current.graceUntil ?? new Date(Date.now() + GRACE_PERIOD_MS).toISOString()
     if (new Date(graceUntil) < new Date()) {
       cached = { ...current, status: 'invalid' }
       return cached

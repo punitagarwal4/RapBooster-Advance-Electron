@@ -43,7 +43,8 @@ function serialize(row: {
 
 async function requireDevice(id: string) {
   const device = await getPrisma().device.findUnique({ where: { id } })
-  if (!device) throw new AppError('NOT_FOUND', { userMessage: 'That device no longer exists.' })
+  if (!device)
+    throw new AppError('NOT_FOUND', { userMessage: 'That device no longer exists.' })
   return device
 }
 
@@ -147,7 +148,9 @@ export function registerDeviceHandlers(): void {
  */
 export async function recoverDeviceSessions(): Promise<void> {
   const devices = await getPrisma().device.findMany({
-    where: { status: { in: ['connected', 'connecting', 'qr_pending', 'pairing_pending'] } },
+    where: {
+      status: { in: ['connected', 'connecting', 'qr_pending', 'pairing_pending'] },
+    },
   })
   for (const device of devices) {
     try {

@@ -10,13 +10,13 @@ user in the OS application-data directory.
 
 ## Documents
 
-| Document | What it is |
-| --- | --- |
-| [REQUIREMENTS.md](./REQUIREMENTS.md) | **Fill this first.** Customer inputs — license API, branding, signing, defaults. Blocks Sprint 1. |
-| [SPRINTS.md](./SPRINTS.md) | The full specification: screens, architecture, database schema, IPC contract, algorithms, and the four sprints in detail |
-| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, deviations, test history |
-| [CLAUDE.md](./CLAUDE.md) | Engineering rules for every coding session |
-| `design/` | Original HTML prototypes — the feature reference |
+| Document                                 | What it is                                                                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [REQUIREMENTS.md](./REQUIREMENTS.md)     | **Fill this first.** Customer inputs — license API, branding, signing, defaults. Blocks Sprint 1.                        |
+| [SPRINTS.md](./SPRINTS.md)               | The full specification: screens, architecture, database schema, IPC contract, algorithms, and the four sprints in detail |
+| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Live status, decision log, deviations, test history                                                                      |
+| [CLAUDE.md](./CLAUDE.md)                 | Engineering rules for every coding session                                                                               |
+| `design/`                                | Original HTML prototypes — the feature reference                                                                         |
 
 ## What it does
 

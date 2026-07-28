@@ -17,7 +17,11 @@ const MAX_ATTEMPTS = 10
 const JITTER = 0.2
 
 export interface SessionCallbacks {
-  onStatus: (deviceId: string, status: DeviceStatus, detail?: { phone?: string; error?: string }) => void
+  onStatus: (
+    deviceId: string,
+    status: DeviceStatus,
+    detail?: { phone?: string; error?: string },
+  ) => void
   onGiveUp: (deviceId: string, attempts: number, detail: string) => void
   onLog: (level: 'info' | 'warn' | 'error', message: string) => void
 }
@@ -88,7 +92,11 @@ export class SessionManager {
     await this.transport.logout(deviceId)
   }
 
-  private handleDisconnect(deviceId: string, kind: 'retryable' | 'logged_out', detail: string): void {
+  private handleDisconnect(
+    deviceId: string,
+    kind: 'retryable' | 'logged_out',
+    detail: string,
+  ): void {
     const session = this.sessions.get(deviceId)
     if (!session) return
 
@@ -128,7 +136,10 @@ export class SessionManager {
     session.timer = setTimeout(() => {
       void this.transport.connect(deviceId, session.authDir).catch((err) => {
         // A failed reconnect attempt is itself a retryable disconnect.
-        this.callbacks.onLog('error', `device ${deviceId} reconnect threw: ${String(err)}`)
+        this.callbacks.onLog(
+          'error',
+          `device ${deviceId} reconnect threw: ${String(err)}`,
+        )
         this.handleDisconnect(deviceId, 'retryable', String(err))
       })
     }, delay)

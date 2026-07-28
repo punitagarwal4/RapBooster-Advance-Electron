@@ -106,11 +106,21 @@ export function ImportDialog({
             Cancel
           </Button>
           {preview ? (
-            <Button variant="primary" onClick={() => void runImport()} disabled={busy} data-testid="run-import">
+            <Button
+              variant="primary"
+              onClick={() => void runImport()}
+              disabled={busy}
+              data-testid="run-import"
+            >
               {busy ? 'Importing…' : `Import ${preview.totalRows} rows`}
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => void loadPreview()} disabled={busy} data-testid="load-preview">
+            <Button
+              variant="primary"
+              onClick={() => void loadPreview()}
+              disabled={busy}
+              data-testid="load-preview"
+            >
               {busy ? 'Reading…' : 'Read file'}
             </Button>
           )}
@@ -134,14 +144,16 @@ export function ImportDialog({
       {preview && (
         <>
           <p className="mt-4 text-xs text-ink-muted">
-            {preview.totalRows} rows found. Map each CSV column to a field — unmapped columns are
-            ignored.
+            {preview.totalRows} rows found. Map each CSV column to a field — unmapped
+            columns are ignored.
           </p>
 
           <div className="mt-2 flex flex-col gap-2" data-testid="column-mapping">
             {preview.headers.map((header) => (
               <div key={header} className="flex items-center gap-2">
-                <span className="w-40 shrink-0 truncate font-mono text-xs text-ink">{header}</span>
+                <span className="w-40 shrink-0 truncate font-mono text-xs text-ink">
+                  {header}
+                </span>
                 <span className="text-ink-subtle">→</span>
                 <select
                   value={mapping[header] ?? ''}
@@ -190,7 +202,10 @@ export function ImportDialog({
                 <thead className="bg-app-bg">
                   <tr>
                     {preview.headers.map((h) => (
-                      <th key={h} className="px-2 py-1.5 text-left font-medium text-ink-muted">
+                      <th
+                        key={h}
+                        className="px-2 py-1.5 text-left font-medium text-ink-muted"
+                      >
                         {h}
                       </th>
                     ))}

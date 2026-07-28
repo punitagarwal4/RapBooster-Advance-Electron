@@ -140,7 +140,9 @@ export default function WAGroupsPage() {
                     aria-pressed={isSelected}
                     onClick={() =>
                       setSelected((c) =>
-                        c.includes(group.id) ? c.filter((x) => x !== group.id) : [...c, group.id],
+                        c.includes(group.id)
+                          ? c.filter((x) => x !== group.id)
+                          : [...c, group.id],
                       )
                     }
                     className={cn(
@@ -231,7 +233,11 @@ export default function WAGroupsPage() {
           </Button>
 
           {error && (
-            <p className="text-xs text-danger" role="alert" data-testid="group-send-error">
+            <p
+              className="text-xs text-danger"
+              role="alert"
+              data-testid="group-send-error"
+            >
               {error}
             </p>
           )}

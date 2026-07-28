@@ -53,7 +53,13 @@ export type MediaType = z.infer<typeof mediaType>
 export const messageDirection = z.enum(['in', 'out'])
 export type MessageDirection = z.infer<typeof messageDirection>
 
-export const messageType = z.enum(['text', 'media', 'attachment', 'buttons', 'interactive'])
+export const messageType = z.enum([
+  'text',
+  'media',
+  'attachment',
+  'buttons',
+  'interactive',
+])
 export type MessageType = z.infer<typeof messageType>
 
 export const messageStatus = z.enum(['pending', 'sent', 'delivered', 'read', 'failed'])

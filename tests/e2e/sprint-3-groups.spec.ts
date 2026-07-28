@@ -1,7 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { cleanupUserDataDir, launchLicensed, newUserDataDir } from './fixtures/licensed-app'
+import {
+  cleanupUserDataDir,
+  launchLicensed,
+  newUserDataDir,
+} from './fixtures/licensed-app'
 
 /**
  * Sprint 3 — groups (SPRINTS.md §11.3, E3.20–E3.25).
@@ -16,7 +20,8 @@ async function connectedDevice(win: Page): Promise<string> {
     // Wait for the mock to report connected — group operations require it.
     for (let i = 0; i < 60; i += 1) {
       const list = await window.api.invoke('device:list')
-      if (list.ok && list.data.find((x) => x.id === d.data.id)?.status === 'connected') break
+      if (list.ok && list.data.find((x) => x.id === d.data.id)?.status === 'connected')
+        break
       await new Promise((r) => setTimeout(r, 250))
     }
     return d.data.id
@@ -26,8 +31,9 @@ async function connectedDevice(win: Page): Promise<string> {
 function groupRows(dir: string) {
   const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
   try {
-    return db.prepare('SELECT id, name, memberCount, deviceId FROM "Group" ORDER BY name').all() as
-      Array<{ id: string; name: string; memberCount: number; deviceId: string }>
+    return db
+      .prepare('SELECT id, name, memberCount, deviceId FROM "Group" ORDER BY name')
+      .all() as Array<{ id: string; name: string; memberCount: number; deviceId: string }>
   } finally {
     db.close()
   }
@@ -93,7 +99,9 @@ test('E3.21 + E3.22 — bulk send reaches every selected group', async () => {
 
       // Poll until the job finishes.
       for (let i = 0; i < 120; i += 1) {
-        const status = await window.api.invoke('groupSend:status', { jobId: job.data.jobId })
+        const status = await window.api.invoke('groupSend:status', {
+          jobId: job.data.jobId,
+        })
         if (status.ok && status.data.status === 'completed') {
           return {
             emptyRefused: !empty.ok,
@@ -142,22 +150,35 @@ test('E3.23 — bulk create produces correctly named groups for each suffix rule
         if (!job.ok) throw new Error(`job ${rule}`)
 
         for (let i = 0; i < 120; i += 1) {
-          const status = await window.api.invoke('groupCreate:status', { jobId: job.data.jobId })
+          const status = await window.api.invoke('groupCreate:status', {
+            jobId: job.data.jobId,
+          })
           if (status.ok && status.data.status === 'completed') break
           await new Promise((r) => setTimeout(r, 250))
         }
 
         const groups = await window.api.invoke('group:list', {})
         out[rule] = groups.ok
-          ? groups.data.filter((g) => g.name.startsWith(`Team ${rule}`)).map((g) => g.name).sort()
+          ? groups.data
+              .filter((g) => g.name.startsWith(`Team ${rule}`))
+              .map((g) => g.name)
+              .sort()
           : []
       }
       return out
     }, deviceId)
 
     // Zero-padded so alphabetical order matches creation order.
-    expect(names.number).toEqual(['Team number 001', 'Team number 002', 'Team number 003'])
-    expect(names.alphabet).toEqual(['Team alphabet A', 'Team alphabet B', 'Team alphabet C'])
+    expect(names.number).toEqual([
+      'Team number 001',
+      'Team number 002',
+      'Team number 003',
+    ])
+    expect(names.alphabet).toEqual([
+      'Team alphabet A',
+      'Team alphabet B',
+      'Team alphabet C',
+    ])
     // 'none' produces three groups that share one name — WhatsApp allows it.
     expect(names.none).toHaveLength(3)
   } finally {
@@ -198,9 +219,15 @@ test('E3.24 + E3.25 — seeded members are recorded, including partial adds', as
       if (!job.ok) throw new Error('job')
 
       for (let i = 0; i < 120; i += 1) {
-        const status = await window.api.invoke('groupCreate:status', { jobId: job.data.jobId })
+        const status = await window.api.invoke('groupCreate:status', {
+          jobId: job.data.jobId,
+        })
         if (status.ok && status.data.status === 'completed') {
-          return { created: status.data.created, failed: status.data.failed, log: status.data.resultLog }
+          return {
+            created: status.data.created,
+            failed: status.data.failed,
+            log: status.data.resultLog,
+          }
         }
         await new Promise((r) => setTimeout(r, 250))
       }

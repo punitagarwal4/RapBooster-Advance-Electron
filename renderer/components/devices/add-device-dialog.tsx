@@ -91,7 +91,10 @@ export function AddDeviceDialog({
     if (!id) return
 
     setBusy(true)
-    const result = await window.api.invoke('device:requestPairingCode', { id, phone: digits })
+    const result = await window.api.invoke('device:requestPairingCode', {
+      id,
+      phone: digits,
+    })
     setBusy(false)
     if (!result.ok) {
       setError(result.error.userMessage)
@@ -222,7 +225,10 @@ export function AddDeviceDialog({
               >
                 {pairingCode}
               </span>
-              <Button size="sm" onClick={() => void navigator.clipboard.writeText(pairingCode)}>
+              <Button
+                size="sm"
+                onClick={() => void navigator.clipboard.writeText(pairingCode)}
+              >
                 Copy
               </Button>
             </div>
@@ -231,7 +237,11 @@ export function AddDeviceDialog({
       )}
 
       {error && (
-        <p className="mt-3 text-xs text-danger" role="alert" data-testid="add-device-error">
+        <p
+          className="mt-3 text-xs text-danger"
+          role="alert"
+          data-testid="add-device-error"
+        >
           {error}
         </p>
       )}

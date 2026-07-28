@@ -70,7 +70,8 @@ export interface CsvPreview {
 /** Read headers and a handful of rows without loading the file. */
 export async function previewCsv(filePath: string, sampleSize = 5): Promise<CsvPreview> {
   if (!existsSync(filePath)) throw new Error('File not found')
-  if (statSync(filePath).size > MAX_IMPORT_BYTES) throw new Error('File is too large to import')
+  if (statSync(filePath).size > MAX_IMPORT_BYTES)
+    throw new Error('File is too large to import')
 
   const reader = createInterface({
     input: createReadStream(filePath, { encoding: 'utf8' }),
@@ -240,7 +241,9 @@ export async function exportCsv(deps: ExportDeps): Promise<number> {
     do {
       const page = await deps.readPage(cursor)
       for (const row of page.rows) {
-        stream.write(`${deps.fields.map((f) => toCsvValue(row.data[f] ?? '')).join(',')}\n`)
+        stream.write(
+          `${deps.fields.map((f) => toCsvValue(row.data[f] ?? '')).join(',')}\n`,
+        )
         written += 1
       }
       cursor = page.nextCursor ?? undefined

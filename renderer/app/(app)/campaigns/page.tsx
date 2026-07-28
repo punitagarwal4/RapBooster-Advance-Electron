@@ -24,7 +24,12 @@ export default function CampaignsPage() {
 
   async function act(
     id: string,
-    channel: 'campaign:start' | 'campaign:pause' | 'campaign:resume' | 'campaign:stop' | 'campaign:delete',
+    channel:
+      | 'campaign:start'
+      | 'campaign:pause'
+      | 'campaign:resume'
+      | 'campaign:stop'
+      | 'campaign:delete',
   ) {
     setBusyId(id)
     const result = await window.api.invoke(channel, { id })
@@ -53,7 +58,11 @@ export default function CampaignsPage() {
         title="WhatsApp Bulk Campaigns"
         description="Send a template to a contact list across your devices, with delay and sleep pacing."
         actions={
-          <Button variant="primary" onClick={() => setCreating(true)} data-testid="new-campaign">
+          <Button
+            variant="primary"
+            onClick={() => setCreating(true)}
+            data-testid="new-campaign"
+          >
             + Create Campaign
           </Button>
         }
@@ -87,7 +96,9 @@ export default function CampaignsPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">{campaign.name}</p>
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {campaign.name}
+                    </p>
                     <p className="text-xs text-ink-muted">
                       {new Date(campaign.createdAt).toLocaleDateString()}
                     </p>
@@ -111,7 +122,8 @@ export default function CampaignsPage() {
                   <div className="flex justify-between">
                     <dt>Pacing</dt>
                     <dd>
-                      {campaign.delayFrom}-{campaign.delayTo}s · {campaign.sleepDuration}s/
+                      {campaign.delayFrom}-{campaign.delayTo}s · {campaign.sleepDuration}
+                      s/
                       {campaign.sleepAfter}
                     </dd>
                   </div>

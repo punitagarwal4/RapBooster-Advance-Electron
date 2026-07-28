@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
@@ -27,12 +23,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": [
-        "./*"
-      ],
-      "@shared/*": [
-        "../shared/*"
-      ]
+      "@renderer/*": ["./*"],
+      "@shared/*": ["../shared/*"]
     }
   },
   "include": [
@@ -44,8 +36,5 @@
     "**/*.tsx",
     "../shared/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "out"
-  ]
+  "exclude": ["node_modules", "out"]
 }

@@ -28,7 +28,9 @@ export async function bootDatabase(): Promise<DbBootReport> {
   }
 
   // Nothing to back up on a first run or straight after quarantine.
-  const backupPath = recovered ? null : await createBackup(dbPath, backupsDir(), 'premigrate')
+  const backupPath = recovered
+    ? null
+    : await createBackup(dbPath, backupsDir(), 'premigrate')
 
   const migrations = runMigrations(dbPath, migrationsDir())
 
