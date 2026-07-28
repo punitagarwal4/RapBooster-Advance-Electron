@@ -18,15 +18,28 @@ Last updated: **2026-07-28**
 | 1 | Foundation · Licensing · Shell | 🟢 Complete | 2026-07-27 | 2026-07-28 | 11/11 | 28 passing | `f095b16` |
 | 2 | Devices · Contacts · Templates | 🟢 Complete | 2026-07-28 | 2026-07-28 | 7/7 | 21 passing | `a51bff7` |
 | 3 | Campaign engine · Groups | 🟢 Complete | 2026-07-28 | 2026-07-28 | 9/9 | 16 passing | `922b14a` |
-| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 4/6 | 16 passing | `ea8e60f` |
+| 4 | Inbox · AI Bot · Settings · Release | 🟡 In progress | 2026-07-28 | — | 6/6 (2 unverified) | 81 passing | pending |
 
 **Legend:** ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Deferred
 
 ### Current status
 
-> 🟢 **Sprints 0–3 complete.** Sprint 4 (inbox, AI bot, settings, dashboard, release) is next.
+> 🟢 **Sprints 0–3 complete.** Sprint 4 is feature-complete: all six tasks are built, the full
+> 81-test suite passes, and the packaged build is green.
+>
+> **What is not done is proving the release itself.** T4.5 and T4.6 are marked 🟡, not 🟢,
+> because no build has been signed and no update has ever been installed — that needs §2/§3/§4
+> from you (K6). Everything is wired and waiting.
 >
 > T3.3 crash-safe resume — the highest-risk item in the project — is done and asserted by E3.8.
+>
+> ⚠ **A packaging bug was found and fixed in this pass (D55).** Baileys declares its image
+> library as an optional *peer* dependency, which npm hoists in development but electron-builder
+> does not package. Every packaged build would have sent images with no thumbnail and no
+> dimensions — silently, because Baileys logs that failure at debug level and carries on. Dev
+> was unaffected, and E2E could not have caught it (the mock transport never builds real media).
+> Fixed by declaring sharp ourselves, and now guarded in both the build and the packaged
+> self-test.
 >
 > The build is proceeding without a filled REQUIREMENTS.md, on customer instruction
 > (2026-07-27). Anything depending on an unanswered question is built against a documented
@@ -146,12 +159,13 @@ create and message in bulk.
 | --- | --- | --- | --- |
 | T4.1 | Inbox (two-pane, live ingestion, composer) | 🟢 | Live ingestion with duplicate suppression, device filter, search, unread badges, all four message shapes, composer with emoji, delivery receipts |
 | T4.2 | AI Bot config + OpenAI auto-reply worker | 🟢 | Every prototype field wired into the prompt, keyword escalation, hard rules (no groups, no self, opt-out), distinct failure codes, throttled replies |
-| T4.3 | Settings: AI · sending defaults · data & backup · about | ⬜ | |
+| T4.3 | Settings: AI · sending defaults · data & backup · about | 🟢 | Encrypted AI key with masked reads, sending defaults applied to new campaigns, backup/restore with integrity refusal, guarded clear |
 | T4.4 | Dashboard real aggregates | 🟢 | SQL aggregates per REQUIREMENTS §7.1 plus today counts; refreshes on campaign, device and message events |
-| T4.5 | Packaging, signing, notarization, auto-update | ⬜ | Needs REQUIREMENTS §3, §4 |
-| T4.6 | Hardening pass + full regression + README | ⬜ | |
+| T4.5 | Packaging, signing, notarization, auto-update | 🟡 | **Wired but unverified.** Icon, entitlements, `asarUnpack`, updater service and `system:checkUpdate` are all in place and the packaged build is green — but no build has been signed and no update has ever been installed, because that needs REQUIREMENTS §2/§3/§4. See K6. Procedure written up in [RELEASE.md](./RELEASE.md) |
+| T4.6 | Hardening pass + full regression + README | 🟡 | Audit clean on production deps (K7), full regression green, RELEASE.md written. Remaining: memory profile under 20 devices, startup-time measurement, README rewrite |
 
-**E2E:** E4.1 – E4.25 — 0/25 passing.
+**E2E:** 81/81 passing (4.4m). Packaged smoke green, including the new
+`baileys image thumbnail` probe.
 
 **Exit gate:** signed installers on both platforms · auto-update works against the real feed ·
 AI replies correctly and fails loudly · full 88-test regression green.
@@ -199,6 +213,10 @@ reasoning — future sessions read this instead of re-litigating.
 | D54 | 2026-07-28 | Only the **keyword** escalation trigger is enforced, and the UI says so | OpenAI returns no confidence score, so the prototype's threshold cannot be honoured directly (REQUIREMENTS §5, A13). The screen states this rather than presenting a control that silently does nothing |
 | D50 | 2026-07-28 | Inbound messages are **ignored if the id already exists** | WhatsApp redelivers on reconnect. Without the check the user would see the same message twice, which reads as a bug in the app rather than a protocol behaviour. E4.1b asserts a relaunch adds nothing |
 | D51 | 2026-07-28 | Inbound test traffic is driven by an env var on the **mock transport**, not a "simulate" IPC channel | Keeps the test hook inside code that is already test-only. Production never ships the mock, so there is no simulate surface to secure or accidentally expose |
+| D55 | 2026-07-28 | **`sharp` is a direct production dependency of this app**, pinned exactly, even though only Baileys uses it | Baileys declares `sharp` as an optional *peer*. npm hoists peers to the root, so dev always found it — but electron-builder packages by walking our own production dependency graph, where a peer of a dependency is unreachable. sharp was therefore in every dev run and in **no** packaged build. Declaring it ourselves is what makes it ship. Confirmed by inspecting `app.asar` before (0 sharp entries) and after (50, plus `@img/sharp-win32-x64` unpacked) |
+| D56 | 2026-07-28 | Chose **sharp over jimp**, despite jimp being pure JS with no native binary and no CVEs | Baileys 7.0.0-rc13's `extractImageThumb` gates its jimp branch on `typeof lib.jimp?.Jimp === 'object'`, but jimp@1.6.1 exports `Jimp` as a *function*, so the branch is unreachable — the same file's `generateProfilePicture` checks for `'function'`, which is the inconsistency. Verified directly: with jimp installed and sharp hidden, the call throws `No image processing library available`. jimp was installed, tested, and removed again. Revisit if a later Baileys fixes the check |
+| D57 | 2026-07-28 | sharp pinned at **0.35.3**, and the guard refuses anything below 0.35.0 or any caret range | Everything under 0.35.0 inherits the libvips CVEs (GHSA-f88m-g3jw-g9cj); the transitive copy Baileys pulled was 0.34.5. Declaring 0.35.3 ourselves overrides it and takes `npm audit --omit=dev` to zero. Pinned exactly per the same rule as Baileys and better-sqlite3 — native modules must not move underneath a packaged build |
+| D58 | 2026-07-28 | The thumbnail check lives in the **packaged self-test**, not only in a build-time script | The bug was invisible everywhere else: dev has sharp hoisted, E2E uses the mock transport which never builds real media, and Baileys swallows the failure as a debug log. Only a packaged run proves sharp is both shipped and loadable from outside the asar. The build-time script (`scripts/check-media-deps.mjs`) additionally asserts the *declaration*, since a functional check alone passes on a hoisted peer install and would let the original bug straight through |
 | D48 | 2026-07-28 | Per-recipient view is a **dialog**, not a `/campaigns/[id]` route | The renderer is a static export, so a dynamic segment needs its parameters known at build time — campaign ids are not. **Deviation from SPRINTS §11.1 T3.5**, and arguably better UX: the list stays visible behind it |
 | D49 | 2026-07-28 | A dropped device's **pending** rows are reassigned; sent and in-flight rows are not | Only pending work is safe to move. Without reassignment one lost account strands its slice and a 10k campaign silently stalls at 80% looking finished. With no device left the campaign pauses with a reason rather than spinning against sockets that cannot send |
 | D46 | 2026-07-28 | **E2E gained a global warm-up launch** | The first launch after a build pages a ~200 MB binary plus fresh bundles from disk; on a loaded machine that took over 90s while the same test ran in 1.4s warm. The first test was absorbing the whole cost and failing on a budget that was fine for its actual work. Warming once keeps every per-test timeout meaningful instead of being a proxy for disk I/O |
@@ -246,7 +264,9 @@ explicitly accepted with a reason.
 | K2 | 1 | ~~The `init` migration creates a spike-only `SpikeProbe` table~~ | ✅ Resolved | Baseline regenerated in T1.4 with the real 17-table schema; E1.13 asserts `SpikeProbe` is absent |
 | K5 | 4 | `settings:get`/`settings:set` were declared in the contract but had **no handler**, so saving the AI key silently did nothing | ✅ Resolved | Found by E4.17. Implemented in T4.3. The preload already converted the missing-handler rejection into a typed error (D39), so it failed visibly rather than hanging — but nothing surfaced it until a test asserted the stored value |
 | K4 | 3 | **Intermittent E2E launch timeouts on this machine** — roughly 1 per 2 full runs | Environmental | Always a launch wait, never a behavioural assertion; the affected spec passes in isolation every time; no orphaned Electron processes after a run. Consistent with disk/CPU contention on a machine that has been building, packaging and launching ~35 Electron apps per suite for hours. **Deliberately not masked with Playwright retries** — that would hide real regressions too. Re-evaluate on a quieter machine or in CI |
-| K3 | 1 | Builds are unsigned; `electron-builder` reports "default Electron icon is used" | Expected | Resolved in T4.5 once REQUIREMENTS §2 (icon) and §4 (certificates) are supplied |
+| K3 | 1 | Builds are unsigned; `electron-builder` reported "default Electron icon is used" | Partly resolved | The icon warning is gone — a placeholder `assets/branding/icon.png` now ships and is applied. Signing still needs REQUIREMENTS §4 |
+| K6 | 4 | **The release pipeline has never been executed end to end.** No signed installer, no notarized DMG, no update ever downloaded or installed | Blocked on user | Config is complete and the packaged build is green, so this is unverified rather than unwritten. Blocked on REQUIREMENTS §2 (branding), §3 (feed URL) and §4 (certificates). Deliberately marked 🟡 rather than 🟢: claiming a release pipeline works when nobody has watched it produce a signed, installable, self-updating build would be the single most expensive thing to be wrong about here |
+| K7 | 4 | 20 high-severity advisories reported by `npm audit`, all in the **build toolchain** (electron-builder, vite, next, postcss and their transitive `minimatch`/`brace-expansion`) | Accepted | `npm audit --omit=dev` reports **0 vulnerabilities** — none of these reach the shipped app. Verified against the actual package: `app.asar` contains only `out/`, `prisma/migrations`, `package.json` and the production dependency graph. Fixing them requires `npm audit fix --force`, which would pull vite outside the range electron-vite supports. Re-evaluate when electron-builder and electron-vite publish updated ranges |
 
 ---
 

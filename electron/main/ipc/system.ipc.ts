@@ -12,6 +12,7 @@ import { checkpoint, disconnectPrisma, getPrisma } from '../db/client'
 import { checkIntegrity } from '../db/integrity'
 import { backupsDir, databasePath, logsDir, userDataDir } from '../db/paths'
 import { buildDiagnostics } from '../services/diagnostics'
+import { checkForUpdate } from '../services/updater'
 import { waBridge } from '../wa-bridge'
 import { registerHandler } from './router'
 
@@ -50,6 +51,20 @@ export function registerSystemHandlers(): void {
   registerHandler('system:exportDiagnostics', async () => ({
     filePath: await buildDiagnostics(),
   }))
+
+  registerHandler('system:checkUpdate', async () => {
+    const state = await checkForUpdate()
+    if (state.unconfigured) {
+      // Reporting "you are up to date" when no feed is configured would be a
+      // lie the user could not detect.
+      throw new AppError('NETWORK_ERROR', {
+        userMessage: app.isPackaged
+          ? 'No update server is configured for this build.'
+          : 'Updates are only available in an installed build.',
+      })
+    }
+    return { available: state.available, version: state.version }
+  })
 
   registerHandler('system:waServiceState', () => ({
     state: waBridge.currentState(),

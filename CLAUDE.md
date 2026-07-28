@@ -316,8 +316,20 @@ deviations, known issues — and commit everything in one commit.
   the most security-sensitive dependency in the app.
 - Prefer the dependencies already listed in `SPRINTS.md` §14. Adding one outside that list
   needs a line in the tracker's decision log explaining why.
-- Native modules (`better-sqlite3`) must rebuild for both platforms — verify in the packaged
-  smoke test, not just in dev.
+- Native modules (`better-sqlite3`, `sharp`) must rebuild for both platforms and be listed in
+  `asarUnpack` — a `.node` binary cannot be `dlopen`'d from inside an asar. Verify in the
+  packaged smoke test, not just in dev.
+- **A peer dependency of a dependency does not get packaged.** npm hoists peers to the root, so
+  development always finds them, but electron-builder packages by walking *our* production
+  dependency graph — where they are unreachable. If a dependency needs an optional peer at
+  runtime, declare it in our own `dependencies` or it will exist in every dev run and no
+  shipped build. This cost us a real bug (tracker D55): Baileys resolves `sharp` this way for
+  image thumbnails, so packaged builds sent every image with no thumbnail and no dimensions.
+  It was silent — Baileys logs that failure at debug level and carries on.
+- **When a dependency swallows its own failures, assert the outcome in the packaged
+  self-test.** Anything guarded by `import(...).catch(() => {})` or a `try/catch` that only
+  logs will not fail a build, will not fail E2E, and will not appear in any log anyone reads.
+  `electron/main/self-test.ts` is the right place, because it runs inside the real package.
 
 ---
 

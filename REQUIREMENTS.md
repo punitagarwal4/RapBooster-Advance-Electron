@@ -177,6 +177,21 @@ TODO
 
 ---
 
+> ## ⚠ Sections 2, 3 and 4 are now the only thing between you and a shippable build
+>
+> As of **2026-07-28** every feature is built and the full test suite passes, but the release
+> pipeline has never been run end to end, because it cannot be without these three sections.
+> This is the one place where "we'll do it later" has a real cost: **an unsigned macOS build
+> will not open at all** on a customer's machine, and an unsigned Windows build shows a
+> SmartScreen warning that most people will not click through.
+>
+> Everything is wired and waiting — see [RELEASE.md](./RELEASE.md) for exactly what happens
+> when you supply each item. In the meantime a placeholder icon ships, and update checks
+> honestly report "no update server is configured" rather than claiming the app is current.
+>
+> If you want to ship to a small internal group first, §4 (signing) matters most; §2 and §3
+> can follow.
+
 ## Section 2 — Branding and Identity ⬜
 
 | Item | Value |

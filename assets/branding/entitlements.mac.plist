@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS hardened-runtime entitlements.
+
+  Deliberately minimal: only what Electron itself needs to run under the
+  hardened runtime, plus outbound network access for WhatsApp, the license
+  server and OpenAI. Nothing here grants camera, microphone, contacts or
+  file-system access beyond the app's own container — the app does not use
+  them, and requesting entitlements you do not need is both a notarization
+  risk and a reason for users to distrust the app.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- Electron's V8 requires JIT under the hardened runtime. -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- Outbound only: WhatsApp, the license server, OpenAI, the update feed. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+  </dict>
+</plist>

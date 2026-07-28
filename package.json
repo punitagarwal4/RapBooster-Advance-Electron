@@ -9,7 +9,7 @@
     "dev": "concurrently -k -n renderer,electron -c cyan,magenta \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "next dev renderer -p 3000",
     "dev:electron": "wait-on tcp:127.0.0.1:3000 && electron-vite dev",
-    "build": "npm run typecheck && npm run build:renderer && electron-vite build",
+    "build": "npm run typecheck && npm run check:media && npm run build:renderer && electron-vite build",
     "build:renderer": "next build renderer && node scripts/copy-renderer.mjs",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
@@ -25,7 +25,8 @@
     "db:studio": "prisma studio",
     "test:e2e": "playwright test",
     "test:smoke": "npm run pack && node scripts/smoke.mjs",
-    "postinstall": "prisma generate && electron-builder install-app-deps"
+    "postinstall": "prisma generate && electron-builder install-app-deps",
+    "check:media": "node scripts/check-media-deps.mjs"
   },
   "dependencies": {
     "@hapi/boom": "10.0.1",
@@ -38,6 +39,7 @@
     "libphonenumber-js": "1.13.9",
     "openai": "7.0.0",
     "qrcode": "1.5.4",
+    "sharp": "0.35.3",
     "zod": "4.4.3"
   },
   "devDependencies": {

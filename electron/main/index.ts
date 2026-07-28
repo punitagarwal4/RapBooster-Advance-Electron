@@ -41,6 +41,7 @@ import {
 } from './services/license/manager'
 import { applySessionSecurity, applyWindowSecurity } from './security'
 import { initLogger, installCrashHandlers } from './services/logger'
+import { initUpdater } from './services/updater'
 
 // The app name determines the userData path, so it must be set before the
 // logger resolves its file location — otherwise logs land under "Electron".
@@ -369,6 +370,11 @@ async function bootUi(): Promise<void> {
   }
 
   createWindow()
+
+  // Updates: wired against the feed from REQUIREMENTS §3. Until that is
+  // supplied the feed is a placeholder and checks report "not configured"
+  // rather than pretending the app is up to date.
+  initUpdater(() => BrowserWindow.getAllWindows())
 
   // Background revalidation (REQUIREMENTS §1.6, assumption A1). A network
   // failure moves to grace rather than locking the user out; an explicit

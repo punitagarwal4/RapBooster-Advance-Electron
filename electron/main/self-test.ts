@@ -111,6 +111,39 @@ async function main(): Promise<void> {
     check('wal checkpoint', false, String(err))
   }
 
+  // 5. Baileys' image-thumbnail path must work *inside the packaged app*.
+  //
+  // This cannot be checked in dev: sharp is an optional peer dependency of
+  // Baileys, so npm hoists it to the root and dev always finds it, while
+  // electron-builder — which walks only our own production dependency graph —
+  // used to omit it entirely. The result was image messages going out with no
+  // thumbnail and no dimensions, silently, because Baileys logs that failure at
+  // debug level and carries on. Only a packaged run proves sharp is both
+  // shipped and loadable from outside the asar.
+  try {
+    const { extractImageThumb } = await import('baileys/lib/Utils/messages-media.js')
+    // 8x8 solid-red PNG, inline so the probe needs nothing from disk.
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAACXBIWXMAAAPoAAAD6AG1e1Jr' +
+        'AAAAEUlEQVQI12O4IyeHFTEMLQkAid1GAWii5iMAAAAASUVORK5CYII=',
+      'base64',
+    )
+    const { buffer, original } = await extractImageThumb(png, 32)
+    // 0xFFD8 is the JPEG SOI marker — Baileys base64s this straight into the
+    // message as jpegThumbnail, so it has to genuinely be a JPEG. Dimensions
+    // are asserted too: they populate width/height on the outgoing message.
+    check(
+      'baileys image thumbnail',
+      buffer.length > 0 &&
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        original?.width === 8 &&
+        original?.height === 8,
+    )
+  } catch (err) {
+    check('baileys image thumbnail', false, String(err))
+  }
+
   console.log('---')
   if (failures.length > 0) {
     console.log(`SELF-TEST FAILED (${failures.length}): ${failures.join(', ')}`)
