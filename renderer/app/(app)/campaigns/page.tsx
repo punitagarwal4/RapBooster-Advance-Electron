@@ -3,6 +3,7 @@
 import { Megaphone } from 'lucide-react'
 import { useState } from 'react'
 import { CreateCampaignDialog } from '@renderer/components/campaigns/create-campaign-dialog'
+import { RecipientsDialog } from '@renderer/components/campaigns/recipients-dialog'
 import { PageHeader } from '@renderer/components/layout/page-header'
 import { useToast } from '@renderer/components/providers/toast-provider'
 import { Button } from '@renderer/components/ui/button'
@@ -15,6 +16,7 @@ export default function CampaignsPage() {
   const toast = useToast()
   const [creating, setCreating] = useState(false)
   const [busyId, setBusyId] = useState<string>()
+  const [viewing, setViewing] = useState<{ id: string; name: string }>()
 
   // Progress arrives batched from the engine, so a 100k-recipient run cannot
   // flood this screen.
@@ -185,6 +187,13 @@ export default function CampaignsPage() {
 
                   <Button
                     size="sm"
+                    onClick={() => setViewing({ id: campaign.id, name: campaign.name })}
+                    data-testid="view-recipients"
+                  >
+                    Recipients
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={() => void report(campaign.id)}
                     disabled={busyId === campaign.id}
                     data-testid="report-campaign"
@@ -205,6 +214,14 @@ export default function CampaignsPage() {
             )
           })}
         </div>
+      )}
+
+      {viewing && (
+        <RecipientsDialog
+          campaignId={viewing.id}
+          campaignName={viewing.name}
+          onClose={() => setViewing(undefined)}
+        />
       )}
 
       {creating && (

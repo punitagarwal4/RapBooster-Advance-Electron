@@ -184,6 +184,28 @@ function startWaService(): void {
       phone: phone ?? null,
       error: error ?? null,
     })
+
+    // A device that drops mid-campaign would otherwise strand its slice of the
+    // queue until it came back, and the campaign would look stalled.
+    if (status === 'disconnected' || status === 'logged_out' || status === 'banned') {
+      void campaignEngine
+        .reassignFrom(deviceId)
+        .then(({ moved, paused }) => {
+          if (moved > 0) {
+            emitToAll(windows(), 'toast', {
+              level: 'warning',
+              message: `A device disconnected. ${moved} pending message(s) moved to other devices.`,
+            })
+          }
+          for (const _ of paused) {
+            emitToAll(windows(), 'toast', {
+              level: 'error',
+              message: 'A campaign paused: no connected device is available to send.',
+            })
+          }
+        })
+        .catch((err: unknown) => console.error('reassignment failed', err))
+    }
   })
 
   waBridge.on('qr', ({ deviceId, qr }) => {

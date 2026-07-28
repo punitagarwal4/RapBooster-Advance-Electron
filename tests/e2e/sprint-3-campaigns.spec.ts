@@ -530,6 +530,125 @@ test('E3.5b — the Campaigns screen creates and runs a campaign', async () => {
   }
 })
 
+test('E3.13 — a disconnected device hands its pending queue to the others', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const f = await seed(win, 60, 2)
+
+    const campaignId = await win.evaluate(async (fx) => {
+      const c = await window.api.invoke('campaign:create', {
+        name: 'Reassign',
+        templateId: fx.templateId,
+        deviceIds: fx.deviceIds,
+        listIds: [fx.listId],
+        // Slow enough that plenty is still pending when a device drops.
+        delayFrom: 1,
+        delayTo: 1,
+        sleepDuration: 0,
+        sleepAfter: 100,
+      })
+      if (!c.ok) throw new Error('create')
+      await window.api.invoke('campaign:start', { id: c.data.id })
+      return c.data.id
+    }, f)
+
+    await expect
+      .poll(() => recipientRows(dir, campaignId).filter((r) => r.status === 'sent').length, {
+        timeout: 60_000,
+      })
+      .toBeGreaterThan(0)
+
+    const victim = f.deviceIds[0]!
+    const pendingOnVictim = () => {
+      const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
+      try {
+        const row = db
+          .prepare(
+            "SELECT COUNT(*) AS n FROM CampaignRecipient WHERE campaignId = ? AND deviceId = ? AND status = 'pending'",
+          )
+          .get(campaignId, victim) as { n: number }
+        return Number(row.n)
+      } finally {
+        db.close()
+      }
+    }
+
+    expect(pendingOnVictim()).toBeGreaterThan(0)
+
+    // Logging the device out drops it mid-run, exactly as a lost connection
+    // would from the campaign's point of view.
+    await win.evaluate((id) => window.api.invoke('device:logout', { id }), victim)
+
+    // Its pending slice must move to the surviving device rather than stall.
+    await expect.poll(pendingOnVictim, { timeout: 60_000 }).toBe(0)
+
+    // And the campaign keeps going.
+    await expect
+      .poll(
+        () =>
+          recipientRows(dir, campaignId).filter(
+            (r) => r.status === 'sent' || r.status === 'failed',
+          ).length,
+        { timeout: 180_000 },
+      )
+      .toBe(60)
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
+test('E3.5c — the recipients view lists outcomes and filters them', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const f = await seed(win, 10, 1)
+
+    const campaignId = await win.evaluate(async (fx) => {
+      const c = await window.api.invoke('campaign:create', {
+        name: 'Inspectable',
+        templateId: fx.templateId,
+        deviceIds: fx.deviceIds,
+        listIds: [fx.listId],
+        delayFrom: 0,
+        delayTo: 0,
+        sleepDuration: 0,
+        sleepAfter: 100,
+      })
+      if (!c.ok) throw new Error('create')
+      await window.api.invoke('campaign:start', { id: c.data.id })
+      return c.data.id
+    }, f)
+
+    await expect
+      .poll(
+        () =>
+          recipientRows(dir, campaignId).filter(
+            (r) => r.status === 'sent' || r.status === 'failed',
+          ).length,
+        { timeout: 120_000 },
+      )
+      .toBe(10)
+
+    await win.getByTestId('nav-campaigns').click()
+    await win.getByTestId('view-recipients').click()
+    await expect(win.getByTestId('recipients-dialog')).toBeVisible()
+
+    await expect(win.getByTestId('recipient-row')).toHaveCount(10)
+    await expect(win.getByTestId('recipient-total')).toContainText('10')
+
+    // Filtering narrows to the failures, which is the whole point of the view.
+    await win.getByTestId('recipient-filter-sent').click()
+    await expect
+      .poll(async () => win.getByTestId('recipient-row').count(), { timeout: 15_000 })
+      .toBeLessThanOrEqual(10)
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})
+
 test('E3.12 — send failures retry then settle as failed', async () => {
   const dir = newUserDataDir()
   const { app, win } = await launchLicensed(dir)

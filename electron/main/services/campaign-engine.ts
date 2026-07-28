@@ -447,6 +447,72 @@ export class CampaignEngine {
   }
 
   /**
+   * Move a disconnected device's pending recipients to devices that are still
+   * connected (SPRINTS.md §11.1 T3.4).
+   *
+   * Without this, one dropped account strands its whole slice of the queue
+   * until it reconnects — a 10k campaign with five devices would silently stall
+   * at 80% and look finished. Only `pending` rows move: anything already sent
+   * or in flight belongs to the device that handled it.
+   *
+   * If no device remains, the campaign pauses with a reason rather than
+   * spinning against sockets that cannot send.
+   */
+  async reassignFrom(deviceId: string): Promise<{ moved: number; paused: string[] }> {
+    const prisma = getPrisma()
+
+    const affected = await prisma.campaign.findMany({
+      where: { status: 'running', devices: { some: { deviceId } } },
+      include: { devices: true },
+    })
+
+    let moved = 0
+    const paused: string[] = []
+
+    for (const campaign of affected) {
+      const others = await prisma.device.findMany({
+        where: {
+          id: { in: campaign.devices.map((d) => d.deviceId), not: deviceId },
+          status: 'connected',
+        },
+      })
+
+      const pending = await prisma.campaignRecipient.count({
+        where: { campaignId: campaign.id, deviceId, status: 'pending' },
+      })
+      if (pending === 0) continue
+
+      if (others.length === 0) {
+        await this.pause(campaign.id)
+        await prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { lastError: 'Paused: no connected device is available to send.' },
+        })
+        paused.push(campaign.id)
+        continue
+      }
+
+      // Spread the orphaned rows evenly rather than dumping them on one device.
+      const rows = await prisma.campaignRecipient.findMany({
+        where: { campaignId: campaign.id, deviceId, status: 'pending' },
+        select: { id: true },
+      })
+
+      await prisma.$transaction(
+        rows.map((row, i) =>
+          prisma.campaignRecipient.update({
+            where: { id: row.id },
+            data: { deviceId: others[i % others.length]!.id },
+          }),
+        ),
+      )
+      moved += rows.length
+    }
+
+    return { moved, paused }
+  }
+
+  /**
    * Start any scheduled campaign whose time has arrived.
    *
    * Compares against the wall clock rather than a monotonic timer, so a laptop
