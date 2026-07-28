@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "WhatsApp marketing desktop application",
+  "license": "UNLICENSED",
   "author": "Punit",
   "main": "out/main/index.js",
   "scripts": {

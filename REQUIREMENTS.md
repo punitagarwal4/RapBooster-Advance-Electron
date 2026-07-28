@@ -15,6 +15,33 @@
 
 ---
 
+## ⚠ Launch blockers — the short version
+
+Everything in the product is built and tested. **Nothing below is code work; it is all things
+only you can supply.** In priority order:
+
+| #   | What I need                                      | Where | Why it blocks launch                                                                 | If you skip it                                                  |
+| --- | ------------------------------------------------ | ----- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| 1   | **Apple Developer ID + notarization login**      | §4    | macOS refuses to open an unsigned app. Not a warning — it will not launch            | You cannot ship to Mac at all                                   |
+| 2   | **Windows code-signing certificate**             | §4    | Unsigned installers trigger a SmartScreen warning most people will not click through | Most Windows users never complete the install                   |
+| 3   | **License server API** (URL + request/reply)     | §1    | The app gates on activation at startup. Without a real server nobody can activate    | The app is unusable by anyone but you                           |
+| 4   | **Update feed URL**                              | §3    | No way to ship a fix after release                                                   | Every bug is permanent until users manually reinstall           |
+| 5   | **Branding** — icon, publisher name, support URL | §2    | A placeholder icon ships and the installer shows no verified publisher               | Looks untrustworthy at the exact moment users decide to install |
+
+**Smaller decisions that do not block launch** but change behaviour, in cost-to-change order:
+
+| #   | Decision                                     | Where | Current default                                                 |
+| --- | -------------------------------------------- | ----- | --------------------------------------------------------------- |
+| 6   | Default country code for phone normalization | §7.5  | `+91` — costly to change after a large import                   |
+| 7   | Button / Interactive templates               | §7.9  | Send as numbered text (platform limitation, not a choice)       |
+| 8   | Link previews on campaign messages           | §7.11 | Off. Turning them on naively means 1 HTTP request per recipient |
+| 9   | AI spend / token caps                        | §5    | No cap                                                          |
+
+If you want to ship to a small internal group first, **items 1–3 are the real gate**; 4 and 5
+can follow.
+
+---
+
 ## Section 0 — Working assumptions in effect
 
 These are the defaults the build is currently running on. **Each one is a placeholder, not a
