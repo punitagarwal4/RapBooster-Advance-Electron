@@ -25,6 +25,11 @@ const REJECTION_COPY: Partial<Record<LicenseStatus, string>> = {
   invalid: 'Invalid license key. Please check and try again.',
   expired: 'This license has expired.',
   revoked: 'This license has been revoked.',
+  // `grace` reaching activation means the server could not be reached or its
+  // reply could not be understood — not that the key is bad. Saying "invalid"
+  // here would send the user off to hunt for a typo in a key that is fine,
+  // while the real problem is their connection or our server.
+  grace: 'Could not reach the license server. Check your connection and try again.',
 }
 
 /**

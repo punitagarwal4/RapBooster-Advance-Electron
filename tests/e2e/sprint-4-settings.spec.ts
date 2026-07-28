@@ -221,3 +221,26 @@ test('E4.21 — the Settings screen exposes sending defaults and a guarded clear
     cleanupUserDataDir(dir)
   }
 })
+
+test('E4.23 — an unconfigured update check refuses to claim the app is current', async () => {
+  const dir = newUserDataDir()
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const result = await win.evaluate(() => window.api.invoke('system:checkUpdate'))
+
+    // The important assertion is what this must NOT do. Reporting
+    // `{ available: false }` here would render as "you are up to date" — a
+    // claim the user cannot check and would have no reason to doubt, on a
+    // build with no update server behind it at all (REQUIREMENTS §3).
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error.code).toBe('NETWORK_ERROR')
+      // Carries a message safe to show, per the error taxonomy.
+      expect(result.error.userMessage.length).toBeGreaterThan(0)
+      expect(result.error.userMessage).not.toMatch(/up to date/i)
+    }
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+  }
+})

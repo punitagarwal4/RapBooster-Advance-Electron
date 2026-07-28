@@ -98,9 +98,32 @@ export class HttpLicenseService implements LicenseService {
       case 'invalid':
         return { kind: 'invalid', reason: payload.message ?? 'Unknown key' }
       default:
-        return httpStatus >= 200 && httpStatus < 300
-          ? { kind: 'invalid', reason: payload.message ?? 'Unrecognised server response' }
-          : { kind: 'invalid', reason: payload.message ?? `HTTP ${httpStatus}` }
+        // WHY this is `unreachable` and not `invalid`: reaching here means the
+        // server did not say the licence is bad — it means we could not
+        // understand what it said. That is the same class of failure as the 5xx
+        // above, and it must not be punitive.
+        //
+        // `invalid` clears the activation and re-gates the app, so treating an
+        // unparseable reply as a rejection locks a paying customer out of
+        // software they bought, for a fault on our side of the wire. The
+        // realistic triggers are all routine: a CDN or captive portal returning
+        // an HTML error page with status 200, a 429 during a revalidation
+        // burst, a proxy rewriting the body, or the server adding a status
+        // string this build predates.
+        //
+        // `unreachable` maps to the bounded grace period instead, and grace
+        // cannot be abused to skip activation: `apply()` persists nothing
+        // except on `valid`, so an unrecognised activation response still
+        // leaves the machine unlicensed.
+        //
+        // An explicit rejection is still honoured immediately — that is the
+        // `invalid` / `expired` / `revoked` cases above, which require the
+        // server to actually say so. Tighten this once REQUIREMENTS §1.4
+        // defines the real status codes.
+        return {
+          kind: 'unreachable',
+          detail: `unrecognised response (HTTP ${httpStatus}, status=${String(payload.status)})`,
+        }
     }
   }
 
