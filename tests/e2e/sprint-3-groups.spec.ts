@@ -203,7 +203,10 @@ test('E3.24 + E3.25 — seeded members are recorded, including partial adds', as
       for (let i = 0; i < 6; i += 1) {
         await window.api.invoke('contacts:create', {
           listId: list.data.id,
-          data: { Name: `M${i}`, Mobile: `9${String(400000000 + i).padStart(9, '0')}` },
+          data: {
+            Name: `M${i}`,
+            Mobile: `+919${String(400000000 + i).padStart(9, '0')}`,
+          },
         })
       }
 

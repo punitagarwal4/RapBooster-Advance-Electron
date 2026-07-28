@@ -1,10 +1,10 @@
 /**
  * Encrypted value storage (CLAUDE.md §5.6).
  *
- * Uses Electron `safeStorage`, which is backed by DPAPI on Windows and the
- * Keychain on macOS — the key never lives in our own files.
+ * Uses Electron `safeStorage`, which is backed by DPAPI on Windows — the key
+ * never lives in our own files.
  *
- * If encryption is unavailable (a locked keychain, an unusual desktop session)
+ * If encryption is unavailable (an unusual or restricted desktop session)
  * we degrade **explicitly** and record that the value is not encrypted, rather
  * than writing plaintext while pretending otherwise. Callers can surface that
  * state to the user; silently storing a license key or API key in the clear

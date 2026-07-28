@@ -13,6 +13,7 @@
  * unrecoverable (CLAUDE.md §5.4).
  */
 import type { DeviceStatus } from '../../../shared/types'
+import type { WaButton } from '../../../shared/wa-protocol'
 
 export interface OutgoingText {
   kind: 'text'
@@ -37,12 +38,22 @@ export interface OutgoingDocument {
 export interface OutgoingButtons {
   kind: 'buttons'
   body: string
-  /** WhatsApp permits at most three quick replies. */
-  buttons: string[]
+  footer?: string
+  buttons: WaButton[]
+}
+
+/** A single-select list — what an interactive template sends. */
+export interface OutgoingList {
+  kind: 'list'
+  body: string
+  footer?: string
+  /** Label on the control that opens the list. */
+  buttonText: string
+  rows: Array<{ id: string; title: string; description?: string }>
 }
 
 export type OutgoingMessage =
-  OutgoingText | OutgoingMedia | OutgoingDocument | OutgoingButtons
+  OutgoingText | OutgoingMedia | OutgoingDocument | OutgoingButtons | OutgoingList
 
 export interface SendResult {
   messageId: string

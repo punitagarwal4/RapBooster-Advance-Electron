@@ -17,6 +17,7 @@ import type { SerializedError } from './errors'
 import {
   campaignStatus,
   deviceStatus,
+  dialPrefix,
   jobStatus,
   licenseStatus,
   mediaType,
@@ -25,8 +26,10 @@ import {
   messageType,
   recipientStatus,
   suffixRule,
+  templateButton,
   templateType,
   waServiceState,
+  MAX_LIST_ROWS,
   MAX_TEMPLATE_BUTTONS,
 } from './types'
 
@@ -103,8 +106,10 @@ export const template = z.object({
   content: z.string(),
   mediaType: mediaType.nullable(),
   mediaPath: z.string().nullable(),
-  options: z.array(z.string()).nullable(),
-  buttons: z.array(z.string()).max(MAX_TEMPLATE_BUTTONS).nullable(),
+  options: z.array(z.string()).max(MAX_LIST_ROWS).nullable(),
+  buttons: z.array(templateButton).max(MAX_TEMPLATE_BUTTONS).nullable(),
+  footer: z.string().nullable(),
+  listButtonText: z.string().nullable(),
   createdAt: isoDate,
 })
 
@@ -168,7 +173,7 @@ export const message = z.object({
   mediaPath: z.string().nullable(),
   fileName: z.string().nullable(),
   fileSize: z.number().int().nullable(),
-  buttons: z.array(z.string()).nullable(),
+  buttons: z.array(templateButton).nullable(),
   status: messageStatus,
   isAiReply: z.boolean(),
   timestamp: isoDate,
@@ -303,6 +308,13 @@ export const ipcContract = {
       /** CSV header -> list field name */
       mapping: z.record(z.string(), z.string()),
       duplicatePolicy: z.enum(['skip', 'overwrite', 'allow']).default('skip'),
+      /**
+       * Dial prefix to apply to national numbers, e.g. `+91`. Null means the
+       * file's numbers already carry their country code. There is no default:
+       * the importer must ask, because a wrong guess corrupts the whole list
+       * (REQUIREMENTS §7.5).
+       */
+      dialPrefix: dialPrefix.nullable(),
     }),
     response: z.object({
       imported: z.number().int().min(0),
@@ -325,8 +337,10 @@ export const ipcContract = {
       content: z.string().min(1),
       mediaType: mediaType.optional(),
       mediaSourcePath: z.string().optional(),
-      options: z.array(z.string()).optional(),
-      buttons: z.array(z.string()).max(MAX_TEMPLATE_BUTTONS).optional(),
+      options: z.array(z.string()).max(MAX_LIST_ROWS).optional(),
+      buttons: z.array(templateButton).max(MAX_TEMPLATE_BUTTONS).optional(),
+      footer: z.string().max(60).optional(),
+      listButtonText: z.string().max(20).optional(),
     }),
     response: template,
   },
@@ -337,8 +351,10 @@ export const ipcContract = {
       content: z.string().min(1).optional(),
       mediaType: mediaType.optional(),
       mediaSourcePath: z.string().optional(),
-      options: z.array(z.string()).optional(),
-      buttons: z.array(z.string()).max(MAX_TEMPLATE_BUTTONS).optional(),
+      options: z.array(z.string()).max(MAX_LIST_ROWS).optional(),
+      buttons: z.array(templateButton).max(MAX_TEMPLATE_BUTTONS).optional(),
+      footer: z.string().max(60).optional(),
+      listButtonText: z.string().max(20).optional(),
     }),
     response: template,
   },
@@ -469,7 +485,7 @@ export const ipcContract = {
       chatId: id,
       body: z.string().optional(),
       mediaSourcePath: z.string().optional(),
-      buttons: z.array(z.string()).max(MAX_TEMPLATE_BUTTONS).optional(),
+      buttons: z.array(templateButton).max(MAX_TEMPLATE_BUTTONS).optional(),
     }),
     response: message,
   },

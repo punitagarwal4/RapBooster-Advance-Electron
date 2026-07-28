@@ -11,7 +11,7 @@ import { REQUIRED_CONTACT_FIELDS } from '../../../shared/types'
 import { getPrisma } from '../db/client'
 import { userDataDir } from '../db/paths'
 import { exportCsv, importCsv, previewCsv, type ImportRow } from '../services/csv'
-import { normalizePhone, resolveCountry } from '../services/phone'
+import { normalizePhone } from '../services/phone'
 import { registerHandler } from './router'
 import { mkdirSync } from 'node:fs'
 
@@ -84,13 +84,6 @@ async function requireList(id: string) {
       userMessage: 'That contact list no longer exists.',
     })
   return list
-}
-
-async function countryCode() {
-  const setting = await getPrisma().setting.findUnique({
-    where: { key: 'contacts.defaultCountryCode' },
-  })
-  return resolveCountry(setting?.value)
 }
 
 async function duplicatePolicy(): Promise<'skip' | 'overwrite' | 'allow'> {
@@ -205,12 +198,13 @@ export function registerContactHandlers(): void {
 
   registerHandler('contacts:create', async ({ listId, data }) => {
     await requireList(listId)
-    const country = await countryCode()
 
-    const normalized = normalizePhone(data.Mobile ?? '', country)
+    // No default country (REQUIREMENTS §7.5): a number typed by hand must carry
+    // its own country code, exactly as the importer requires.
+    const normalized = normalizePhone(data.Mobile ?? '')
     if (!normalized.e164) {
       throw new AppError('VALIDATION_FAILED', {
-        userMessage: 'Enter a valid phone number including country code.',
+        userMessage: 'Enter the number with its country code, for example +919876543210.',
       })
     }
 
@@ -233,11 +227,10 @@ export function registerContactHandlers(): void {
     if (!existing)
       throw new AppError('NOT_FOUND', { userMessage: 'That contact no longer exists.' })
 
-    const country = await countryCode()
-    const normalized = normalizePhone(data.Mobile ?? existing.phone, country)
+    const normalized = normalizePhone(data.Mobile ?? existing.phone)
     if (!normalized.e164) {
       throw new AppError('VALIDATION_FAILED', {
-        userMessage: 'Enter a valid phone number including country code.',
+        userMessage: 'Enter the number with its country code, for example +919876543210.',
       })
     }
 
@@ -285,9 +278,8 @@ export function registerContactHandlers(): void {
 
   registerHandler(
     'contacts:import',
-    async ({ listId, filePath, mapping, duplicatePolicy: policyArg }) => {
+    async ({ listId, filePath, mapping, duplicatePolicy: policyArg, dialPrefix }) => {
       const list = await requireList(listId)
-      const country = await countryCode()
       const policy = policyArg ?? (await duplicatePolicy())
 
       const exportsDir = join(userDataDir(), 'exports')
@@ -297,7 +289,7 @@ export function registerContactHandlers(): void {
 
       try {
         const outcome = await importCsv(filePath, mapping, {
-          country,
+          ...(dialPrefix ? { dialPrefix } : {}),
           exportsDir,
           writeBatch: async (rows: ImportRow[]) => {
             // Within-file duplicates would otherwise make createMany fail the

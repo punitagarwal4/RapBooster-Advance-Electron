@@ -2,19 +2,19 @@
 
 Rules for every coding session in this repository. Read this **before** touching code.
 
-| Document                                 | Purpose                                                               |
-| ---------------------------------------- | --------------------------------------------------------------------- |
-| `CLAUDE.md` (this file)                  | How to work — architecture rules, standards, workflow                 |
-| [SPRINTS.md](./SPRINTS.md)               | What to build — full spec, schema, IPC contract, algorithms           |
-| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Where we are — status, decisions, deviations                          |
-| [REQUIREMENTS.md](./REQUIREMENTS.md)     | Customer inputs — **blocks Sprint 1 until filled**                    |
-| `design/`                                | Original HTML prototypes — reference only, **never import from here** |
+| Document                                 | Purpose                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------- |
+| `CLAUDE.md` (this file)                  | How to work — architecture rules, standards, workflow                  |
+| [SPRINTS.md](./SPRINTS.md)               | What to build — full spec, schema, IPC contract, algorithms            |
+| [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) | Where we are — status, decisions, deviations                           |
+| [REQUIREMENTS.md](./REQUIREMENTS.md)     | Customer inputs still outstanding — answered items move to the tracker |
+| `design/`                                | Original HTML prototypes — reference only, **never import from here**  |
 
 ---
 
 ## 1. Project in one paragraph
 
-RapBooster Advance is a licensed Windows + macOS desktop app for WhatsApp marketing: Electron
+RapBooster Advance is a licensed Windows desktop app for WhatsApp marketing: Electron
 shell, Next.js renderer, Baileys for WhatsApp, local SQLite per OS user. It connects up to 20
 WhatsApp accounts concurrently and runs bulk campaigns, group operations, a unified inbox, and
 an OpenAI auto-responder. Nine screens, all defined in `SPRINTS.md` §2. Four sprints, each
@@ -214,7 +214,7 @@ This is where careless code costs the user their accounts.
 
 - License cache and OpenAI key encrypted with Electron `safeStorage`. If `safeStorage` is
   unavailable, degrade explicitly and tell the user — never store plaintext silently.
-- **No secrets in the renderer, in logs, or in git.** Certificates, `.p8` keys and
+- **No secrets in the renderer, in logs, or in git.** Signing certificates and
   `REQUIREMENTS.local.md` are git-ignored.
 - Strict CSP (`default-src 'self'`). `setWindowOpenHandler` denies everything.
   `will-navigate` blocked outside the app origin. `shell.openExternal` allowlisted.
@@ -316,7 +316,7 @@ deviations, known issues — and commit everything in one commit.
   the most security-sensitive dependency in the app.
 - Prefer the dependencies already listed in `SPRINTS.md` §14. Adding one outside that list
   needs a line in the tracker's decision log explaining why.
-- Native modules (`better-sqlite3`, `sharp`) must rebuild for both platforms and be listed in
+- Native modules (`better-sqlite3`, `sharp`) must rebuild for the Windows target and be listed in
   `asarUnpack` — a `.node` binary cannot be `dlopen`'d from inside an asar. Verify in the
   packaged smoke test, not just in dev.
 - **A peer dependency of a dependency does not get packaged.** npm hoists peers to the root, so
@@ -358,8 +358,9 @@ Things that will bite, listed so nobody rediscovers them the expensive way.
 
 ```bash
 npm run dev           # Electron + Next dev server with HMR
+npm run dev:mock      # …with the mock license server and mock WhatsApp transport
 npm run build         # Build all processes
-npm run dist          # Package installers (both platforms configured)
+npm run dist          # Package the Windows NSIS installer
 npm run typecheck     # tsc --noEmit across all tsconfigs
 npm run lint          # ESLint
 npm run test:e2e      # Playwright against a dev build
@@ -369,5 +370,5 @@ npm run db:studio     # Inspect the local database
 graphify . --update   # Refresh the knowledge graph
 ```
 
-Runtime data lives under `app.getPath('userData')` — `%APPDATA%\RapBooster` on Windows,
-`~/Library/Application Support/RapBooster` on macOS. Layout is in `SPRINTS.md` §3.4.
+Runtime data lives under `app.getPath('userData')` — `%APPDATA%\RapBooster` on Windows.
+Layout is in `SPRINTS.md` §3.4.

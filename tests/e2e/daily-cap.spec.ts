@@ -42,7 +42,7 @@ async function seed(
         listId: list.data.id,
         data: {
           Name: `Person ${i}`,
-          Mobile: `9${String(600000000 + i).padStart(9, '0')}`,
+          Mobile: `+919${String(600000000 + i).padStart(9, '0')}`,
         },
       })
     }

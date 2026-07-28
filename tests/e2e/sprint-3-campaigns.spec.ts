@@ -36,7 +36,7 @@ async function seed(win: Page, contacts: number, devices = 1): Promise<Fixture> 
           listId: list.data.id,
           data: {
             Name: `Person ${i}`,
-            Mobile: `9${String(500000000 + i).padStart(9, '0')}`,
+            Mobile: `+919${String(500000000 + i).padStart(9, '0')}`,
             Company: `Acme ${i}`,
           },
         })
@@ -203,11 +203,11 @@ test('E3.16 — a contact in two selected lists is queued exactly once', async (
       // The same number in both lists is two Contact rows but one person.
       await window.api.invoke('contacts:create', {
         listId: a.data.id,
-        data: { Name: 'Dup', Mobile: '9876543210' },
+        data: { Name: 'Dup', Mobile: '+919876543210' },
       })
       await window.api.invoke('contacts:create', {
         listId: b.data.id,
-        data: { Name: 'Dup', Mobile: '9876543210' },
+        data: { Name: 'Dup', Mobile: '+919876543210' },
       })
 
       const device = await window.api.invoke('device:create', { name: 'S' })

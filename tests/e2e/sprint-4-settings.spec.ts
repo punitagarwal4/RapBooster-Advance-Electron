@@ -37,7 +37,7 @@ async function seedData(win: Page): Promise<void> {
     for (let i = 0; i < 5; i += 1) {
       await window.api.invoke('contacts:create', {
         listId: list.data.id,
-        data: { Name: `P${i}`, Mobile: `9${String(300000000 + i).padStart(9, '0')}` },
+        data: { Name: `P${i}`, Mobile: `+919${String(300000000 + i).padStart(9, '0')}` },
       })
     }
     await window.api.invoke('template:create', { name: 'T', type: 'text', content: 'hi' })

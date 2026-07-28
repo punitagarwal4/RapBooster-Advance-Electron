@@ -11,8 +11,10 @@
  *   WA_MOCK_FAIL_RATE   0..1, fraction of sends that fail (default 0)
  *   WA_MOCK_LATENCY_MS  artificial per-send delay (default 0)
  *   WA_MOCK_CONNECT_MS  delay before a device reports connected (default 50)
+ *   WA_MOCK_INCOMING    inbound messages synthesised per linked device (default 0)
+ *   WA_MOCK_SEND_LOG    file to append every send to as JSONL, for assertions
  */
-import { mkdirSync } from 'node:fs'
+import { appendFileSync, mkdirSync } from 'node:fs'
 import { TransportEmitter } from './emitter'
 import type { OutgoingMessage, RemoteGroup, SendResult, Transport } from './types'
 
@@ -21,6 +23,26 @@ const num = (name: string, fallback: number): number => {
   if (raw === undefined) return fallback
   const parsed = Number(raw)
   return Number.isFinite(parsed) ? parsed : fallback
+}
+
+/**
+ * Append every send to a JSONL file when WA_MOCK_SEND_LOG points at one.
+ *
+ * WHY a file rather than a new IPC channel: nothing in the app could previously
+ * assert *what* was sent — the mock counted sends and dropped the payload — so
+ * the button and list shapes had no way to be tested. A file keeps the test seam
+ * inside code that already only exists for tests; production never loads this
+ * transport, so there is no new surface to secure.
+ */
+function recordSend(deviceId: string, to: string, message: OutgoingMessage): void {
+  const path = process.env.WA_MOCK_SEND_LOG
+  if (!path) return
+  try {
+    appendFileSync(path, `${JSON.stringify({ deviceId, to, message })}\n`, 'utf8')
+  } catch (err) {
+    // A broken test seam must never fail a send the app is making.
+    console.debug('mock: could not write the send log', err)
+  }
 }
 
 interface MockSession {
@@ -129,12 +151,14 @@ export class MockTransport extends TransportEmitter implements Transport {
   async send(
     deviceId: string,
     to: string,
-    _message: OutgoingMessage,
+    message: OutgoingMessage,
   ): Promise<SendResult> {
     const session = this.sessions.get(deviceId)
     if (!session?.connected) {
       throw new Error(`mock: device ${deviceId} is not connected`)
     }
+
+    recordSend(deviceId, to, message)
 
     const latency = num('WA_MOCK_LATENCY_MS', 0)
     if (latency > 0) await new Promise((resolve) => setTimeout(resolve, latency))

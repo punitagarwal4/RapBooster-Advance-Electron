@@ -41,17 +41,37 @@ test('E2.18 — all four template types are created, with the button cap enforce
           name: 'Approve',
           type: 'button',
           content: 'Please review',
-          buttons: ['Approve', 'Reject', 'Later'],
+          buttons: [
+            { type: 'reply', label: 'Approve' },
+            { type: 'url', label: 'Open', value: 'https://example.com/review' },
+            { type: 'call', label: 'Call us', value: '+919876543210' },
+          ],
         })
       ).ok
 
-      // Four buttons must be refused — WhatsApp allows three.
-      out.fourButtons = (
+      // Four quick replies must be refused — WhatsApp renders three.
+      out.fourReplies = (
         await window.api.invoke('template:create', {
           name: 'TooMany',
           type: 'button',
           content: 'Nope',
-          buttons: ['A', 'B', 'C', 'D'],
+          buttons: [
+            { type: 'reply', label: 'A' },
+            { type: 'reply', label: 'B' },
+            { type: 'reply', label: 'C' },
+            { type: 'reply', label: 'D' },
+          ],
+        })
+      ).ok
+
+      // A url button with nothing to open is refused at creation rather than
+      // failing silently on the recipient's phone.
+      out.urlNoValue = (
+        await window.api.invoke('template:create', {
+          name: 'Broken link',
+          type: 'button',
+          content: 'Nope',
+          buttons: [{ type: 'url', label: 'Open' }],
         })
       ).ok
 
@@ -71,7 +91,8 @@ test('E2.18 — all four template types are created, with the button cap enforce
     expect(results.text).toBe(true)
     expect(results.interactive).toBe(true)
     expect(results.button).toBe(true)
-    expect(results.fourButtons).toBe(false)
+    expect(results.fourReplies).toBe(false)
+    expect(results.urlNoValue).toBe(false)
     expect(results.mediaNoFile).toBe(false)
   } finally {
     await app.close()
@@ -143,7 +164,7 @@ test('E2.20 — merge tags resolve against a real contact', async () => {
 
       const contact = await window.api.invoke('contacts:create', {
         listId: list.data.id,
-        data: { Name: 'Priya', Mobile: '9876543210', Company: 'Acme' },
+        data: { Name: 'Priya', Mobile: '+919876543210', Company: 'Acme' },
       })
       if (!contact.ok) return null
 
@@ -224,7 +245,7 @@ test('E2.21 — a template used by a campaign cannot be deleted', async () => {
   }
 })
 
-test('E2.22 — the Templates screen previews merge tags and warns about buttons', async () => {
+test('E2.22 — the Templates screen previews merge tags and offers button types', async () => {
   const dir = newUserDataDir()
   const { app, win } = await launchLicensed(dir)
   try {
@@ -254,9 +275,9 @@ test('E2.22 — the Templates screen previews merge tags and warns about buttons
     // A tag no list provides is flagged before the user sends to thousands.
     await expect(win.getByTestId('unknown-tags')).toContainText('{{Nope}}')
 
-    // Switching to a button type surfaces the platform limitation.
+    // Switching to a button type explains what recipients will see.
     await win.getByTestId('tpl-type').selectOption('button')
-    await expect(win.getByTestId('degrade-notice')).toContainText('numbered text')
+    await expect(win.getByTestId('interactive-notice')).toBeVisible()
 
     await win.getByTestId('tpl-type').selectOption('text')
     await win.getByTestId('submit-template').click()

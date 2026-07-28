@@ -9,8 +9,7 @@
 import { createReadStream, createWriteStream, existsSync, statSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { join } from 'node:path'
-import type { CountryCode } from 'libphonenumber-js'
-import { normalizePhone } from './phone'
+import { normalizePhone, type DialPrefix } from './phone'
 
 export const IMPORT_BATCH_SIZE = 1_000
 /** Guardrail: a file this large is almost certainly not a contact list. */
@@ -117,7 +116,12 @@ export interface ImportDeps {
   writeBatch: (rows: ImportRow[]) => Promise<{ written: number; skipped: number }>
   onProgress?: (processed: number, total: number) => void
   exportsDir: string
-  country: CountryCode
+  /**
+   * Dial prefix to apply to national numbers, e.g. `+91`. Undefined means the
+   * user stated the file's numbers already carry their country code, so one
+   * that does not is reported as invalid rather than guessed at.
+   */
+  dialPrefix?: DialPrefix
 }
 
 /**
@@ -175,7 +179,7 @@ export async function importCsv(
     })
 
     const rawPhone = record.Mobile ?? ''
-    const normalized = normalizePhone(rawPhone, deps.country)
+    const normalized = normalizePhone(rawPhone, deps.dialPrefix)
 
     if (!normalized.valid || !normalized.e164) {
       invalid += 1

@@ -45,11 +45,28 @@ export interface WaRequests {
   'service:shutdown': Record<string, never>
 }
 
+/** One tappable button on an outgoing message (REQUIREMENTS §7.9). */
+export interface WaButton {
+  type: 'reply' | 'url' | 'call' | 'copy'
+  /** Stable id echoed back when the recipient taps a reply button. */
+  id: string
+  label: string
+  /** URL, phone number or copied text, by type. */
+  value?: string
+}
+
 export type WaOutgoing =
   | { kind: 'text'; body: string }
   | { kind: 'media'; path: string; mediaType: 'image' | 'video'; caption?: string }
   | { kind: 'document'; path: string; fileName: string; caption?: string }
-  | { kind: 'buttons'; body: string; buttons: string[] }
+  | { kind: 'buttons'; body: string; footer?: string; buttons: WaButton[] }
+  | {
+      kind: 'list'
+      body: string
+      footer?: string
+      buttonText: string
+      rows: Array<{ id: string; title: string; description?: string }>
+    }
 
 export interface WaResponses {
   'device:connect': { started: true }

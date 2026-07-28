@@ -74,11 +74,58 @@ export type SuffixRule = z.infer<typeof suffixRule>
 export const waServiceState = z.enum(['starting', 'up', 'restarting', 'down'])
 export type WaServiceState = z.infer<typeof waServiceState>
 
+/**
+ * An international dial prefix, e.g. `+91`.
+ *
+ * There is deliberately no default (REQUIREMENTS §7.5): the importer asks per
+ * file whether the numbers already carry a country code, because normalizing a
+ * whole list against a guessed country is only discoverable after the messages
+ * have gone to the wrong people.
+ */
+export const dialPrefix = z
+  .string()
+  .regex(/^\+[1-9]\d{0,3}$/, 'A dial prefix looks like +91')
+export type DialPrefix = z.infer<typeof dialPrefix>
+
 /** Mandatory columns every contact list begins with (SPRINTS.md §2.6). */
 export const REQUIRED_CONTACT_FIELDS = ['Name', 'Mobile'] as const
 
-/** WhatsApp permits at most three quick-reply buttons. */
-export const MAX_TEMPLATE_BUTTONS = 3
+/**
+ * The button kinds a template can carry (REQUIREMENTS §7.9).
+ *
+ * `reply` sends the label back as a message; `url` opens a link; `call` dials a
+ * number; `copy` copies text to the recipient's clipboard. Catalogue-based
+ * shapes (product, shop, carousel) are deliberately out of scope — they need a
+ * WhatsApp Business catalogue, which this product does not have.
+ */
+export const templateButtonType = z.enum(['reply', 'url', 'call', 'copy'])
+export type TemplateButtonType = z.infer<typeof templateButtonType>
+
+export const templateButton = z.object({
+  type: templateButtonType,
+  /** Shown on the button. WhatsApp truncates long labels on narrow screens. */
+  label: z.string().min(1).max(25),
+  /** URL for `url`, phone number for `call`, the copied string for `copy`. */
+  value: z.string().max(2048).optional(),
+})
+export type TemplateButton = z.infer<typeof templateButton>
+
+/**
+ * Per-kind caps.
+ *
+ * WhatsApp itself enforces nothing here — Baileys will happily encode an
+ * over-limit message and the server drops it silently, which is the worst
+ * possible failure for a campaign. These are the conservative limits the
+ * official Business templates use, applied at our own boundary so an
+ * over-limit template is refused at creation rather than at send.
+ */
+export const MAX_TEMPLATE_BUTTONS = 5
+export const MAX_REPLY_BUTTONS = 3
+export const MAX_URL_BUTTONS = 2
+export const MAX_CALL_BUTTONS = 1
+export const MAX_COPY_BUTTONS = 1
+/** Rows in an interactive template's single-select list. */
+export const MAX_LIST_ROWS = 10
 
 /** Concurrency ceiling for connected devices (SPRINTS.md §1.1). */
 export const MAX_DEVICES = 20

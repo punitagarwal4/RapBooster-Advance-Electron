@@ -9,7 +9,7 @@ import { Button } from '@renderer/components/ui/button'
 import { EmptyState } from '@renderer/components/ui/empty-state'
 import { useIpcEvent, useIpcQuery } from '@renderer/hooks/useIpc'
 import { cn } from '@renderer/lib/cn'
-import type { MessageType } from '@shared/types'
+import type { MessageType, TemplateButton } from '@shared/types'
 
 interface Message {
   id: string
@@ -18,7 +18,7 @@ interface Message {
   body: string | null
   fileName: string | null
   fileSize: number | null
-  buttons: string[] | null
+  buttons: TemplateButton[] | null
   status: string
   timestamp: string
 }
@@ -280,10 +280,11 @@ export default function InboxPage() {
                         <div className="mt-1.5 flex flex-col gap-1">
                           {m.buttons.map((b, i) => (
                             <span
-                              key={b}
-                              className="rounded border border-black/10 px-2 py-1 text-xs"
+                              key={`${b.type}-${b.label}-${i}`}
+                              data-testid="message-button"
+                              className="rounded-control border border-black/10 bg-surface px-2 py-1 text-center text-xs text-primary"
                             >
-                              {i + 1}. {b}
+                              {b.label}
                             </span>
                           ))}
                         </div>

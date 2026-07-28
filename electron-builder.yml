@@ -44,23 +44,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false
 
-mac:
-  target:
-    - target: dmg
-      arch: [arm64, x64]
-  icon: assets/branding/icon.png
-  category: public.app-category.business
-  # Required for notarization. Without an Apple Developer identity
-  # (REQUIREMENTS §4) the build is unsigned and macOS will refuse to open it.
-  hardenedRuntime: true
-  gatekeeperAssess: false
-  entitlements: assets/branding/entitlements.mac.plist
-  entitlementsInherit: assets/branding/entitlements.mac.plist
-
-# Notarization runs only when APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD /
-# APPLE_TEAM_ID (or an API key) are present in the environment.
-afterSign: null
-
 linux:
   target: []
 

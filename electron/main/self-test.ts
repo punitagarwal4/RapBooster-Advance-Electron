@@ -168,6 +168,20 @@ async function main(): Promise<void> {
     check('baileys image thumbnail', false, String(err))
   }
 
+  // 6. Link previews depend on another optional Baileys peer that fails the same
+  //    silent way (CLAUDE.md §8): a swallowed dynamic import, a debug log, and
+  //    messages that quietly go out as plain text. Only the packaged app proves
+  //    the module actually shipped. No network call — resolving and loading it
+  //    is the part packaging can break.
+  try {
+    const linkPreview: unknown = await import('link-preview-js')
+    const loadable =
+      typeof (linkPreview as { getLinkPreview?: unknown }).getLinkPreview === 'function'
+    check('link-preview-js packaged', loadable)
+  } catch (err) {
+    check('link-preview-js packaged', false, String(err))
+  }
+
   console.log('---')
   if (failures.length > 0) {
     console.log(`SELF-TEST FAILED (${failures.length}): ${failures.join(', ')}`)

@@ -99,6 +99,7 @@ test('E2.12 — a 50,000-row CSV imports with counts reconciling', async () => {
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile', Company: 'Company' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )
@@ -159,6 +160,7 @@ test('E2.13 — duplicates are skipped, within the file and against existing row
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )
@@ -177,6 +179,7 @@ test('E2.13 — duplicates are skipped, within the file and against existing row
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )
@@ -217,6 +220,7 @@ test('E2.14 — malformed numbers are rejected with a downloadable error report'
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )
@@ -227,6 +231,109 @@ test('E2.14 — malformed numbers are rejected with a downloadable error report'
     expect(result.data.invalid).toBe(3)
     // A rejection the user cannot inspect is not actionable.
     expect(result.data.errorReportPath).not.toBeNull()
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+    rmSync(files, { recursive: true, force: true })
+  }
+})
+
+test('E2.14b — national numbers are rejected, not guessed, when none is chosen', async () => {
+  const dir = newUserDataDir()
+  const files = mkdtempSync(join(tmpdir(), 'rapbooster-csv-'))
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const csv = writeCsv(files, 'no-country.csv', [
+      'Name,Mobile',
+      // National form, no country code — unusable without an answer from the user.
+      'National,9876543210',
+      // Already international, in the two ways people write it.
+      'Plus,+919876543211',
+      'DoubleZero,00919876543212',
+    ])
+
+    const listId = await win.evaluate(async () => {
+      const r = await window.api.invoke('contactList:create', {
+        name: 'No country',
+        customFields: [],
+      })
+      return r.ok ? r.data.id : ''
+    })
+
+    const result = await win.evaluate(
+      ({ id, p }) =>
+        window.api.invoke('contacts:import', {
+          listId: id,
+          filePath: p,
+          mapping: { Name: 'Name', Mobile: 'Mobile' },
+          duplicatePolicy: 'skip',
+          // The user stated the numbers already carry their country code.
+          dialPrefix: null,
+        }),
+      { id: listId, p: csv },
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // The two international rows import; the national one is reported rather
+    // than silently normalized against a country nobody chose.
+    expect(result.data.imported).toBe(2)
+    expect(result.data.invalid).toBe(1)
+    expect(result.data.errorReportPath).not.toBeNull()
+
+    const db = new DatabaseSync(join(dir, 'rapbooster.db'), { readOnly: true })
+    try {
+      const rows = db
+        .prepare('SELECT phone FROM Contact WHERE listId = ? ORDER BY phone')
+        .all(listId) as { phone: string }[]
+      expect(rows.map((r) => r.phone)).toEqual(['+919876543211', '+919876543212'])
+    } finally {
+      db.close()
+    }
+  } finally {
+    await app.close()
+    cleanupUserDataDir(dir)
+    rmSync(files, { recursive: true, force: true })
+  }
+})
+
+test('E2.14c — the import dialog refuses to run until the country code is answered', async () => {
+  const dir = newUserDataDir()
+  const files = mkdtempSync(join(tmpdir(), 'rapbooster-csv-'))
+  const { app, win } = await launchLicensed(dir)
+  try {
+    const csv = writeCsv(files, 'ui.csv', ['Name,Mobile', 'Asha,9876543210'])
+
+    await win.evaluate(() =>
+      window.api.invoke('contactList:create', { name: 'UI', customFields: [] }),
+    )
+    await win.getByTestId('nav-contacts').click()
+    await win.getByTestId('list-tab-UI').click()
+    await win.getByTestId('import-contacts').click()
+
+    await win.getByTestId('csv-path').fill(csv)
+    await win.getByTestId('load-preview').click()
+    await expect(win.getByTestId('country-answer')).toBeVisible()
+
+    // Nothing is preselected, so importing now must fail loudly rather than
+    // fall back to a country nobody chose.
+    await win.getByTestId('run-import').click()
+    await expect(win.getByTestId('import-error')).toContainText('country code')
+
+    await win.getByTestId('country-answer').selectOption('apply')
+    await win.getByTestId('dial-prefix').fill('+91')
+    await win.getByTestId('run-import').click()
+
+    await expect(win.getByTestId('import-dialog')).toBeHidden()
+    const stored = await win.evaluate(async () => {
+      const lists = await window.api.invoke('contactList:list', undefined)
+      if (!lists.ok) return []
+      const list = lists.data.find((l) => l.name === 'UI')
+      if (!list) return []
+      const page = await window.api.invoke('contacts:list', { listId: list.id })
+      return page.ok ? page.data.items.map((c) => c.phone) : []
+    })
+    expect(stored).toEqual(['+919876543210'])
   } finally {
     await app.close()
     cleanupUserDataDir(dir)
@@ -265,6 +372,7 @@ test('E2.15 — export round-trips back to an identical list', async () => {
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile', Notes: 'Notes' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: ids.source, p: csv },
     )
@@ -284,6 +392,7 @@ test('E2.15 — export round-trips back to an identical list', async () => {
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile', Notes: 'Notes' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: ids.target, p: exported.data.filePath },
     )
@@ -346,6 +455,7 @@ test('E2.17 — the contacts screen virtualizes a large list and searches it', a
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )
@@ -398,6 +508,7 @@ test('E2.16 — search across a large list stays fast and paginates', async () =
           filePath: p,
           mapping: { Name: 'Name', Mobile: 'Mobile' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         }),
       { id: listId, p: csv },
     )

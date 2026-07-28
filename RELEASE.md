@@ -1,7 +1,13 @@
 # Release guide
 
-How to produce, sign and publish a RapBooster Advance build.
+How to produce, sign and publish a RapBooster Advance build for **Windows**.
 
+> **Windows is the only distribution target.** macOS packaging, Apple signing and
+> notarization were removed on 2026-07-28 at the customer's instruction. Nothing
+> in the app is Windows-specific — reinstating a Mac build means adding a `mac:`
+> block to `electron-builder.yml` and an Apple Developer identity, not rewriting
+> code.
+>
 > ⚠ **The release pipeline is wired but unverified.** Every step below is real
 > configuration against real tooling, but no signed build has been produced and
 > no update has been installed, because that requires credentials from
@@ -12,12 +18,11 @@ How to produce, sign and publish a RapBooster Advance build.
 
 ## What is missing, and what happens without it
 
-| Needed                                              | REQUIREMENTS | Consequence if absent                                                                                         |
-| --------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| App icon, publisher name                            | §2           | A placeholder icon ships (`assets/branding/icon.png`), and the installer shows no verified publisher          |
-| Update feed URL                                     | §3           | `system:checkUpdate` reports "no update server is configured" rather than falsely claiming the app is current |
-| Windows code-signing certificate                    | §4           | Unsigned `.exe`; Windows SmartScreen warns users the app is unrecognised                                      |
-| Apple Developer identity + notarization credentials | §4           | Unsigned `.dmg`; **macOS refuses to open the app at all**                                                     |
+| Needed                           | REQUIREMENTS | Consequence if absent                                                                                         |
+| -------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| App icon, publisher name         | §2           | A placeholder icon ships (`assets/branding/icon.png`), and the installer shows no verified publisher          |
+| Update feed URL                  | §3           | `system:checkUpdate` reports "no update server is configured" rather than falsely claiming the app is current |
+| Windows code-signing certificate | §4           | Unsigned `.exe`; Windows SmartScreen warns users the app is unrecognised                                      |
 
 None of these block development. All of them block shipping to real users.
 
@@ -28,16 +33,12 @@ None of these block development. All of them block shipping to real users.
 ```bash
 npm ci
 npm run build        # typecheck, renderer export, main/preload/wa-service bundles
-npm run dist         # installers for the current platform
-npm run dist:win     # Windows NSIS only
-npm run dist:mac     # macOS DMG only (must run on a Mac)
+npm run dist         # NSIS installer for the current platform (Windows)
+npm run dist:win     # the same, with the target named explicitly
 ```
 
 `npm run pack` produces an unpacked build without an installer — this is what
 `npm run test:smoke` drives.
-
-**macOS builds must be produced on a Mac.** Signing and notarization both call
-Apple tooling that does not exist on Windows or Linux.
 
 ---
 
@@ -45,8 +46,6 @@ Apple tooling that does not exist on Windows or Linux.
 
 Signing activates from environment variables; there is nothing to switch on in
 the config.
-
-### Windows
 
 ```bash
 # .pfx certificate
@@ -59,32 +58,15 @@ For an EV certificate on a hardware token, or Azure Trusted Signing, the
 configuration differs — supply the details in REQUIREMENTS §4 and this section
 gets rewritten against what you actually have.
 
-### macOS
-
-```bash
-export CSC_LINK=/path/to/DeveloperIDApplication.p12
-export CSC_KEY_PASSWORD=<password>
-export APPLE_ID=<apple id>
-export APPLE_APP_SPECIFIC_PASSWORD=<app-specific password>
-export APPLE_TEAM_ID=<team id>
-npm run dist:mac
-```
-
-Entitlements are in `assets/branding/entitlements.mac.plist` and are
-deliberately minimal: JIT for V8, and outbound network access. No camera,
-microphone, contacts or broad file-system access — the app does not use them,
-and requesting entitlements you do not need is both a notarization risk and a
-reason for users to distrust the app.
-
 ---
 
 ## Publishing an update
 
 1. Bump `version` in `package.json`.
-2. Build and sign for both platforms.
-3. Upload the installers **and** the generated `latest.yml` / `latest-mac.yml`
-   to the feed configured in REQUIREMENTS §3. The metadata files are what
-   `electron-updater` reads; installers alone are not enough.
+2. Build and sign the Windows installer.
+3. Upload the installer **and** the generated `latest.yml` to the feed
+   configured in REQUIREMENTS §3. The metadata file is what `electron-updater`
+   reads; the installer alone is not enough.
 4. Verify by installing the previous version and letting it check.
 
 Set the feed at runtime with `UPDATE_FEED_URL`, or bake it into
@@ -108,7 +90,6 @@ than being a version behind.
 - [ ] `npm run test:smoke` green against the packaged build
 - [ ] Version bumped, `SPRINT-TRACKER.md` release table updated
 - [ ] Windows installer signed, installs without a SmartScreen warning
-- [ ] macOS DMG signed **and notarized**, opens without a Gatekeeper prompt
 - [ ] Update feed serves the new version, and a previous build upgrades to it
 - [ ] A fresh install activates a license, links a device, and sends one test
       message to a number you control

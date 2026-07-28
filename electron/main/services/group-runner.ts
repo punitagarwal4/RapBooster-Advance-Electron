@@ -11,7 +11,7 @@
  */
 import { getPrisma } from '../db/client'
 import { groupName } from '../../../shared/group-names'
-import { renderTemplate } from '../../../shared/merge-tags'
+import { buildTemplateMessage } from './template-message'
 import type { SuffixRule } from '../../../shared/types'
 import { waBridge } from '../wa-bridge'
 
@@ -113,7 +113,9 @@ export class GroupRunner {
       })
       if (!job) return
 
-      const { text } = renderTemplate(job.template.content, {})
+      // Groups send the same payload a campaign would — media, buttons and
+      // lists included. Building text only here is what used to drop them.
+      const payload = buildTemplateMessage(job.template, {})
       let done = 0
 
       for (const target of job.targets) {
@@ -125,7 +127,7 @@ export class GroupRunner {
           await waBridge.request('message:send', {
             deviceId: target.group.deviceId,
             to: target.group.id,
-            message: { kind: 'text', body: text },
+            message: payload,
           })
           await prisma.groupSendTarget.update({
             where: { id: target.id },

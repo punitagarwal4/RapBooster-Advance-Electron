@@ -117,6 +117,7 @@ test.describe(() => {
           filePath: path,
           mapping: { Name: 'name', Mobile: 'phone' },
           duplicatePolicy: 'skip',
+          dialPrefix: '+91',
         })
         if (!imported.ok) throw new Error(`import failed: ${imported.error.code}`)
         return created.data.id

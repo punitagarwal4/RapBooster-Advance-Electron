@@ -32,6 +32,11 @@ export function ImportDialog({
   const [preview, setPreview] = useState<Preview>()
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [policy, setPolicy] = useState<'skip' | 'overwrite' | 'allow'>('skip')
+  // Deliberately starts unanswered: there is no default country code, because a
+  // list normalized against the wrong one is only discoverable after the
+  // messages have gone to the wrong people (REQUIREMENTS §7.5).
+  const [countryAnswer, setCountryAnswer] = useState<'' | 'included' | 'apply'>('')
+  const [prefix, setPrefix] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
 
@@ -69,6 +74,19 @@ export function ImportDialog({
       setError('One column must be mapped to Mobile — it is the number we send to.')
       return
     }
+    if (countryAnswer === '') {
+      setError('Answer whether these numbers already include their country code.')
+      return
+    }
+
+    // Accept +91, 0091 or 91 — they all mean the same thing to a user.
+    const digits = prefix.trim().replace(/^\+/, '').replace(/^00/, '').replace(/\D/g, '')
+    const normalizedPrefix = digits === '' ? '' : `+${digits}`
+    if (countryAnswer === 'apply' && !/^\+[1-9]\d{0,3}$/.test(normalizedPrefix)) {
+      setError('Enter the country code to apply, for example +91.')
+      return
+    }
+
     setBusy(true)
     setError(undefined)
 
@@ -77,6 +95,7 @@ export function ImportDialog({
       filePath: filePath.trim(),
       mapping,
       duplicatePolicy: policy,
+      dialPrefix: countryAnswer === 'apply' ? normalizedPrefix : null,
     })
     setBusy(false)
 
@@ -177,6 +196,40 @@ export function ImportDialog({
                 </select>
               </div>
             ))}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-1.5">
+            <label htmlFor="country-answer" className="text-xs font-semibold text-ink">
+              Do these numbers already include their country code?
+            </label>
+            <select
+              id="country-answer"
+              data-testid="country-answer"
+              value={countryAnswer}
+              onChange={(e) => setCountryAnswer(e.target.value as typeof countryAnswer)}
+              className="rounded-control border border-line px-2 py-1.5 text-sm outline-none focus:border-primary"
+            >
+              <option value="">— Choose one —</option>
+              <option value="included">
+                Yes — every number starts with its country code
+              </option>
+              <option value="apply">No — add this country code to all of them</option>
+            </select>
+            {countryAnswer === 'apply' && (
+              <input
+                data-testid="dial-prefix"
+                value={prefix}
+                onChange={(e) => setPrefix(e.target.value)}
+                placeholder="+91"
+                aria-label="Country code to apply"
+                className="mt-1 w-32 rounded-control border border-line px-2.5 py-2 font-mono text-xs outline-none focus:border-primary"
+              />
+            )}
+            <p className="text-[11px] text-ink-muted">
+              There is no default. A number that already starts with <code>+</code> keeps
+              its own country code either way; anything left without one is reported in
+              the error file instead of being guessed at.
+            </p>
           </div>
 
           <div className="mt-4 flex flex-col gap-1.5">

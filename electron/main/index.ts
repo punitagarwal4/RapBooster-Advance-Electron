@@ -397,11 +397,10 @@ async function bootUi(): Promise<void> {
     }, REVALIDATE_INTERVAL_MS)
   }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  // WHY unconditional: Windows is the only distribution target (tracker D66), and
+  // there closing the last window means quitting.
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
+    app.quit()
   })
 
   // Graceful shutdown (CLAUDE.md §5.5): release the client and fold the WAL back

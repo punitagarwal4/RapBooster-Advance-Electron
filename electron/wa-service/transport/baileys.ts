@@ -5,19 +5,22 @@
  * talks to the Transport interface, so a version bump or API change is confined
  * here (CLAUDE.md §8).
  *
- * ⚠ BUTTON AND INTERACTIVE TEMPLATES ARE DEGRADED TO TEXT.
- * Baileys 7's send API (`AnyMessageContent`) has no button variant — the
- * protocol definitions only cover button *responses*, i.e. what arrives when a
- * recipient taps one. Sending buttons requires hand-assembling raw protobuf,
- * which WhatsApp breaks regularly and which raises ban risk on the user's
- * accounts. Rather than ship something that silently stops working, button and
- * interactive templates render their options as numbered text lines, which
- * always delivers. See REQUIREMENTS §7.9 for the decision to confirm.
+ * BUTTONS AND LISTS (REQUIREMENTS §7.9).
+ * Baileys 7's high-level `sendMessage` content union has no button variant —
+ * only button *responses*, i.e. what arrives when a recipient taps one. The
+ * protobuf definitions for sending are all still present, so real buttons go out
+ * through `generateWAMessageFromContent` + `relayMessage` instead (see
+ * `sendInteractive` below). Whether a given account's recipients see them
+ * rendered is decided by WhatsApp's servers, not by us, so every interactive
+ * send falls back to numbered text if construction or relay fails — a message
+ * that always arrives beats one that silently does not.
  */
 import makeWASocket, {
   Browsers,
   DisconnectReason,
+  generateWAMessageFromContent,
   jidNormalizedUser,
+  proto,
   useMultiFileAuthState,
   type WAMessage,
   type WASocket,
@@ -26,8 +29,13 @@ import type { Boom } from '@hapi/boom'
 import { rm } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { TransportEmitter } from './emitter'
+import { resolveLinkPreview } from '../link-preview'
+import { buttonsAsNumberedText } from '../../../shared/template-buttons'
+import type { WaButton } from '../../../shared/wa-protocol'
 import type {
   IncomingMessage,
+  OutgoingButtons,
+  OutgoingList,
   OutgoingMessage,
   RemoteGroup,
   SendResult,
@@ -64,6 +72,152 @@ function mimeFor(path: string): string {
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   }
   return table[ext] ?? 'application/octet-stream'
+}
+
+/**
+ * Buttons, in the most widely-rendered shape that can carry them.
+ *
+ * - Quick replies only → `buttonsMessage`, the oldest and best-supported form.
+ * - Reply/url/call mix → `templateMessage.hydratedTemplate`, whose three button
+ *   kinds map exactly onto ours.
+ * - Anything with a copy button → `interactiveMessage.nativeFlowMessage`, the
+ *   only shape that carries one.
+ *
+ * Each step down is less widely rendered, so we take the highest one that can
+ * express the template rather than always using the most capable.
+ */
+function buildButtonsMessage(message: OutgoingButtons): proto.IMessage {
+  const { body, footer, buttons } = message
+
+  if (buttons.some((b) => b.type === 'copy')) {
+    return {
+      // viewOnce is how WhatsApp Web itself wraps native-flow messages; without
+      // it many clients ignore the buttons entirely.
+      viewOnceMessage: {
+        message: {
+          messageContextInfo: { deviceListMetadataVersion: 2, deviceListMetadata: {} },
+          interactiveMessage: {
+            body: { text: body },
+            ...(footer ? { footer: { text: footer } } : {}),
+            nativeFlowMessage: {
+              messageVersion: 1,
+              buttons: buttons.map(nativeFlowButton),
+            },
+          },
+        },
+      },
+    }
+  }
+
+  if (buttons.every((b) => b.type === 'reply')) {
+    return {
+      buttonsMessage: {
+        contentText: body,
+        ...(footer ? { footerText: footer } : {}),
+        headerType: proto.Message.ButtonsMessage.HeaderType.EMPTY,
+        buttons: buttons.map((b) => ({
+          buttonId: b.id,
+          buttonText: { displayText: b.label },
+          type: proto.Message.ButtonsMessage.Button.Type.RESPONSE,
+        })),
+      },
+    }
+  }
+
+  return {
+    templateMessage: {
+      hydratedTemplate: {
+        hydratedContentText: body,
+        ...(footer ? { hydratedFooterText: footer } : {}),
+        hydratedButtons: buttons.map((b, index) => hydratedButton(b, index + 1)),
+      },
+    },
+  }
+}
+
+function hydratedButton(button: WaButton, index: number): proto.IHydratedTemplateButton {
+  switch (button.type) {
+    case 'url':
+      return {
+        index,
+        urlButton: { displayText: button.label, url: button.value ?? '' },
+      }
+    case 'call':
+      return {
+        index,
+        callButton: { displayText: button.label, phoneNumber: button.value ?? '' },
+      }
+    // A copy button never reaches here — buildButtonsMessage routes those to
+    // native flow, which is the only shape that can express one.
+    case 'reply':
+    case 'copy':
+      return {
+        index,
+        quickReplyButton: { displayText: button.label, id: button.id },
+      }
+  }
+}
+
+/**
+ * Native-flow buttons are `{ name, buttonParamsJson }` pairs. Baileys neither
+ * validates the name nor parses the JSON — the names below are WhatsApp's own,
+ * and an unknown one is dropped by the server, which is why the caller keeps a
+ * text fallback.
+ */
+function nativeFlowButton(button: WaButton) {
+  switch (button.type) {
+    case 'url':
+      return {
+        name: 'cta_url',
+        buttonParamsJson: JSON.stringify({
+          display_text: button.label,
+          url: button.value ?? '',
+          merchant_url: button.value ?? '',
+        }),
+      }
+    case 'call':
+      return {
+        name: 'cta_call',
+        buttonParamsJson: JSON.stringify({
+          display_text: button.label,
+          phone_number: button.value ?? '',
+        }),
+      }
+    case 'copy':
+      return {
+        name: 'cta_copy',
+        buttonParamsJson: JSON.stringify({
+          display_text: button.label,
+          copy_code: button.value ?? '',
+        }),
+      }
+    case 'reply':
+      return {
+        name: 'quick_reply',
+        buttonParamsJson: JSON.stringify({ display_text: button.label, id: button.id }),
+      }
+  }
+}
+
+/** A single-select list. WhatsApp renders one section; more adds no value here. */
+function buildListMessage(message: OutgoingList): proto.IMessage {
+  return {
+    listMessage: {
+      description: message.body,
+      buttonText: message.buttonText,
+      ...(message.footer ? { footerText: message.footer } : {}),
+      listType: proto.Message.ListMessage.ListType.SINGLE_SELECT,
+      sections: [
+        {
+          rows: message.rows.map((row) => ({
+            rowId: row.id,
+            title: row.title,
+            ...(row.description ? { description: row.description } : {}),
+          })),
+        },
+      ],
+    },
+  }
 }
 
 export class BaileysTransport extends TransportEmitter implements Transport {
@@ -261,17 +415,62 @@ export class BaileysTransport extends TransportEmitter implements Transport {
     }
 
     const jid = toJid(to)
+
+    if (message.kind === 'buttons' || message.kind === 'list') {
+      const interactive = await this.sendInteractive(session.socket, jid, message)
+      if (interactive) return interactive
+      // Fell back: send the text form through the normal path below.
+    }
+
     const sent = await session.socket.sendMessage(jid, await this.toContent(message))
     const id = sent?.key?.id
     if (!id) throw new Error('send returned no message id')
     return { messageId: id }
   }
 
+  /**
+   * Send a real buttons/list message by building the protobuf directly.
+   *
+   * Returns null when the message could not be built or relayed, which makes the
+   * caller fall back to numbered text. WHY a fallback at all: WhatsApp decides
+   * server-side whether an unofficial client may send these, and that answer has
+   * changed before. A campaign that stops delivering is far worse than one whose
+   * buttons arrive as a numbered list.
+   */
+  private async sendInteractive(
+    socket: WASocket,
+    jid: string,
+    message: OutgoingButtons | OutgoingList,
+  ): Promise<SendResult | null> {
+    try {
+      const content =
+        message.kind === 'list' ? buildListMessage(message) : buildButtonsMessage(message)
+
+      const generated = generateWAMessageFromContent(jid, content, {
+        userJid: socket.user?.id ?? '',
+      })
+      const id = generated.key?.id
+      if (!id) return null
+
+      await socket.relayMessage(jid, generated.message ?? {}, { messageId: id })
+      return { messageId: id }
+    } catch (err) {
+      // Not silent: this is the signal that WhatsApp changed the rules, and the
+      // user is still getting their message — as text.
+      console.warn('interactive send failed, falling back to text', err)
+      return null
+    }
+  }
+
   /** Map our outgoing shapes onto Baileys' AnyMessageContent. */
   private async toContent(message: OutgoingMessage) {
     switch (message.kind) {
+      // Link previews are on for every text message (REQUIREMENTS §7.11). The
+      // preview is resolved here and handed over finished, so Baileys does not
+      // fetch it again per recipient — see ../link-preview.ts. An explicit null
+      // is what tells Baileys "no preview, and do not go looking".
       case 'text':
-        return { text: message.body }
+        return { text: message.body, linkPreview: await resolveLinkPreview(message.body) }
 
       // NOTE: pass `{ url: path }` rather than a Buffer so Baileys streams the
       // file from disk. Reading it into memory first costs roughly twice the
@@ -297,12 +496,23 @@ export class BaileysTransport extends TransportEmitter implements Transport {
         }
       }
 
+      // Only reached when the interactive send above could not be delivered.
       case 'buttons': {
-        // See the file header: Baileys 7 cannot send real buttons. Numbered
-        // text always delivers, which is better than a message that silently
-        // fails to render on the recipient's phone.
-        const options = message.buttons.map((label, i) => `${i + 1}. ${label}`).join('\n')
-        return { text: `${message.body}\n\n${options}` }
+        const text = buttonsAsNumberedText(message.body, message.buttons)
+        const body = message.footer ? `${text}\n\n${message.footer}` : text
+        return { text: body, linkPreview: await resolveLinkPreview(body) }
+      }
+
+      case 'list': {
+        const rows = message.rows
+          .map(
+            (row, i) =>
+              `${i + 1}. ${row.title}${row.description ? ` — ${row.description}` : ''}`,
+          )
+          .join('\n')
+        const text = `${message.body}\n\n${rows}`
+        const body = message.footer ? `${text}\n\n${message.footer}` : text
+        return { text: body, linkPreview: await resolveLinkPreview(body) }
       }
     }
   }

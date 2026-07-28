@@ -108,10 +108,14 @@ model Template {
   content   String
   mediaType String?
   mediaPath String?
-  /// JSON string[] — interactive options
+  /// JSON string[] — rows of the single-select list an interactive template sends
   options   String?
-  /// JSON string[], max 3 — button labels
+  /// JSON TemplateButton[] — { type, label, value? }. Legacy rows hold string[].
   buttons   String?
+  /// Small print under the body, on button and interactive templates
+  footer    String?
+  /// Label on the control that opens an interactive template's list
+  listButtonText String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

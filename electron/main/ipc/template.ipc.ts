@@ -9,7 +9,8 @@ import { copyFileSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import { AppError } from '../../../shared/errors'
 import { renderTemplate } from '../../../shared/merge-tags'
-import { MAX_TEMPLATE_BUTTONS } from '../../../shared/types'
+import { decodeButtons, validateButtons } from '../../../shared/template-buttons'
+import type { TemplateButton } from '../../../shared/types'
 import { getPrisma } from '../db/client'
 import { mediaDir } from '../db/paths'
 import { registerHandler } from './router'
@@ -42,6 +43,8 @@ function serialize(row: {
   mediaPath: string | null
   options: string | null
   buttons: string | null
+  footer: string | null
+  listButtonText: string | null
   createdAt: Date
 }) {
   return {
@@ -52,7 +55,11 @@ function serialize(row: {
     mediaType: (row.mediaType as 'image' | 'video' | null) ?? null,
     mediaPath: row.mediaPath,
     options: parseJsonArray(row.options),
-    buttons: parseJsonArray(row.buttons),
+    // Rows written before buttons were structured hold plain labels; decode
+    // accepts both so an old template still opens (D70).
+    buttons: row.buttons ? decodeButtons(row.buttons) : null,
+    footer: row.footer,
+    listButtonText: row.listButtonText,
     createdAt: row.createdAt.toISOString(),
   }
 }
@@ -99,14 +106,20 @@ function storeMedia(
   return target
 }
 
-function validateButtons(buttons: string[] | undefined): string[] | undefined {
+function checkButtons(
+  buttons: TemplateButton[] | undefined,
+): TemplateButton[] | undefined {
   if (!buttons) return undefined
-  const cleaned = buttons.map((b) => b.trim()).filter((b) => b !== '')
-  if (cleaned.length > MAX_TEMPLATE_BUTTONS) {
-    throw new AppError('VALIDATION_FAILED', {
-      userMessage: `WhatsApp allows at most ${MAX_TEMPLATE_BUTTONS} buttons.`,
-    })
-  }
+  const cleaned = buttons
+    .map((b) => ({
+      ...b,
+      label: b.label.trim(),
+      ...(b.value ? { value: b.value.trim() } : {}),
+    }))
+    .filter((b) => b.label !== '')
+
+  const problem = validateButtons(cleaned)
+  if (problem) throw new AppError('VALIDATION_FAILED', { userMessage: problem })
   return cleaned
 }
 
@@ -132,7 +145,7 @@ export function registerTemplateHandlers(): void {
       })
     }
 
-    const buttons = validateButtons(input.buttons)
+    const buttons = checkButtons(input.buttons)
     const options = input.options?.map((o) => o.trim()).filter((o) => o !== '')
 
     if (input.type === 'media' && !input.mediaSourcePath) {
@@ -149,6 +162,8 @@ export function registerTemplateHandlers(): void {
         mediaType: input.mediaType ?? null,
         options: options ? JSON.stringify(options) : null,
         buttons: buttons ? JSON.stringify(buttons) : null,
+        footer: input.footer?.trim() || null,
+        listButtonText: input.listButtonText?.trim() || null,
       },
     })
 
@@ -173,7 +188,7 @@ export function registerTemplateHandlers(): void {
 
   registerHandler('template:update', async (input) => {
     const existing = await requireTemplate(input.id)
-    const buttons = validateButtons(input.buttons)
+    const buttons = checkButtons(input.buttons)
     const options = input.options?.map((o) => o.trim()).filter((o) => o !== '')
 
     let mediaPath = existing.mediaPath
@@ -194,6 +209,10 @@ export function registerTemplateHandlers(): void {
         ...(mediaPath !== existing.mediaPath ? { mediaPath } : {}),
         ...(options ? { options: JSON.stringify(options) } : {}),
         ...(buttons ? { buttons: JSON.stringify(buttons) } : {}),
+        ...(input.footer !== undefined ? { footer: input.footer.trim() || null } : {}),
+        ...(input.listButtonText !== undefined
+          ? { listButtonText: input.listButtonText.trim() || null }
+          : {}),
       },
     })
     return serialize(updated)

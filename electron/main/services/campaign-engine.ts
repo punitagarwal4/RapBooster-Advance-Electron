@@ -17,8 +17,7 @@
 import Database from 'better-sqlite3'
 import { getPrisma } from '../db/client'
 import { databasePath } from '../db/paths'
-import { renderTemplate } from '../../../shared/merge-tags'
-import type { WaOutgoing } from '../../../shared/wa-protocol'
+import { buildTemplateMessage } from './template-message'
 import { waBridge } from '../wa-bridge'
 import { dailyCapPerDevice } from '../ipc/settings.ipc'
 
@@ -129,46 +128,6 @@ export async function counters(campaignId: string): Promise<CampaignCounters> {
   const pending = (byStatus.get('pending') ?? 0) + (byStatus.get('sending') ?? 0)
 
   return { total: sent + failed + skipped + pending, sent, failed, pending }
-}
-
-/** Build the wire payload for one recipient, resolving merge tags. */
-function buildMessage(
-  template: {
-    type: string
-    content: string
-    mediaType: string | null
-    mediaPath: string | null
-    buttons: string | null
-  },
-  values: Record<string, string>,
-): WaOutgoing {
-  const { text } = renderTemplate(template.content, values)
-
-  if (template.type === 'media' && template.mediaPath) {
-    return {
-      kind: 'media',
-      path: template.mediaPath,
-      mediaType: (template.mediaType as 'image' | 'video') ?? 'image',
-      ...(text ? { caption: text } : {}),
-    }
-  }
-
-  if (template.type === 'button' && template.buttons) {
-    try {
-      const parsed: unknown = JSON.parse(template.buttons)
-      if (Array.isArray(parsed)) {
-        return {
-          kind: 'buttons',
-          body: text,
-          buttons: parsed.filter((b): b is string => typeof b === 'string'),
-        }
-      }
-    } catch {
-      // Fall through to plain text — a corrupt button list must not stop a send.
-    }
-  }
-
-  return { kind: 'text', body: text }
 }
 
 type ProgressListener = (campaignId: string, counters: CampaignCounters) => void
@@ -387,7 +346,7 @@ export class CampaignEngine {
         const { messageId } = await waBridge.request('message:send', {
           deviceId,
           to: claimed.phone,
-          message: buildMessage(campaign.template, values),
+          message: buildTemplateMessage(campaign.template, values),
         })
 
         await prisma.campaignRecipient.update({

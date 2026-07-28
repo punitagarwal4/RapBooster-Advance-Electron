@@ -7,21 +7,16 @@
  * per chat.
  */
 import { AppError } from '../../../shared/errors'
-import type { MessageType } from '../../../shared/types'
+import { decodeButtons } from '../../../shared/template-buttons'
+import type { MessageType, TemplateButton } from '../../../shared/types'
 import { getPrisma } from '../db/client'
 import { waBridge } from '../wa-bridge'
 import { registerHandler } from './router'
 
-function parseButtons(value: string | null): string[] | null {
+function parseButtons(value: string | null): TemplateButton[] | null {
   if (!value) return null
-  try {
-    const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed)
-      ? parsed.filter((v): v is string => typeof v === 'string')
-      : null
-  } catch {
-    return null
-  }
+  const decoded = decodeButtons(value)
+  return decoded.length > 0 ? decoded : null
 }
 
 function serializeMessage(row: {
@@ -161,7 +156,16 @@ export function registerChatHandlers(): void {
     const message = mediaSourcePath
       ? ({ kind: 'media', path: mediaSourcePath, mediaType: 'image' as const } as const)
       : buttons && buttons.length > 0
-        ? ({ kind: 'buttons', body: body ?? '', buttons } as const)
+        ? ({
+            kind: 'buttons' as const,
+            body: body ?? '',
+            buttons: buttons.map((b, i) => ({
+              type: b.type,
+              id: `btn_${i + 1}`,
+              label: b.label,
+              ...(b.value ? { value: b.value } : {}),
+            })),
+          } as const)
         : ({ kind: 'text', body: body ?? '' } as const)
 
     let messageId: string

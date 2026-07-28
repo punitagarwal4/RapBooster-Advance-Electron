@@ -32,7 +32,7 @@ application.
 
 ## 1. Product definition
 
-RapBooster Advance is a licensed Windows + macOS desktop application for WhatsApp marketing.
+RapBooster Advance is a licensed Windows desktop application for WhatsApp marketing.
 It connects multiple WhatsApp accounts through Baileys, stores everything in a local SQLite
 database scoped to the OS user, and runs bulk campaigns, group operations, a unified inbox, and
 an OpenAI-powered auto-responder.
@@ -51,7 +51,7 @@ an OpenAI-powered auto-responder.
 | Personalization     | `{{Field}}` merge tags resolved from contact-list columns                                  |
 | Campaign durability | Per-recipient queue rows; crash-safe resume; bounded duplicate guarantee                   |
 | Pairing             | QR code **and** 8-digit pairing code                                                       |
-| Platforms           | Windows (NSIS) + macOS (DMG), signed and notarized                                         |
+| Platforms           | Windows (NSIS), signed — macOS dropped on 2026-07-28 (tracker D66)                         |
 | Updates             | `electron-updater` against a customer-hosted feed                                          |
 | Scale target        | 50,000 contacts · 20 devices · 100,000 queued recipients                                   |
 | Testing             | Playwright E2E through `_electron`, run at the end of every sprint                         |
@@ -353,7 +353,7 @@ RapBooster-Advance-Electron/
 
 ```text
 {app.getPath('userData')}/            # per OS user — Windows: %APPDATA%\RapBooster
-├── rapbooster.db                     # macOS: ~/Library/Application Support/RapBooster
+├── rapbooster.db
 ├── rapbooster.db-wal
 ├── rapbooster.db-shm
 ├── backups/rapbooster-{iso}.db
@@ -716,28 +716,28 @@ validated by zod at every boundary.
 
 ### 4.2 Settings keys
 
-| Key                            | Type   | Default               | Encrypted |
-| ------------------------------ | ------ | --------------------- | --------- |
-| `sending.delayFrom`            | int    | 0                     | no        |
-| `sending.delayTo`              | int    | 5                     | no        |
-| `sending.sleepDuration`        | int    | 10                    | no        |
-| `sending.sleepAfter`           | int    | 10                    | no        |
-| `sending.groupMessageDelay`    | int    | 2                     | no        |
-| `sending.groupCreateDelay`     | int    | 2                     | no        |
-| `sending.dailyCapPerDevice`    | int    | 0 (unlimited)         | no        |
-| `sending.retryAttempts`        | int    | 2                     | no        |
-| `sending.maxConcurrentDevices` | int    | 20                    | no        |
-| `ai.apiKey`                    | string | —                     | **yes**   |
-| `ai.model`                     | string | per REQUIREMENTS §5   | no        |
-| `ai.maxTokens`                 | int    | 500                   | no        |
-| `ai.temperature`               | float  | 0.7                   | no        |
-| `ai.historyDepth`              | int    | 10                    | no        |
-| `ai.dailyReplyCap`             | int    | 0                     | no        |
-| `contacts.defaultCountryCode`  | string | per REQUIREMENTS §7.5 | no        |
-| `contacts.duplicatePolicy`     | string | `skip`                | no        |
-| `inbox.retentionDays`          | int    | per REQUIREMENTS §7.3 | no        |
-| `updates.channel`              | string | `stable`              | no        |
-| `app.lastMigration`            | string | —                     | no        |
+| Key                               | Type   | Default                                                   | Encrypted |
+| --------------------------------- | ------ | --------------------------------------------------------- | --------- |
+| `sending.delayFrom`               | int    | 0                                                         | no        |
+| `sending.delayTo`                 | int    | 5                                                         | no        |
+| `sending.sleepDuration`           | int    | 10                                                        | no        |
+| `sending.sleepAfter`              | int    | 10                                                        | no        |
+| `sending.groupMessageDelay`       | int    | 2                                                         | no        |
+| `sending.groupCreateDelay`        | int    | 2                                                         | no        |
+| `sending.dailyCapPerDevice`       | int    | 0 (unlimited)                                             | no        |
+| `sending.retryAttempts`           | int    | 2                                                         | no        |
+| `sending.maxConcurrentDevices`    | int    | 20                                                        | no        |
+| `ai.apiKey`                       | string | —                                                         | **yes**   |
+| `ai.model`                        | string | per REQUIREMENTS §5                                       | no        |
+| `ai.maxTokens`                    | int    | 500                                                       | no        |
+| `ai.temperature`                  | float  | 0.7                                                       | no        |
+| `ai.historyDepth`                 | int    | 10                                                        | no        |
+| `ai.dailyReplyCap`                | int    | 0                                                         | no        |
+| ~~`contacts.defaultCountryCode`~~ | —      | removed — §7.5 has no default; the importer asks per file | —         |
+| `contacts.duplicatePolicy`        | string | `skip`                                                    | no        |
+| `inbox.retentionDays`             | int    | per REQUIREMENTS §7.3                                     | no        |
+| `updates.channel`                 | string | `stable`                                                  | no        |
+| `app.lastMigration`               | string | —                                                         | no        |
 
 ### 4.3 Why `Contact.data` is a JSON blob
 
@@ -952,7 +952,8 @@ recipient if the campaign is configured strictly. A literal `{{` is escaped as `
 ```text
 file → stream parse (papaparse, worker) → detect header
      → column-mapping UI (CSV header → list field)
-     → per row: normalize phone to E.164 with default country code
+     → ask once per file: numbers already carry a country code, or apply this prefix
+     → per row: normalize phone to E.164 (no default country — REQUIREMENTS §7.5)
               → validate; invalid → error report, isValid = false
               → duplicate check per settings policy (skip | overwrite | allow)
      → batch INSERT in transactions of 1,000
@@ -1039,8 +1040,8 @@ system is in place, and packaging is proven. No WhatsApp yet.
 
 #### T1.1 — Prisma/Electron packaging spike _(do this first, timebox 1 day)_
 
-Prove Prisma Client works inside a packaged, `asar`-packed Electron build on **both** Windows
-and macOS, using the `better-sqlite3` driver adapter so no Rust query-engine binary needs
+Prove Prisma Client works inside a packaged, `asar`-packed Electron build on **Windows**,
+using the `better-sqlite3` driver adapter so no Rust query-engine binary needs
 shipping. Deliverable: a throwaway packaged build that opens a DB at `userData`, migrates,
 writes and reads.
 
@@ -1054,7 +1055,7 @@ log either way. Do not switch silently.
 `electron-vite` for main/preload/wa-service bundling; Next.js with `output: 'export'`,
 `images.unoptimized`, `trailingSlash`; ESLint + Prettier; `.editorconfig`.
 
-Scripts: `dev` · `build` · `dist` · `dist:win` · `dist:mac` · `typecheck` · `lint` ·
+Scripts: `dev` · `build` · `dist` · `dist:win` · `typecheck` · `lint` ·
 `test:e2e` · `test:smoke` · `db:generate` · `db:migrate` · `db:studio` · `graph`.
 
 `.gitignore`: `node_modules`, `out`, `dist`, `.next`, `graphify-out/`, `REQUIREMENTS.local.md`,
@@ -1151,7 +1152,7 @@ launches.
   after it expires.
 - The DB is created at the per-OS-user path, migrates from empty, and survives restart.
 - The sidebar navigates to all nine screens, each with an intentional empty state.
-- `npm run dist` produces Windows and macOS installers that launch to the activation screen.
+- `npm run dist` produces a Windows installer that launches to the activation screen.
 
 ### 9.3 E2E tests
 
@@ -1238,8 +1239,8 @@ clear message.
   search over IPC — must stay responsive at 50,000 rows.
 - Add / edit / delete contact with fields generated from the active list.
 - Bulk select and bulk delete.
-- **CSV import** per §6.7: worker-thread streamed parse, explicit column-mapping step, E.164
-  normalization using the default country code, duplicate policy from settings, batched
+- **CSV import** per §6.7: worker-thread streamed parse, explicit column-mapping step, a
+  required country-code answer, E.164 normalization, duplicate policy from settings, batched
   transactional inserts, progress events, and a summary with a downloadable error report.
 - **CSV export** of the active list, quoted, honoring the current search filter, written to
   `userData/exports` and revealed in the file manager.
@@ -1276,35 +1277,42 @@ without a real WhatsApp account or ban risk.**
 - A 50,000-row CSV imports with visible progress, correct E.164 normalization, and an accurate
   imported/skipped/invalid summary.
 - Export re-imports to an identical list.
-- All four template types save, preview correctly, and enforce the 3-button cap.
+- All four template types save, preview correctly, and enforce the per-kind button caps
+  (3 quick replies, 2 links, 1 call, 1 copy; 10 list rows) — REQUIREMENTS §7.9.
 - `Hi {{Name}} from {{Company}}` previews with real contact values.
 
 ### 10.3 E2E tests
 
-| ID    | Test                                                                   |
-| ----- | ---------------------------------------------------------------------- |
-| E2.1  | Add device via QR (mock) → status reaches `connected`, phone persisted |
-| E2.2  | Add device via pairing code → 8-digit code shown → connects            |
-| E2.3  | Sessions restore on relaunch without re-scanning                       |
-| E2.4  | Simulated disconnect → reconnects with backoff, not a tight loop       |
-| E2.5  | `loggedOut` reason → terminal state, auth folder purged                |
-| E2.6  | Circuit breaker opens after N failures; manual Reconnect recovers      |
-| E2.7  | Logout → confirmation → device removed from the active list            |
-| E2.8  | 20 mock devices connect concurrently; UI stays responsive              |
-| E2.9  | 21st device blocked with a clear message                               |
-| E2.10 | wa-service killed → supervisor restarts it → devices reconnect         |
-| E2.11 | Create list with custom fields; add/edit/delete a contact              |
-| E2.12 | Import 50k-row CSV with column mapping; counts reconcile exactly       |
-| E2.13 | Import with duplicates honors skip/overwrite/allow policy              |
-| E2.14 | Import with malformed numbers produces a downloadable error report     |
-| E2.15 | Export → re-import round-trips identically                             |
-| E2.16 | Search across 50k rows returns correct results under 500 ms            |
-| E2.17 | Virtualized table scrolls 50k rows without frame drops                 |
-| E2.18 | Create each of the four template types; button cap enforced at 3       |
-| E2.19 | Oversized media rejected with a clear message                          |
-| E2.20 | Merge-tag preview substitutes real contact values                      |
-| E2.21 | Template referencing an unknown field is flagged at save               |
-| E2.22 | Deleting a template used by a campaign warns first                     |
+| ID     | Test                                                                   |
+| ------ | ---------------------------------------------------------------------- |
+| E2.1   | Add device via QR (mock) → status reaches `connected`, phone persisted |
+| E2.2   | Add device via pairing code → 8-digit code shown → connects            |
+| E2.3   | Sessions restore on relaunch without re-scanning                       |
+| E2.4   | Simulated disconnect → reconnects with backoff, not a tight loop       |
+| E2.5   | `loggedOut` reason → terminal state, auth folder purged                |
+| E2.6   | Circuit breaker opens after N failures; manual Reconnect recovers      |
+| E2.7   | Logout → confirmation → device removed from the active list            |
+| E2.8   | 20 mock devices connect concurrently; UI stays responsive              |
+| E2.9   | 21st device blocked with a clear message                               |
+| E2.10  | wa-service killed → supervisor restarts it → devices reconnect         |
+| E2.11  | Create list with custom fields; add/edit/delete a contact              |
+| E2.12  | Import 50k-row CSV with column mapping; counts reconcile exactly       |
+| E2.13  | Import with duplicates honors skip/overwrite/allow policy              |
+| E2.14  | Import with malformed numbers produces a downloadable error report     |
+| E2.14b | National numbers are rejected, not guessed, when no country is chosen  |
+| E2.14c | The import dialog refuses to run until the country code is answered    |
+| E2.15  | Export → re-import round-trips identically                             |
+| E2.16  | Search across 50k rows returns correct results under 500 ms            |
+| E2.17  | Virtualized table scrolls 50k rows without frame drops                 |
+| E2.18  | Create each of the four template types; per-kind button caps enforced  |
+| E2.19  | Oversized media rejected with a clear message                          |
+| E2.20  | Merge-tag preview substitutes real contact values                      |
+| E2.21  | Template referencing an unknown field is flagged at save               |
+| E2.22  | Deleting a template used by a campaign warns first                     |
+| E2.23  | A button template puts real structured buttons on the wire             |
+| E2.24  | An interactive template sends a single-select list                     |
+| E2.25  | A group send carries the whole template, not just its body             |
+| E2.26  | The button editor produces a template that sends real buttons          |
 
 ### 10.4 Risks
 
@@ -1500,10 +1508,9 @@ sent/failed totals and recent campaign activity. Cards link to their screens.
 
 #### T4.5 — Packaging and release
 
-`electron-builder` producing NSIS (Windows, per-user install, no admin required) and DMG
-(macOS, architecture per REQUIREMENTS §4). Native module rebuild wired for both platforms.
-Windows signing per §4; macOS signing, notarization and stapling with hardened runtime and the
-minimum necessary entitlements. Icons and installer artwork from `assets/branding/`.
+`electron-builder` producing NSIS (Windows, per-user install, no admin required). Native module
+rebuild wired for the Windows target. Windows signing per §4. Icons and installer artwork from
+`assets/branding/`.
 `electron-updater` against the customer feed from §3, with update-available and
 update-downloaded UI, safe handling of a failed update, and a documented version-bump and
 changelog process.
@@ -1557,18 +1564,17 @@ instructions. Final packaged smoke test on both platforms.
 | E4.21 | Clear-all-data requires typed confirmation                              |
 | E4.22 | Dashboard aggregates match direct SQL                                   |
 | E4.23 | Update check against a mock feed reports the available version          |
-| E4.24 | Packaged build smoke test on Windows and macOS                          |
+| E4.24 | Packaged build smoke test on Windows                                    |
 | E4.25 | Full Sprint 1–3 regression suite green                                  |
 
 ### 12.4 Risks
 
-| Risk                                 | Mitigation                                                                                                             |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Apple notarization rejects the build | Attempt notarization in the first days of the sprint, not the last; hardened runtime and entitlements planned up front |
-| Certificates unavailable at release  | REQUIREMENTS §4 asks early; unsigned interim builds possible with a documented warning                                 |
-| OpenAI cost surprises for end users  | Token caps, optional daily reply limits, visible usage in Settings                                                     |
-| Inbox history bloats the DB          | Retention policy enforced by a scheduled cleanup job, asserted by E4.8                                                 |
-| AI replies to the wrong chat         | Hard rules (no groups, no self, opt-out) asserted by E4.15/E4.16                                                       |
+| Risk                                | Mitigation                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------- |
+| Certificates unavailable at release | REQUIREMENTS §4 asks early; unsigned interim builds possible with a documented warning |
+| OpenAI cost surprises for end users | Token caps, optional daily reply limits, visible usage in Settings                     |
+| Inbox history bloats the DB         | Retention policy enforced by a scheduled cleanup job, asserted by E4.8                 |
+| AI replies to the wrong chat        | Hard rules (no groups, no self, opt-out) asserted by E4.15/E4.16                       |
 
 ---
 
@@ -1598,7 +1604,7 @@ time in Sprint 1; nothing floats on `^`.
 | -------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------ |
 | `electron`                                                     | Desktop shell                                                             | 1                        |
 | `electron-vite`                                                | Main/preload/wa-service bundling with HMR                                 | 1                        |
-| `electron-builder`                                             | NSIS + DMG packaging, signing, notarization                               | 1 (config) / 4 (release) |
+| `electron-builder`                                             | NSIS packaging and Windows signing                                        | 1 (config) / 4 (release) |
 | `electron-updater`                                             | Auto-update against the customer feed                                     | 4                        |
 | `electron-log`                                                 | Rotating structured logs in all processes                                 | 1                        |
 | `next` · `react` · `react-dom`                                 | Renderer                                                                  | 1                        |

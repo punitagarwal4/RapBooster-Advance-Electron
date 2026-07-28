@@ -29,10 +29,7 @@ REQUIREMENTS.local.md
 !.env.example
 *.pfx
 *.p12
-*.p8
 *.cer
-*.mobileprovision
-build/entitlements.local.plist
 
 # Local databases and runtime data
 *.db

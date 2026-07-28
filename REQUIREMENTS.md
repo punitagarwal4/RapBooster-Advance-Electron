@@ -1,83 +1,29 @@
-# RapBooster Advance — Requirements Questionnaire
+# RapBooster Advance — What I still need from you
 
-> **Status:** ⬜ Not filled &nbsp;|&nbsp; **Owner:** Punit &nbsp;|&nbsp; **Blocks:** parts of Sprints 1 and 4
+> **Owner:** Punit &nbsp;|&nbsp; **Last trimmed:** 2026-07-28
 >
-> Every blank below maps to something the application genuinely cannot be finished without.
-> If an item does not apply, write `N/A` — do not leave it empty, so we can tell "not
-> applicable" from "not yet answered".
+> This file holds **only open questions**. Anything you have already decided has been built and
+> moved to the decision log in [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) §7 — it is recorded
+> there with the reasoning, not repeated here.
 >
-> **Build is proceeding without waiting for these.** On instruction (2026-07-27), Sprint 1
-> started before this file was filled. Anything that depends on an answer here is built
-> against a documented default or behind a swappable interface, and every such choice is
-> listed in [§0 Working assumptions](#section-0--working-assumptions-in-effect). When you fill
-> a section in, the corresponding assumption is replaced and the affected code updated — no
-> rewrite required, because the dependencies were isolated deliberately.
+> If an item does not apply, write `N/A` rather than leaving it blank, so "not applicable" is
+> distinguishable from "not yet answered".
 
----
+## The short version
 
-## ⚠ Launch blockers — the short version
+| #   | What I need                                      | Where | If you skip it                                                |
+| --- | ------------------------------------------------ | ----- | ------------------------------------------------------------- |
+| 1   | **License server API** (URL + request/reply)     | §1    | Nobody but you can activate the app                           |
+| 2   | **Windows code-signing certificate**             | §4    | SmartScreen warns on install; most users stop there           |
+| 3   | **Branding** — icon, publisher name, support URL | §2    | A placeholder icon ships and the installer shows no publisher |
+| 4   | **Update feed URL**                              | §3    | No way to ship a fix after release                            |
+| 5   | **AI defaults** — model, caps                    | §5    | Sensible defaults stay; spend is uncapped                     |
 
-Everything in the product is built and tested. **Nothing below is code work; it is all things
-only you can supply.** In priority order:
+**You can run and test everything today without any of these.** `npm run dev:mock` starts the
+app against a mock license server and a fake WhatsApp transport — activate with
+`VALID-DEMO-001`. See the README's "Running without a license server".
 
-| #   | What I need                                      | Where | Why it blocks launch                                                                 | If you skip it                                                  |
-| --- | ------------------------------------------------ | ----- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| 1   | **Apple Developer ID + notarization login**      | §4    | macOS refuses to open an unsigned app. Not a warning — it will not launch            | You cannot ship to Mac at all                                   |
-| 2   | **Windows code-signing certificate**             | §4    | Unsigned installers trigger a SmartScreen warning most people will not click through | Most Windows users never complete the install                   |
-| 3   | **License server API** (URL + request/reply)     | §1    | The app gates on activation at startup. Without a real server nobody can activate    | The app is unusable by anyone but you                           |
-| 4   | **Update feed URL**                              | §3    | No way to ship a fix after release                                                   | Every bug is permanent until users manually reinstall           |
-| 5   | **Branding** — icon, publisher name, support URL | §2    | A placeholder icon ships and the installer shows no verified publisher               | Looks untrustworthy at the exact moment users decide to install |
-
-**Smaller decisions that do not block launch** but change behaviour, in cost-to-change order:
-
-| #   | Decision                                     | Where | Current default                                                 |
-| --- | -------------------------------------------- | ----- | --------------------------------------------------------------- |
-| 6   | Default country code for phone normalization | §7.5  | `+91` — costly to change after a large import                   |
-| 7   | Button / Interactive templates               | §7.9  | Send as numbered text (platform limitation, not a choice)       |
-| 8   | Link previews on campaign messages           | §7.11 | Off. Turning them on naively means 1 HTTP request per recipient |
-| 9   | AI spend / token caps                        | §5    | No cap                                                          |
-
-If you want to ship to a small internal group first, **items 1–3 are the real gate**; 4 and 5
-can follow.
-
----
-
-## Section 0 — Working assumptions in effect
-
-These are the defaults the build is currently running on. **Each one is a placeholder, not a
-decision.** Correct any of them by filling the linked section; nothing here is baked in.
-
-| #   | Assumption in use                                                                                                               | Replaced by | Cost to change later                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------- |
-| A1  | License server calls go through a `LicenseService` interface with a mock implementation; no real endpoint is wired              | §1          | Low — one file (`license.service.ts`)                                                 |
-| A2  | Product name "RapBooster Advance", appId `com.rapbooster.advance`, placeholder icon                                             | §2          | Low — config + assets swap                                                            |
-| A3  | No update feed configured; `electron-updater` wired but pointed at a placeholder URL read from config                           | §3          | Low — config value                                                                    |
-| A4  | Builds are unsigned; signing config present but disabled                                                                        | §4          | Low — config + certs                                                                  |
-| A5  | OpenAI model defaults to a current general-purpose model; user must supply their own key                                        | §5          | Low — settings default                                                                |
-| A6  | Sending defaults = the prototype's values (delay 0–5s, sleep 10s after 10 msgs, group delay 2s), daily cap unlimited, 2 retries | §6          | Low — seeded settings row                                                             |
-| A7  | Default country code for phone normalization: **`+91`** (India)                                                                 | §7.5        | **Medium** — changes how imported numbers normalize; re-import may be needed if wrong |
-| A8  | Duplicate policy on import: **skip**                                                                                            | §7.4        | Low — settings default                                                                |
-| A9  | Campaign report exports **CSV, one row per recipient** (upgrade over the prototype's `.txt`)                                    | §7.2        | Low                                                                                   |
-| A10 | Inbox retention: **forever** (no cleanup job active)                                                                            | §7.3        | Low                                                                                   |
-| A11 | Dashboard stats use the suggested definitions in §7.1                                                                           | §7.1        | Low                                                                                   |
-| A12 | Baileys pinned to the **7.x line**; exact version recorded in the tracker's decision log                                        | §7.6        | Medium — regression run required                                                      |
-| A13 | Escalation uses **keyword triggers**; the confidence-threshold control is stored but not enforced                               | §5          | Medium — prompt + logic change                                                        |
-| A14 | **Button and Interactive templates send as numbered text**, not real tappable buttons                                           | §7.9        | See §7.9 — this is a platform limitation, not a preference                            |
-| A15 | **Link previews are off.** Messages containing URLs send as plain text                                                          | §7.11       | Low — but see §7.11: enabling it naively means one HTTP request per recipient         |
-
-**A7 is the one worth checking early.** If your contact lists are not Indian numbers, tell me
-the right country code before a large CSV import happens, because normalization is applied at
-import time and stored.
-
----
-
-## How to fill this
-
-- Replace every `___` or `TODO` with a real value.
-- **Do not put secrets in this file.** It is committed to git. For anything sensitive
-  (certificate passwords, API keys, private URLs) write _where to find it_ here, and put the
-  actual value in `REQUIREMENTS.local.md`, which is git-ignored.
-- Mark each section's checkbox when complete.
+Everything in §6 already has a working default. Read it only if you want to change one.
 
 ---
 
@@ -85,6 +31,12 @@ import time and stored.
 
 The prototype's activation screen validates keys client-side against a hardcoded list. The
 real app must call your server. Everything below is needed to write that client.
+
+> **You can run and test the whole app before answering this section.** `npm run dev:mock`
+> starts it against a deterministic mock license server and a fake WhatsApp transport — no
+> license server, no real WhatsApp account. Activate with `VALID-DEMO-001`; the other test key
+> prefixes (`CONFLICT-`, `EXPIRED-`, `REVOKED-`, `OFFLINE-`) exercise every rejection and the
+> offline grace path. See the README's "Running without a license server".
 
 ### 1.1 Connection
 
@@ -205,21 +157,6 @@ TODO
 
 ---
 
-> ## ⚠ Sections 2, 3 and 4 are now the only thing between you and a shippable build
->
-> As of **2026-07-28** every feature is built and the full test suite passes, but the release
-> pipeline has never been run end to end, because it cannot be without these three sections.
-> This is the one place where "we'll do it later" has a real cost: **an unsigned macOS build
-> will not open at all** on a customer's machine, and an unsigned Windows build shows a
-> SmartScreen warning that most people will not click through.
->
-> Everything is wired and waiting — see [RELEASE.md](./RELEASE.md) for exactly what happens
-> when you supply each item. In the meantime a placeholder icon ships, and update checks
-> honestly report "no update server is configured" rather than claiming the app is current.
->
-> If you want to ship to a small internal group first, §4 (signing) matters most; §2 and §3
-> can follow.
-
 ## Section 2 — Branding and Identity ⬜
 
 | Item                                                                    | Value                                    |
@@ -235,10 +172,9 @@ TODO
 
 **Assets** — drop files into `assets/branding/` and tick when done:
 
-- ⬜ App icon, 1024×1024 PNG with transparency (I generate `.ico` and `.icns` from it)
+- ⬜ App icon, 1024×1024 PNG with transparency (I generate the `.ico` from it)
 - ⬜ Windows installer sidebar image, 164×314 BMP _(optional — default used if absent)_
 - ⬜ Windows installer header image, 150×57 BMP _(optional)_
-- ⬜ macOS DMG background, 540×380 PNG _(optional)_
 - ⬜ Logo for the in-app sidebar / activation screen, SVG or PNG
 - ⬜ Brand colors, if you want to override the palette derived from the prototype:
   primary `___` (prototype uses `#0078d4`), danger `___` (`#c50f1f`)
@@ -262,11 +198,12 @@ You chose auto-update via **your own server / S3**.
 
 ---
 
-## Section 4 — Code Signing and Notarization ⬜
+## Section 4 — Code Signing ⬜
 
-Without these, Windows shows a SmartScreen warning and macOS refuses to open the app.
+Without this, Windows shows a SmartScreen warning when someone runs the installer.
 
-### 4.1 Windows
+**Windows is the only distribution target** (decided 2026-07-28), so there is nothing to answer
+about Apple Developer accounts, notarization or a Mac build machine.
 
 | Item                                                      | Value                                                                           |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -275,26 +212,6 @@ Without these, Windows shows a SmartScreen warning and macOS refuses to open the
 | Where is the cert file, and where is its password stored? | `___` (value → `REQUIREMENTS.local.md`)                                         |
 | If Azure Trusted Signing: endpoint, account, cert profile | `___`                                                                           |
 | Timestamp server URL preference                           | `___` (default `http://timestamp.digicert.com`)                                 |
-
-### 4.2 macOS
-
-| Item                                                                   | Value                                                                              |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Do you have a paid Apple Developer account?                            | ⬜ Yes ⬜ No ⬜ Skip macOS signing for now                                         |
-| Apple Team ID                                                          | `___`                                                                              |
-| "Developer ID Application" certificate installed on the build machine? | ⬜ Yes ⬜ No                                                                       |
-| Notarization credential                                                | ⬜ App-specific password ⬜ App Store Connect API key (`.p8` + key ID + issuer ID) |
-| Where are those stored?                                                | `___` (values → `REQUIREMENTS.local.md`)                                           |
-| Which Macs must be supported?                                          | ⬜ Apple Silicon only ⬜ Intel only ⬜ Universal build (both)                      |
-| Minimum macOS version                                                  | `___` (default: macOS 11 Big Sur)                                                  |
-
-### 4.3 Build machine
-
-macOS artifacts can only be signed and notarized on a Mac.
-
-| Question                                | Answer                                                                           |
-| --------------------------------------- | -------------------------------------------------------------------------------- |
-| Do you have a Mac available for builds? | ⬜ Yes ⬜ No — use CI (GitHub Actions macOS runner) ⬜ Ship Windows only for now |
 
 ---
 
@@ -314,167 +231,35 @@ You chose OpenAI, with the end user pasting their own key.
 | What happens when the key is missing/invalid — silently skip auto-reply, or notify the user? | `___`                                                                                          |
 | Should AI replies be logged for the user to audit?                                           | ⬜ Yes ⬜ No                                                                                   |
 
-The prototype's escalation section sets a **confidence threshold (%)**. OpenAI does not return a
-confidence score directly, so tell me which you want:
+---
 
-- ⬜ Ask the model to self-rate its confidence and compare against the threshold
-- ⬜ Escalate on keyword triggers only, and drop the threshold control
-- ⬜ Other: `___`
+## Section 6 — Defaults already in effect ⬜
+
+Each of these is running now with the value shown. Nothing here blocks anything; change one by
+writing over its value.
+
+| Setting                             | Running as                                                          | Change to |
+| ----------------------------------- | ------------------------------------------------------------------- | --------- |
+| Random delay between messages       | 0–5 seconds                                                         | `___`     |
+| Sleep duration / after N messages   | 10 seconds after every 10                                           | `___`     |
+| Delay between group messages        | 2 seconds                                                           | `___`     |
+| Delay between group creations       | 2 seconds                                                           | `___`     |
+| Daily send cap per device           | Unlimited                                                           | `___`     |
+| Max devices sending at once         | 20                                                                  | `___`     |
+| Retry attempts per failed recipient | 2                                                                   | `___`     |
+| Pause outside business hours        | No                                                                  | `___`     |
+| Duplicate handling on import        | Skip the duplicate                                                  | `___`     |
+| Inbox retention                     | Forever, media referenced on disk                                   | `___`     |
+| Campaign report format              | CSV, one row per recipient                                          | `___`     |
+| Dashboard cards                     | Contacts · connected devices · running+paused campaigns · templates | `___`     |
+| App UI language                     | English only                                                        | `___`     |
+| Crash reporting                     | Local logs only, nothing phones home                                | `___`     |
+| Baileys version                     | `7.0.0-rc13`, pinned exactly (npm's `latest`)                       | `___`     |
+| WhatsApp Business API integration   | Out of scope — Baileys only                                         | `___`     |
 
 ---
 
-## Section 6 — Default Sending Policy ⬜
-
-The prototype's create-campaign modal defaults to delay 0–5s, sleep 10s, sleep after 10
-messages. Confirm or override these as the app-wide factory defaults (users can still change
-them per campaign in Settings → Sending Defaults).
-
-| Setting                                      | Prototype default    | Your default                 |
-| -------------------------------------------- | -------------------- | ---------------------------- |
-| Random delay from (sec)                      | 0                    | `___`                        |
-| Random delay to (sec)                        | 5                    | `___`                        |
-| Sleep duration (sec)                         | 10                   | `___`                        |
-| Sleep after N messages                       | 10                   | `___`                        |
-| Delay between group messages (sec)           | 2                    | `___`                        |
-| Delay between group creations (sec)          | 2                    | `___`                        |
-| **Daily send cap per device**                | _(not in prototype)_ | `___` (0 = unlimited)        |
-| Max concurrent devices sending at once       | _(not in prototype)_ | `___`                        |
-| Should sending pause outside business hours? | _(not in prototype)_ | ⬜ No ⬜ Yes: `___` to `___` |
-| Retry attempts per failed recipient          | _(not in prototype)_ | `___` (suggest 2)            |
-
----
-
-## Section 7 — Product Decisions ⬜
-
-Small things the prototype leaves ambiguous. Each has a suggested default — tick it or write
-your own.
-
-**7.1 Dashboard stat cards.** The mockup shows Total Contacts / Active Devices / Running
-Campaigns / Templates with hardcoded numbers. Confirm what each should actually count:
-
-| Card              | Suggested definition                        | OK?        |
-| ----------------- | ------------------------------------------- | ---------- |
-| Total Contacts    | Unique contacts across all lists            | ⬜ / `___` |
-| Active Devices    | Devices currently `connected`               | ⬜ / `___` |
-| Running Campaigns | Campaigns with status `running` or `paused` | ⬜ / `___` |
-| Templates         | Total templates saved                       | ⬜ / `___` |
-
-Want a fifth/sixth card (messages sent today, failure rate)? `___`
-
-**7.2 Campaign report.** The mockup exports a plain `.txt` summary.
-
-- ⬜ Keep plain `.txt` summary
-- ⬜ CSV with one row per recipient (number, status, sent time, error) — _recommended_
-- ⬜ Both
-- ⬜ PDF
-
-**7.3 Inbox retention.** How long should received messages be kept in the local DB?
-
-- ⬜ Forever ⬜ 90 days ⬜ 30 days ⬜ Other: `___`
-- Should media files received be downloaded and stored, or only referenced? `___`
-
-**7.4 Contact deduplication.** On CSV import, when a phone number already exists in the list:
-
-- ⬜ Skip the duplicate ⬜ Overwrite existing ⬜ Import anyway ⬜ Ask each time
-
-**7.5 Phone number format.** What default country code should bare numbers be assumed to have?
-`___` (e.g. `+91`). Should numbers failing validation be rejected at import or flagged? `___`
-
-**7.6 Baileys version.** ⚠ Needs your call.
-
-`baileys` on npm currently publishes `7.0.0-rc13` as `latest` and `6.7.23` under the `legacy`
-tag — so "the latest Baileys" is presently a **release candidate**.
-
-- ⬜ Use `baileys@7.0.0-rc13`, pinned exactly (newest features; RC risk) — _recommended, matches your instruction_
-- ⬜ Use `baileys@6.7.23` (proven stable, older API)
-- ⬜ Whatever is `latest` at the time Sprint 2 starts, pinned exactly then
-
-Either way the version is pinned exactly (no `^`) and upgrades are a deliberate, tested task.
-
-**7.9 Button and Interactive templates.** ⚠ **Needs your decision — platform limitation.**
-
-Your prototype defines four template types, two of which are **Button Message** and
-**Interactive Message**. WhatsApp has withdrawn tappable buttons from unofficial client
-libraries: Baileys 7's send API has no button type at all, and its protocol definitions cover
-only button _responses_ — what arrives when someone taps a button sent by an official Business
-API account.
-
-Sending real buttons would mean hand-assembling raw protobuf that WhatsApp does not support
-for linked devices. In practice that means: it breaks without warning on WhatsApp's schedule,
-it frequently renders as a blank or broken message on the recipient's phone, and it is exactly
-the kind of protocol abuse that gets accounts banned — which is unrecoverable.
-
-**Current behaviour (A14):** Button and Interactive templates send their options as numbered
-text lines, e.g.
-
-```text
-Would you like to book a call?
-
-1. Yes, tomorrow
-2. Yes, next week
-3. No thanks
-```
-
-This always delivers and always renders. Recipients reply with a number.
-
-Pick one:
-
-- ⬜ **Keep numbered-text fallback** — reliable, no ban risk. _Recommended._
-- ⬜ **Drop Button and Interactive template types entirely** — remove them from the Templates
-  screen so the app never promises something WhatsApp will not deliver.
-- ⬜ **Attempt real buttons anyway** — I will implement raw protobuf interactive messages.
-  Understand that they may not render, may stop working at any time, and increase ban risk on
-  your customers' accounts. I will not do this without an explicit instruction here.
-- ⬜ Other: `___`
-
-**7.10 WhatsApp Business API.** Related to §7.9: real buttons, templates and higher rate
-limits are only available through the official WhatsApp Business API (via Meta or a provider
-such as Twilio or 360dialog), which is a paid, approval-gated channel and a completely
-different integration from Baileys. Out of scope unless you say otherwise.
-
-- ⬜ Not interested — Baileys only ⬜ Tell me more later ⬜ Other: `___`
-
-**7.7 Language.** The chatbot config offers reply languages, but should the **app UI** itself be
-translatable?
-
-- ⬜ English only ⬜ Prepare for i18n (adds scope) ⬜ Other: `___`
-
-**7.8 Telemetry / crash reporting.** Should the app phone home with anonymous crash reports?
-
-- ⬜ No, local logs only — _default_ ⬜ Yes, to: `___`
-
-**7.11 Link previews on campaign messages.** ⚠ **Needs your decision — currently off.**
-
-When a message contains a URL, WhatsApp can show a rich preview card (title, description,
-thumbnail) instead of a bare link. Marketing messages almost always contain a link, and the
-preview materially affects whether people tap it.
-
-**This does not work today, and never has.** Baileys generates previews through an optional
-library (`link-preview-js`) that has never been installed, and it swallows the failure — so
-links have always sent as plain text with no error anywhere.
-
-I have deliberately not just switched it on, because Baileys fetches the preview **once per
-message with no caching** (its own source carries a `//TODO: CACHE`). Enabled naively, a
-50,000-recipient campaign containing one link would make **50,000 requests to that website
-from your IP address** over the campaign. That is slow, wasteful, and could get your server or
-IP rate-limited or blocked by the target site — and if the link points at your own site, you
-would be attacking yourself.
-
-| Option                                                        | What it means                                                                                                                                                 |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ⬜ **Leave off** — _current behaviour_                        | Links send as plain text. Nothing to build.                                                                                                                   |
-| ⬜ **On, cached per campaign** — _recommended if you want it_ | I fetch the preview **once per unique URL** and attach the same card to every message. One request instead of 50,000. Roughly half a day of work, plus tests. |
-| ⬜ **On, Baileys default**                                    | Simplest to add, but one request per recipient. I do not recommend this and would want it in writing.                                                         |
-
-Also relevant: fetching a preview means your machine makes an outbound request to whatever URL
-is in the template, at send time. That is normally fine for your own marketing links, but it is
-a real network egress from the user's machine, so it should be a conscious choice.
-
-- Your choice: `___`
-
----
-
-## Section 8 — Anything I have not asked about ⬜
+## Section 7 — Anything I have not asked about ⬜
 
 Constraints, integrations, deadlines, or existing systems this must fit into:
 
@@ -484,10 +269,22 @@ TODO
 
 ---
 
+## Already decided — no action needed
+
+Recorded in [SPRINT-TRACKER.md](./SPRINT-TRACKER.md) §7 with the full reasoning:
+
+| Decision                                                                     | Tracker  |
+| ---------------------------------------------------------------------------- | -------- |
+| Windows-only distribution; Apple packaging and notarization removed          | D66      |
+| No default country code — every import asks, per file                        | D67      |
+| Link previews always on, fetched once per URL rather than once per message   | D68, D69 |
+| Real WhatsApp buttons and single-select lists, with a numbered-text fallback | D70–D72  |
+
+---
+
 ## Sign-off
 
-|                          |        |
-| ------------------------ | ------ |
-| Filled by                | `___`  |
-| Date                     | `___`  |
-| Ready to start Sprint 1? | ⬜ Yes |
+|           |       |
+| --------- | ----- |
+| Filled by | `___` |
+| Date      | `___` |

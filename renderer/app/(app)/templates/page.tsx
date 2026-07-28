@@ -9,7 +9,14 @@ import { Dialog } from '@renderer/components/ui/dialog'
 import { EmptyState } from '@renderer/components/ui/empty-state'
 import { useIpcQuery } from '@renderer/hooks/useIpc'
 import { extractTags, renderTemplate } from '@shared/merge-tags'
-import { MAX_TEMPLATE_BUTTONS, type TemplateType } from '@shared/types'
+import { validateButtons } from '@shared/template-buttons'
+import {
+  MAX_LIST_ROWS,
+  MAX_TEMPLATE_BUTTONS,
+  type TemplateButton,
+  type TemplateButtonType,
+  type TemplateType,
+} from '@shared/types'
 
 const TYPE_LABEL: Record<TemplateType, string> = {
   text: 'Text Only',
@@ -18,8 +25,50 @@ const TYPE_LABEL: Record<TemplateType, string> = {
   button: 'Button Message',
 }
 
-/** Types WhatsApp will not deliver as tappable UI — see REQUIREMENTS §7.9. */
-const DEGRADES_TO_TEXT: TemplateType[] = ['button', 'interactive']
+/** Types that carry tappable UI, and so offer a footer (REQUIREMENTS §7.9). */
+const INTERACTIVE_TYPES: TemplateType[] = ['button', 'interactive']
+
+const BUTTON_TYPE_LABEL: Record<TemplateButtonType, string> = {
+  reply: 'Quick reply',
+  url: 'Open a link',
+  call: 'Call a number',
+  copy: 'Copy a code',
+}
+
+/** Short form, for the previews where the full sentence would not fit. */
+const BUTTON_TYPE_HINT: Record<TemplateButtonType, string> = {
+  reply: 'reply',
+  url: 'link',
+  call: 'call',
+  copy: 'copy',
+}
+
+/** Per-type wording for the value field. `reply` carries no value at all. */
+const VALUE_FIELD: Record<
+  TemplateButtonType,
+  { label: string; placeholder: string } | null
+> = {
+  reply: null,
+  url: { label: 'Link', placeholder: 'https://example.com/offer' },
+  call: { label: 'Phone number', placeholder: '+919876543210' },
+  copy: { label: 'Text to copy', placeholder: 'SAVE20' },
+}
+
+/**
+ * The editor's row shape.
+ *
+ * WHY a local type rather than `TemplateButton`: `value` is optional on the
+ * wire but an input needs a string to stay controlled, so the empty string is
+ * kept here and dropped on the way out.
+ */
+interface ButtonDraft {
+  type: TemplateButtonType
+  label: string
+  value: string
+}
+
+/** A factory, so two added rows never share one object. */
+const emptyButton = (): ButtonDraft => ({ type: 'reply', label: '', value: '' })
 
 export default function TemplatesPage() {
   const templates = useIpcQuery('template:list')
@@ -33,7 +82,9 @@ export default function TemplatesPage() {
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image')
   const [mediaPath, setMediaPath] = useState('')
   const [options, setOptions] = useState('')
-  const [buttons, setButtons] = useState('')
+  const [listButtonText, setListButtonText] = useState('')
+  const [footer, setFooter] = useState('')
+  const [buttons, setButtons] = useState<ButtonDraft[]>([])
   const [error, setError] = useState<string>()
 
   // Every field across all lists is a candidate merge tag.
@@ -66,7 +117,9 @@ export default function TemplatesPage() {
     setContent('')
     setMediaPath('')
     setOptions('')
-    setButtons('')
+    setListButtonText('')
+    setFooter('')
+    setButtons([])
     setError(undefined)
   }
 
@@ -75,17 +128,44 @@ export default function TemplatesPage() {
     reset()
   }
 
+  function updateButton(index: number, patch: Partial<ButtonDraft>) {
+    setButtons((current) =>
+      current.map((button, i) => (i === index ? { ...button, ...patch } : button)),
+    )
+  }
+
   async function create() {
     setError(undefined)
-    const buttonList = buttons
-      .split('\n')
-      .map((b) => b.trim())
-      .filter((b) => b !== '')
 
-    if (type === 'button' && buttonList.length > MAX_TEMPLATE_BUTTONS) {
-      setError(`WhatsApp allows at most ${MAX_TEMPLATE_BUTTONS} buttons.`)
+    // Blank rows are the user leaving the last "+ Add button" unfilled, not an error.
+    const buttonList: TemplateButton[] = buttons
+      .filter((b) => b.label.trim() !== '')
+      .map((b) => ({
+        type: b.type,
+        label: b.label.trim(),
+        ...(b.value.trim() !== '' ? { value: b.value.trim() } : {}),
+      }))
+
+    if (type === 'button') {
+      const rejection = validateButtons(buttonList)
+      if (rejection) {
+        setError(rejection)
+        return
+      }
+    }
+
+    const optionList = options
+      .split('\n')
+      .map((o) => o.trim())
+      .filter((o) => o !== '')
+
+    if (type === 'interactive' && optionList.length > MAX_LIST_ROWS) {
+      setError(`A list can hold at most ${MAX_LIST_ROWS} options.`)
       return
     }
+
+    const trimmedFooter = footer.trim()
+    const trimmedListButton = listButtonText.trim()
 
     const result = await window.api.invoke('template:create', {
       name,
@@ -94,13 +174,14 @@ export default function TemplatesPage() {
       ...(type === 'media' ? { mediaType, mediaSourcePath: mediaPath.trim() } : {}),
       ...(type === 'interactive'
         ? {
-            options: options
-              .split('\n')
-              .map((o) => o.trim())
-              .filter((o) => o !== ''),
+            options: optionList,
+            ...(trimmedListButton !== '' ? { listButtonText: trimmedListButton } : {}),
           }
         : {}),
       ...(type === 'button' ? { buttons: buttonList } : {}),
+      ...(INTERACTIVE_TYPES.includes(type) && trimmedFooter !== ''
+        ? { footer: trimmedFooter }
+        : {}),
     })
 
     if (!result.ok) {
@@ -175,26 +256,42 @@ export default function TemplatesPage() {
                   </div>
                 )}
                 {template.content}
+                {template.footer && (
+                  <p className="mt-1 text-xs text-ink-subtle">{template.footer}</p>
+                )}
                 {template.buttons && template.buttons.length > 0 && (
                   <div className="mt-2 flex flex-col gap-1">
                     {template.buttons.map((b, i) => (
                       <span
-                        key={b}
-                        className="rounded border border-black/10 px-2 py-1 text-xs"
+                        key={`${b.type}-${b.label}-${i}`}
+                        className="flex items-center justify-between gap-2 rounded border border-black/10 px-2 py-1 text-xs"
                       >
-                        {i + 1}. {b}
+                        <span className="truncate">{b.label}</span>
+                        <span className="shrink-0 text-ink-subtle">
+                          {BUTTON_TYPE_HINT[b.type]}
+                        </span>
                       </span>
                     ))}
                   </div>
                 )}
+                {template.type === 'interactive' &&
+                  template.options &&
+                  template.options.length > 0 && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      <span className="rounded border border-black/10 px-2 py-1 text-center text-xs">
+                        {template.listButtonText ?? 'View options'}
+                      </span>
+                      {template.options.map((option, i) => (
+                        <span
+                          key={`${option}-${i}`}
+                          className="truncate px-2 text-xs text-ink-muted"
+                        >
+                          • {option}
+                        </span>
+                      ))}
+                    </div>
+                  )}
               </div>
-
-              {DEGRADES_TO_TEXT.includes(template.type) && (
-                <p className="text-xs text-status-warn-fg">
-                  Sends as numbered text — WhatsApp does not accept tappable buttons from
-                  linked devices.
-                </p>
-              )}
 
               <Button
                 size="sm"
@@ -262,13 +359,13 @@ export default function TemplatesPage() {
                   </option>
                 ))}
               </select>
-              {DEGRADES_TO_TEXT.includes(type) && (
+              {INTERACTIVE_TYPES.includes(type) && (
                 <p
-                  className="rounded-card bg-status-warn-bg px-2 py-1.5 text-xs text-status-warn-fg"
-                  data-testid="degrade-notice"
+                  className="rounded-card bg-status-idle-bg px-2 py-1.5 text-xs text-status-idle-fg"
+                  data-testid="interactive-notice"
                 >
-                  WhatsApp no longer accepts tappable buttons from linked devices, so this
-                  sends as numbered text. Recipients reply with a number.
+                  These send as real WhatsApp buttons. If a recipient&apos;s WhatsApp
+                  cannot render them, the message still arrives as a numbered list.
                 </p>
               )}
             </div>
@@ -347,31 +444,143 @@ export default function TemplatesPage() {
             )}
 
             {type === 'interactive' && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="tpl-options" className="text-xs font-semibold text-ink">
-                  Options (one per line)
-                </label>
-                <textarea
-                  id="tpl-options"
-                  data-testid="tpl-options"
-                  value={options}
-                  onChange={(e) => setOptions(e.target.value)}
-                  className="min-h-20 resize-y rounded-control border border-line px-2.5 py-2 font-mono text-sm outline-none focus:border-primary"
-                />
-              </div>
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="tpl-options" className="text-xs font-semibold text-ink">
+                    Options (one per line, max {MAX_LIST_ROWS})
+                  </label>
+                  <textarea
+                    id="tpl-options"
+                    data-testid="tpl-options"
+                    value={options}
+                    onChange={(e) => setOptions(e.target.value)}
+                    className="min-h-20 resize-y rounded-control border border-line px-2.5 py-2 font-mono text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="tpl-list-button"
+                    className="text-xs font-semibold text-ink"
+                  >
+                    List button label (optional)
+                  </label>
+                  <input
+                    id="tpl-list-button"
+                    data-testid="tpl-list-button"
+                    value={listButtonText}
+                    onChange={(e) => setListButtonText(e.target.value)}
+                    placeholder="View options"
+                    maxLength={20}
+                    className="rounded-control border border-line px-2.5 py-2 text-sm outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-ink-subtle">
+                    The label on the control that opens the list.
+                  </p>
+                </div>
+              </>
             )}
 
             {type === 'button' && (
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="tpl-buttons" className="text-xs font-semibold text-ink">
-                  Buttons (one per line, max {MAX_TEMPLATE_BUTTONS})
+                <span className="text-xs font-semibold text-ink">
+                  Buttons (max {MAX_TEMPLATE_BUTTONS})
+                </span>
+                <div className="flex flex-col gap-2" data-testid="tpl-buttons">
+                  {buttons.map((button, i) => {
+                    const valueField = VALUE_FIELD[button.type]
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1.5 rounded-card border border-line p-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <select
+                            aria-label={`Button ${i + 1} type`}
+                            data-testid={`btn-type-${i}`}
+                            value={button.type}
+                            // WHY reset the value: it means a different thing per type,
+                            // so carrying a URL into a phone field would only mislead.
+                            onChange={(e) =>
+                              updateButton(i, {
+                                type: e.target.value as TemplateButtonType,
+                                value: '',
+                              })
+                            }
+                            className="rounded-control border border-line px-2 py-1.5 text-xs outline-none focus:border-primary"
+                          >
+                            {(Object.keys(BUTTON_TYPE_LABEL) as TemplateButtonType[]).map(
+                              (t) => (
+                                <option key={t} value={t}>
+                                  {BUTTON_TYPE_LABEL[t]}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                          <input
+                            aria-label={`Button ${i + 1} label`}
+                            data-testid={`btn-label-${i}`}
+                            value={button.label}
+                            onChange={(e) => updateButton(i, { label: e.target.value })}
+                            placeholder="Button text"
+                            maxLength={25}
+                            className="min-w-0 flex-1 rounded-control border border-line px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Remove button ${i + 1}`}
+                            data-testid={`btn-remove-${i}`}
+                            onClick={() =>
+                              setButtons((current) =>
+                                current.filter((_, index) => index !== i),
+                              )
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        {valueField && (
+                          <label className="flex flex-col gap-1 text-xs text-ink-muted">
+                            {valueField.label}
+                            <input
+                              data-testid={`btn-value-${i}`}
+                              value={button.value}
+                              onChange={(e) => updateButton(i, { value: e.target.value })}
+                              placeholder={valueField.placeholder}
+                              maxLength={2048}
+                              className="rounded-control border border-line px-2.5 py-1.5 text-sm text-ink outline-none focus:border-primary"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )
+                  })}
+                  <Button
+                    size="sm"
+                    className="self-start"
+                    disabled={buttons.length >= MAX_TEMPLATE_BUTTONS}
+                    onClick={() => setButtons((current) => [...current, emptyButton()])}
+                    data-testid="add-button"
+                  >
+                    + Add button
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {INTERACTIVE_TYPES.includes(type) && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="tpl-footer" className="text-xs font-semibold text-ink">
+                  Footer (optional)
                 </label>
-                <textarea
-                  id="tpl-buttons"
-                  data-testid="tpl-buttons"
-                  value={buttons}
-                  onChange={(e) => setButtons(e.target.value)}
-                  className="min-h-20 resize-y rounded-control border border-line px-2.5 py-2 font-mono text-sm outline-none focus:border-primary"
+                <input
+                  id="tpl-footer"
+                  data-testid="tpl-footer"
+                  value={footer}
+                  onChange={(e) => setFooter(e.target.value)}
+                  placeholder="Small print under the message"
+                  maxLength={60}
+                  className="rounded-control border border-line px-2.5 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>
             )}

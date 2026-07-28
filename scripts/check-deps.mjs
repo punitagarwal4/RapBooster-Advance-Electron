@@ -54,8 +54,9 @@ const TRIAGE = {
     why: 'Only used for audio waveform and duration. This app sends image and video only — asserted below against shared/types.ts.',
   },
   'link-preview-js': {
-    required: false,
-    why: 'Deliberately absent: Baileys fetches the preview once per message with no cache (its own TODO), so a 50k campaign would make 50k requests to the linked site from the user IP. Pending a decision in REQUIREMENTS §7.10. See D59.',
+    required: true,
+    major: 4, // <=4.0.0 is vulnerable to IPv6/loopback SSRF (GHSA-4gp8-rjrq-ch6q)
+    why: 'Link previews are on for every text message (REQUIREMENTS §7.11). Baileys resolves them through this optional peer and swallows its absence, so without it links have always sent as plain text. We resolve and cache the preview ourselves in electron/wa-service/link-preview.ts — one fetch per URL, not per recipient. See D68.',
   },
 }
 
@@ -117,6 +118,12 @@ for (const [name, rule] of Object.entries(TRIAGE)) {
     const [major, minor] = installed.split('.').map(Number)
     if (major === 0 && minor < rule.minor) {
       fail(`"${name}" ${installed} is below the required 0.${rule.minor}.0 floor.`)
+    }
+  }
+  if (rule.major !== undefined) {
+    const [major] = installed.split('.').map(Number)
+    if (major < rule.major) {
+      fail(`"${name}" ${installed} is below the required ${rule.major}.0.0 floor.`)
     }
   }
 }
